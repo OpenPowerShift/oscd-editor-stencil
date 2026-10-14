@@ -133,7 +133,9 @@ function findSupervision(cb: Element, ied: Element): Element | undefined {
 }
 
 function identityNoIed(element: Element | null, iedName: string): string {
-  if (element === null) return 'NONE';
+  if (element === null) {
+    return 'NONE';
+  }
   return `${identity(element)}`.substring(iedName.length);
 }
 
@@ -169,7 +171,7 @@ export function getMappingInfo(
 
   controlBlocks.forEach((cb: Element) => {
     const extRefMappings = findControlBlockSubscription(cb, toName)
-      .filter(extRef => {
+      .filter((extRef) => {
         const iedNameMatch =
           extRef.closest('IED')!.getAttribute('name') === toName;
         return iedNameMatch && isSubscribed(extRef);
@@ -189,10 +191,10 @@ export function getMappingInfo(
         const selMqExtRef = findSELMessageQuality(cb, toName);
         selSupervision = selMqExtRef
           ? {
-              name:
+            name:
                 selMqExtRef.getAttribute('intAddr') ?? 'No internal address!!',
-              ExtRef: identityNoIed(selMqExtRef, toName)
-            }
+            ExtRef: identityNoIed(selMqExtRef, toName)
+          }
           : undefined;
       }
 

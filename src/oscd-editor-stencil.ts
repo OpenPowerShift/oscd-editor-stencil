@@ -51,11 +51,11 @@ import { Checkbox } from '@material/web/checkbox/internal/checkbox.js';
 import {
   ControlBlockInfo,
   getMappingInfo
-} from './foundation/getMappingInfo.js';
-import { combinations } from './combinations.js';
-import { getIedDescription } from './getIedDescription.js';
+} from './foundation/mapping-info.js';
+import { combinations } from './foundation/combinations.js';
+import { getIedDescription } from './foundation/ied-description.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 // const defaultStencil = await fetch(
 //   new URL('./default_stencil.json', import.meta.url)
 // ).then(res => res.json());
@@ -237,7 +237,7 @@ export default class Stencil extends LitElement {
   @query('#applications > md-list-item.selected')
   selectedApplicationUI!: MdListItem;
 
-  // eslint-disable-next-line no-useless-constructor
+   
   constructor() {
     super();
     // TODO: Decide whether to package stencils at all
@@ -253,7 +253,7 @@ export default class Stencil extends LitElement {
     );
 
     const ieds = new Map<string, IED>();
-    this.uniqueIeds.forEach(iedName => {
+    this.uniqueIeds.forEach((iedName) => {
       const ied = this.doc.querySelector(`IED[name="${iedName}"]`)!;
       ieds.set(iedNameMapping.get(iedName) ?? 'Unknown IED', {
         originalName: ied.getAttribute('name')!,
@@ -451,7 +451,7 @@ export default class Stencil extends LitElement {
         ) as MdCheckbox[]
       ).forEach((cb): void => {
         if (cb.checked) {
-          // eslint-disable-next-line no-param-reassign
+           
           cb.checked = false;
           cb.dispatchEvent(new Event('change'));
           cb.requestUpdate();
@@ -468,7 +468,9 @@ export default class Stencil extends LitElement {
 
   async loadStencil(event: Event): Promise<void> {
     const file = (<HTMLInputElement | null>event.target)?.files?.item(0);
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     const text = await file.text();
     this.stencilData = JSON.parse(text);
@@ -481,7 +483,7 @@ export default class Stencil extends LitElement {
     this.resetApplyStencil();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   applyStencil() {
     let subscriptionsCount = 0;
     let supervisionsCount = 0;
@@ -500,7 +502,7 @@ export default class Stencil extends LitElement {
         cb =>
           (cb.from === fn1 && cb.to === fn2) ||
           (cb.to === fn1 && cb.from === fn2)
-      ).forEach(cb => {
+      ).forEach((cb) => {
         const newFromIed = cb.from === fn1 ? newIed1Name : newIed2Name;
         const newToIed = cb.to === fn1 ? newIed1Name : newIed2Name;
 
@@ -514,7 +516,7 @@ export default class Stencil extends LitElement {
         }
 
         const cbSubscriptions = cb.mappings
-          .map(mapping => {
+          .map((mapping) => {
             const newSourceId = newIedIdentity(newFromIed, mapping.FCDA);
             const newSource = find(this.doc, 'FCDA', newSourceId);
 
@@ -626,7 +628,9 @@ export default class Stencil extends LitElement {
       });
     });
 
-    if (this.errorMessages.length > 0) this.errorDialogUI.show();
+    if (this.errorMessages.length > 0) {
+      this.errorDialogUI.show();
+    }
 
     this.snackBarMessage = `${subscriptionsCount} subscriptions and ${supervisionsCount} supervisions done`;
     this.snackBarMessageUI.show();
@@ -674,7 +678,9 @@ export default class Stencil extends LitElement {
     const storageUpdateRequired = Array.from(changedProperties.keys()).some(
       prop => prop === 'stencilData'
     );
-    if (storageUpdateRequired) this.storeSettings();
+    if (storageUpdateRequired) {
+      this.storeSettings();
+    }
 
     // reset application if switching to create tab
     if (Array.from(changedProperties.keys()).includes('tabIndex')) {
@@ -691,7 +697,9 @@ export default class Stencil extends LitElement {
   }
 
   renderAddStencilMetadata(): TemplateResult {
-    if (!this.doc) return html``;
+    if (!this.doc) {
+      return html``;
+    }
 
     // TODO: Can't use ?disabled=${this.iedsStencilMetadataUI?.selectedElements.length === 0} on button?
 
@@ -717,7 +725,7 @@ export default class Stencil extends LitElement {
           id="stencil-metadata-ieds"
           filterable
           .items=${Array.from(this.doc!.querySelectorAll(':root > IED')).map(
-            ied => {
+            (ied) => {
               const { firstLine, secondLine } = getIedDescription(ied);
 
               const id = ied.querySelector('Private[type="OpenSCD-Stencil-Id"]')
@@ -745,7 +753,7 @@ export default class Stencil extends LitElement {
           form="stencil-metadata"
           value="ok"
           @click="${() => {
-            this.iedsStencilMetadataUI?.selectedElements.forEach(ied => {
+            this.iedsStencilMetadataUI?.selectedElements.forEach((ied) => {
               const id = this.doc.createElementNS(
                 this.doc.documentElement.namespaceURI,
                 'Private'
@@ -833,42 +841,42 @@ export default class Stencil extends LitElement {
           .items=${!items
             ? []
             : Array.from(items)
-                .filter(ied => {
-                  const id = ied.querySelector(
-                    ':scope > Private[type="OpenSCD-Stencil-Id"]'
-                  )?.textContent;
-                  const version = ied.querySelector(
-                    ':scope > Private[type="OpenSCD-Stencil-Version"]'
-                  )?.textContent;
-                  return (
-                    !func ||
+              .filter((ied) => {
+                const id = ied.querySelector(
+                  ':scope > Private[type="OpenSCD-Stencil-Id"]'
+                )?.textContent;
+                const version = ied.querySelector(
+                  ':scope > Private[type="OpenSCD-Stencil-Version"]'
+                )?.textContent;
+                return (
+                  !func ||
                     func.privates.some(
                       priv =>
                         priv['OpenSCD-Stencil-Id'] === id &&
                         priv['OpenSCD-Stencil-Version'] === version
                     )
-                  );
-                })
-                .filter(
-                  ied =>
-                    !Array.from(this.functionToIed.values()).includes(
-                      ied.getAttribute('name')!
-                    )
-                )
-                .map(ied => {
-                  const { firstLine, secondLine } = getIedDescription(ied);
+                );
+              })
+              .filter(
+                ied =>
+                  !Array.from(this.functionToIed.values()).includes(
+                    ied.getAttribute('name')!
+                  )
+              )
+              .map((ied) => {
+                const { firstLine, secondLine } = getIedDescription(ied);
 
-                  return {
-                    headline: `${ied.getAttribute('name')!} — ${firstLine}`,
-                    supportingText: secondLine,
-                    attachedElement: ied,
-                    primaryAction: () => {
-                      this.applicationSelectedIed = ied;
-                      this.iedSelectorUI.returnValue = 'ok';
-                      this.iedSelectorUI.close();
-                    }
-                  };
-                })}
+                return {
+                  headline: `${ied.getAttribute('name')!} — ${firstLine}`,
+                  supportingText: secondLine,
+                  attachedElement: ied,
+                  primaryAction: () => {
+                    this.applicationSelectedIed = ied;
+                    this.iedSelectorUI.returnValue = 'ok';
+                    this.iedSelectorUI.close();
+                  }
+                };
+              })}
         ></action-list>
       </form>
       <div slot="actions">
@@ -895,7 +903,7 @@ export default class Stencil extends LitElement {
                 .sort((iedA, iedB) =>
                   iedA.toLowerCase().localeCompare(iedB.toLowerCase())
                 )
-                .map(iedFunction => {
+                .map((iedFunction) => {
                   const ied = this.selectedAppVersion!.IEDS[iedFunction];
 
                   return html`
@@ -956,7 +964,9 @@ export default class Stencil extends LitElement {
   }
 
   renderApplicationDetails(): TemplateResult {
-    if (!this.selectedAppVersion) return html``;
+    if (!this.selectedAppVersion) {
+      return html``;
+    }
 
     const toIedNames = this.selectedAppVersion!.ControlBlocks.map(cb => cb.to)
       .filter((item, i, ar) => ar.indexOf(item) === i)
@@ -969,7 +979,7 @@ export default class Stencil extends LitElement {
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
     const iedFromWithCBs = new Map<string, string[]>();
-    rowIedNames.forEach(ied => {
+    rowIedNames.forEach((ied) => {
       iedFromWithCBs.set(ied, [
         ...new Set(
           this.selectedAppVersion!.ControlBlocks.filter(
@@ -1007,8 +1017,9 @@ export default class Stencil extends LitElement {
   }
 
   renderStencilSelectionAndUse(): TemplateResult {
-    if (this.stencilData.applications.length === 0)
+    if (this.stencilData.applications.length === 0) {
       return html`<p>No applications exist in the current stencil.</p>`;
+    }
 
     return html`<section id="appSelection">
         <div id="appMaker">
@@ -1070,25 +1081,27 @@ export default class Stencil extends LitElement {
                             .toLowerCase()
                             .localeCompare(`${vAppsB.name}`.toLowerCase())
                         )
-                        .flatMap(app => {
+                        .flatMap((app) => {
                           let availableVersion = null;
-                          if (this.showDeprecated === false)
+                          if (this.showDeprecated === false) {
                             availableVersion = app.versions.find(
                               appVer => appVer.deprecated === false
                             );
+                          }
 
                           return html`<md-list-item
                             @click=${(event: Event) => {
                               this.selectedApplication = app;
-                              if (this.showDeprecated === false)
+                              if (this.showDeprecated === false) {
                                 this.selectedAppVersion = app.versions.find(
                                   appVer => appVer.deprecated === false
                                 );
+                              }
                               // TODO: Handle deprecated versions
                               (<HTMLElement>event.target)
                                 .closest('md-list')!
                                 .querySelectorAll('md-list-item')
-                                .forEach(listItem => {
+                                .forEach((listItem) => {
                                   listItem.classList.remove('selected');
                                 });
 
@@ -1123,7 +1136,9 @@ export default class Stencil extends LitElement {
               @click=${() => {
                 // application that already matches parameters
 
-                if (!this.selectedApplication) return;
+                if (!this.selectedApplication) {
+                  return;
+                }
 
                 const otherAppVersions = [
                   ...this.selectedApplication.versions.filter(
@@ -1178,8 +1193,9 @@ export default class Stencil extends LitElement {
   }
 
   renderUse(): TemplateResult {
-    if (!this.doc)
+    if (!this.doc) {
       return html`<h1>Please open a file to use this functionality</h1>`;
+    }
 
     return html`
       <div id="headline">
@@ -1213,7 +1229,7 @@ export default class Stencil extends LitElement {
       <input
         id="changeStencil"
         @click=${({ target }: MouseEvent) => {
-          // eslint-disable-next-line no-param-reassign
+           
           (<HTMLInputElement>target).value = '';
         }}
         @change=${this.loadStencil}
@@ -1231,7 +1247,7 @@ export default class Stencil extends LitElement {
     mappingData: ControlBlockInfo[],
     readOnly?: boolean
   ) {
-    return html`${toIedNames.map(toIed => {
+    return html`${toIedNames.map((toIed) => {
       const mappedCb = mappingData.find(
         cb => cb.id === cbName && cb.from === row.fromIed && cb.to === toIed
       );
@@ -1321,8 +1337,8 @@ export default class Stencil extends LitElement {
                         ?.querySelectorAll(
                           `td.mapcell > md-checkbox[data-fromied="${row.fromIed}"]`
                         )
-                        .forEach(checkbox => {
-                          // eslint-disable-next-line no-param-reassign
+                        .forEach((checkbox) => {
+                           
                           (<MdCheckbox>checkbox).checked = event.target.checked;
                         });
 
@@ -1366,9 +1382,9 @@ export default class Stencil extends LitElement {
                                 `td.mapcell > md-checkbox[data-fromied="${row.fromIed}"][data-fromcb="${cbName}"]`
                               )
                               .forEach(
-                                // eslint-disable-next-line no-return-assign
-                                checkbox => {
-                                  // eslint-disable-next-line no-param-reassign
+                                 
+                                (checkbox) => {
+                                   
                                   (checkbox as MdCheckbox).checked =
                                     event.target.checked;
                                 }
@@ -1404,7 +1420,9 @@ export default class Stencil extends LitElement {
     fromIedName?: string,
     cbName?: string
   ): void {
-    if (!this.allowEditColumns) return;
+    if (!this.allowEditColumns) {
+      return;
+    }
 
     const updateCheckbox = (checkbox: Checkbox, selector: string) => {
       if (checkbox) {
@@ -1415,9 +1433,9 @@ export default class Stencil extends LitElement {
         const rowIedsTotal =
           this.tableUserMappingSelectionUI?.querySelectorAll(selector).length;
 
-        // eslint-disable-next-line no-param-reassign
+         
         checkbox.checked = rowIedsTotal === rowIedsChecked;
-        // eslint-disable-next-line no-param-reassign
+         
         checkbox.indeterminate =
           rowIedsTotal !== rowIedsChecked && rowIedsChecked !== 0;
       }
@@ -1432,7 +1450,7 @@ export default class Stencil extends LitElement {
 
       // not a specific IED, update all
       if (!toIedName) {
-        toIedNames.forEach(iedName => {
+        toIedNames.forEach((iedName) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
             `:scope > thead > tr > th > md-checkbox.colselect.iedname[data-toied="${iedName}"]`
           ) as Checkbox;
@@ -1452,7 +1470,7 @@ export default class Stencil extends LitElement {
 
       // update for all from-IEDs
       if (!fromIedName) {
-        fromIedNamesAndCBs.forEach(ied => {
+        fromIedNamesAndCBs.forEach((ied) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
             `:scope > tbody > tr > th.iedname > md-checkbox.rowselect.iedname[data-fromied="${ied.fromIed}"]`
           ) as Checkbox;
@@ -1472,8 +1490,8 @@ export default class Stencil extends LitElement {
 
       if (!fromIedName && !cbName) {
         // update for all IEDs and control blocks
-        fromIedNamesAndCBs.forEach(ied => {
-          ied.cbs?.forEach(cb => {
+        fromIedNamesAndCBs.forEach((ied) => {
+          ied.cbs?.forEach((cb) => {
             const checkbox = this.cbMappingsTableUI?.querySelector(
               `:scope > tbody > tr > th.cbname > md-checkbox.rowselect.cbname[data-fromied="${ied.fromIed}"][data-fromcb="${cb}"]`
             ) as Checkbox;
@@ -1487,7 +1505,7 @@ export default class Stencil extends LitElement {
         const fromData = fromIedNamesAndCBs.find(
           data => data.fromIed === fromIedName
         );
-        fromData?.cbs?.forEach(cb => {
+        fromData?.cbs?.forEach((cb) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
             `:scope > tbody > tr > th.cbname > md-checkbox.rowselect.cbname[data-fromied="${fromIedName}"][data-fromcb="${cb}"]`
           ) as Checkbox;
@@ -1511,7 +1529,7 @@ export default class Stencil extends LitElement {
       .sort();
 
     const iedFromWithCBs = new Map<string, string[]>();
-    rowIedNames.forEach(ied => {
+    rowIedNames.forEach((ied) => {
       iedFromWithCBs.set(ied, [
         ...new Set(
           this.iedMappingStencilData
@@ -1562,9 +1580,9 @@ export default class Stencil extends LitElement {
                             `td.mapcell > md-checkbox[data-toied="${iedName}"]`
                           )
                           .forEach(
-                            // eslint-disable-next-line no-return-assign
+                             
                             checkBox =>
-                              // eslint-disable-next-line no-param-reassign
+                               
                               ((checkBox as MdCheckbox).checked =
                                 event.target.checked)
                           );
@@ -1626,18 +1644,18 @@ export default class Stencil extends LitElement {
         ${toIedNames.length === 0
           ? html`<h3>No mappings found between devices</h3>`
           : this.renderCbSelectionTable(
-              toIedNames,
-              rowInfo,
-              this.iedMappingStencilData,
-              readOnly
-            )}
+            toIedNames,
+            rowInfo,
+            this.iedMappingStencilData,
+            readOnly
+          )}
       </div>
       <md-filled-button
         class="button"
         ?disabled=${this.iedMappingStencilData.length === 0}
         @click=${() => {
           Array.from(this.tableUserMappingMappedCheckboxesUI!).forEach(
-            checkbox => {
+            (checkbox) => {
               const { fromied, fromcb, toied } = (<MdCheckbox>checkbox).dataset;
               if ((<MdCheckbox>checkbox).checked === false) {
                 this.createCBsToRemove.push({
@@ -1669,9 +1687,12 @@ export default class Stencil extends LitElement {
 
           // now generate list of remaining IEDs for naming
           this.iedMappingStencilData.forEach((val: ControlBlockInfo) => {
-            if (!this.uniqueIeds.includes(val.to)) this.uniqueIeds.push(val.to);
-            if (!this.uniqueIeds.includes(val.from))
+            if (!this.uniqueIeds.includes(val.to)) {
+              this.uniqueIeds.push(val.to);
+            }
+            if (!this.uniqueIeds.includes(val.from)) {
               this.uniqueIeds.push(val.from);
+            }
           });
         }}
         >Name IEDs for Functions
@@ -1733,8 +1754,9 @@ export default class Stencil extends LitElement {
   }
 
   renderCreate(): TemplateResult {
-    if (!this.doc)
+    if (!this.doc) {
       return html`<h1>Please open a file to use this functionality</h1>`;
+    }
 
     return html`
       <h1 id="enterStencilData">
@@ -1746,7 +1768,7 @@ export default class Stencil extends LitElement {
             this.iedsStencilMetadataUI
               .shadowRoot!.querySelectorAll('md-list-item > md-checkbox')
               .forEach(
-                // eslint-disable-next-line no-return-assign, no-param-reassign
+                 
                 item => ((item as MdCheckbox).checked = false)
               );
           }}
@@ -1857,7 +1879,7 @@ export default class Stencil extends LitElement {
         <selection-list
           id="selection-list"
           .items=${Array.from(this.doc?.querySelectorAll('IED') ?? []).map(
-            ied => {
+            (ied) => {
               const { firstLine, secondLine } = getIedDescription(ied);
 
               return {
@@ -1889,7 +1911,7 @@ export default class Stencil extends LitElement {
             const iedCombinations = Array.from(combinations(iedNames, 2));
 
             this.iedMappingStencilData = [];
-            iedCombinations.forEach(iedPairs => {
+            iedCombinations.forEach((iedPairs) => {
               // A to B
               const aDir = getMappingInfo(this.doc, iedPairs[0]!, iedPairs[1]!);
               this.iedMappingStencilData.push(...aDir);

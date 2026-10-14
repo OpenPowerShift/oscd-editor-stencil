@@ -242,7 +242,7 @@ src/
   foundation/
     types.ts            v1 and v2 types
     stencil-io.ts       parse / validate / migrate / serialize / filename
-    stencil-ref.ts      structured reference ⇄ element (resolve, describe) + v1 string parser
+    stencil-ref.ts      identity string ⇄ element (build, parse, resolve), incl. `#n` form
     stencil-model.ts    pure reducers: upsertVersion, deleteVersion, renameFunction, setDeprecated…
     capture.ts          getMappingInfo successor: doc + IEDs → ControlBlockLink[]
     match.ts            matchSrcAttributes (fixed), SEL quality detection

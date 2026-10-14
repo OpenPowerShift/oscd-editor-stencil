@@ -1,21 +1,20 @@
-## npm
-/node_modules/
-/npm-debug.log
+node_modules
+*.tsbuildinfo
+
+## editors
+/.idea
+/.vscode
+
+## build artifacts
+dist
+coverage
+doc
 
 ## testing
-/coverage/
 /test/screenshots/failed/
 
-# build
-/locales.ts
-/locales
-/dist
-/custom-elements.json
-/.tsbuildinfo
-/.rollup.cache
-
-# IDE
-/.idea
-
-# testing bits
+# large local vendor templates, not used by tests
 templates
+
+# local, uncommitted sample files
+demo/local/

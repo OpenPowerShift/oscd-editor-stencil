@@ -1,27 +1,8 @@
 {
+  "extends": "@omicronenergy/oscd-tooling/configs/base.tsconfig.json",
   "compilerOptions": {
-    "target": "es2018",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "noEmitOnError": true,
-    "lib": ["es2017", "dom"],
-    "strict": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
     "outDir": "dist",
-    "sourceMap": true,
-    "inlineSources": true,
-    "rootDir": "./",
-    "tsBuildInfoFile": "dist/.tsbuildinfo",
-    "declaration": true,
-    "incremental": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true
+    "rootDir": "src"
   },
-  "include": ["**/*.ts"],
-  "files": [
-    "./default_stencil.json"
-  ],
+  "include": ["src/**/*.ts"]
 }
