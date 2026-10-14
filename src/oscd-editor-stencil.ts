@@ -8,6 +8,7 @@ import {
 } from 'lit';
 
 import { property, query, queryAll } from 'lit/decorators.js';
+import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import '@material/mwc-tab-bar';
 import '@material/mwc-snackbar/mwc-snackbar.js';
@@ -119,13 +120,15 @@ function newIedIdentity(iedName: string | undefined, id: string): string {
  * A plugin to allow templates of GOOSE and SV using the
  * later binding method based on a JSON description of a configuration.
  */
-export default class Stencil extends LitElement {
+export default class OscdEditorStencil extends ScopedElementsMixin(
+  LitElement
+) {
   @property({ attribute: false })
   doc!: XMLDocument;
 
   @property() docName!: string;
 
-  @property() editCount!: number;
+  @property({ attribute: false }) docVersion?: unknown;
 
   @property() tabIndex: number = 0;
 

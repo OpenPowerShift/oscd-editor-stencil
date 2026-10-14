@@ -1,60 +1,52 @@
-<title>oscd-stencil Demo</title>
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300&family=Roboto:wght@300;400;500&display=swap"
-/>
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css?family=Material+Icons&display=block"
-/>
-<link
-  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-  rel="stylesheet"
-/>
-<open-scd
-  plugins='{
-  "menu": 
-  [
-    {"name": "Open File", "translations": {"de": "Datei öffnen"}, "icon": "folder_open", "active": true, "src": "https://openscd.github.io/oscd-open/oscd-open.js"}, 
-    {"name": "Save File", "translations": {"de": "Datei speichern"}, "icon": "save", "active": true, "src": "https://openscd.github.io/oscd-save/oscd-save.js"}
-  ],
-  "editor": 
-  [
-    {"name": "Stencil", "icon": "draw_collage", "active": true, "requireDoc": true, "src": "/dist/oscd-stencil.js"}
-  ]
-}'
-></open-scd>
-
-<script>
-  const _customElementsDefine = window.customElements.define;
-  window.customElements.define = (name, cl, conf) => {
-    if (!customElements.get(name)) {
-      try {
-        _customElementsDefine.call(window.customElements, name, cl, conf);
-      } catch (e) {
-        console.warn(e);
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>oscd-editor-stencil demo</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300&family=Roboto:wght@300;400;500&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Material+Symbols+Outlined&display=block"
+    />
+    <style>
+      * {
+        --oscd-theme-text-font: 'Roboto';
+        --oscd-theme-icon-font: 'Material Symbols Outlined';
+        margin: 0px;
+        padding: 0px;
       }
-    }
-  };
-</script>
 
-<script type="module">
-  import '@openscd/open-scd-core/open-scd.js';
+      body {
+        background-color: #2485e5;
+      }
+    </style>
+  </head>
+  <body>
+    <oscd-shell></oscd-shell>
 
-  const editor = document.querySelector('open-scd');
-  const params = new URL(document.location).searchParams;
-  for (const [name, value] of params) {
-    editor.setAttribute(name, value);
-  }
-</script>
-<style>
-  * {
-    margin: 0px;
-    padding: 0px;
-    --mdc-icon-font: 'Material Symbols Outlined';
-  }
+    <script type="module">
+      import '@webcomponents/scoped-custom-element-registry';
+      import '@omicronenergy/oscd-shell/oscd-shell.js';
+      import { plugins } from './plugins.js';
 
-  body {
-    background: white;
-  }
-</style>
+      const editor = document.querySelector('oscd-shell');
+      editor.plugins = plugins;
+
+      const params = new URL(document.location).searchParams;
+      for (const [name, value] of params) {
+        editor.setAttribute(name, value);
+      }
+
+      const filename = 'sample.scd';
+      const sample = await fetch(filename).then((r) => r.text());
+      editor.docs = {
+        [filename]: new DOMParser().parseFromString(sample, 'application/xml'),
+      };
+      editor.docName = filename;
+    </script>
+  </body>
+</html>
