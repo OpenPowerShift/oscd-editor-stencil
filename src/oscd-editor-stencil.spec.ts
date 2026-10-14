@@ -410,6 +410,30 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.stencilData.applications[0].versions.map(v => `${v.version}:${v.description}`)).to.deep.equal(['1.0.0:again', '2.0.0:version 2.0.0']);
     });
 
+    it('warns that ExtRefs without intAddr are matched by position', async () => {
+      const messages: unknown[] = [];
+      const snackbar = plugin.shadowRoot!.querySelector('oscd-snackbar')!;
+      const show = snackbar.show.bind(snackbar);
+      snackbar.show = (options) => {
+        messages.push(options);
+        return show(options);
+      };
+
+      await showTab(1);
+      plugin.iedMappingStencilData = getMappingInfo(doc, 'PUB1', 'EDN1');
+      plugin.uniqueIeds = ['PUB1', 'EDN1'];
+      plugin.templateCreationStage = 2;
+      await plugin.updateComplete;
+      ['appcat', 'appname', 'appver'].forEach((id) => {
+        (plugin.shadowRoot!.querySelector(`#${id}`) as HTMLInputElement).value = 'x';
+      });
+      await click('oscd-filled-button', 'Add Application');
+
+      expect(messages).to.have.lengthOf(1);
+      expect(messages[0]).to.include({ variant: 'warning' });
+      expect((messages[0] as { message: string }).message).to.contain('matched by position');
+    });
+
     it('creates the first application of an empty stencil with the functions it was given', async () => {
       await create({ appcat: 'Bus', appname: 'BZ', appver: '1.0.0' });
 

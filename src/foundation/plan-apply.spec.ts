@@ -262,4 +262,48 @@ describe('planApply', () => {
       expect(plan.supervisions).to.equal(2);
     });
   });
+
+  describe('ExtRefs without intAddr', () => {
+    it('recreates a subscription on the ExtRef at the same position of a clean IED', () => {
+      doc
+        .querySelector('IED[name="EDN1"] Inputs')!
+        .appendChild(
+          doc.importNode(
+            new DOMParser()
+              .parseFromString(
+                `<ExtRef xmlns="${doc.documentElement.namespaceURI}" iedName="PUB1" ldInst="LD0" lnClass="GGIO" lnInst="1" doName="Ind1" daName="stVal"/>`,
+                'application/xml'
+              )
+              .documentElement,
+            true
+          )
+        );
+      cloneAsClean(doc, 'PUB1', 'PUB2');
+      cloneAsClean(doc, 'EDN1', 'EDN2');
+      const application = applicationFrom(
+        getMappingInfo(doc, 'PUB1', 'EDN1'),
+        'PUBF',
+        'EDNF'
+      );
+
+      const plan = planApply(
+        doc,
+        application,
+        new Map([
+          ['PUBF', 'PUB2'],
+          ['EDNF', 'EDN2']
+        ])
+      );
+      expect(plan.errors).to.be.empty;
+      plan.edits.forEach(edit => handleEdit(edit));
+
+      const [first, second] = Array.from(
+        doc.querySelectorAll('IED[name="EDN2"] ExtRef')
+      );
+      // position 0 was subscribed to GC2 (Ind3), position 1 to GC1 (Ind1)
+      expect(attrs(first)).to.include({ iedName: 'PUB2', srcCBName: 'GC2', doName: 'Ind3' });
+      expect(attrs(second)).to.include({ iedName: 'PUB2', srcCBName: 'GC1', doName: 'Ind1' });
+    });
+  });
 });
+

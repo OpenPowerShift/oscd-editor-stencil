@@ -1,5 +1,6 @@
-import { controlBlockObjRef, identity } from '@openscd/scl-lib';
+import { controlBlockObjRef } from '@openscd/scl-lib';
 
+import { toRef } from './stencil-ref.js';
 import {
   findFcda,
   findIed,
@@ -66,13 +67,6 @@ function findSupervision(cb: Element, ied: Element): Element | undefined {
   );
 }
 
-function identityNoIed(element: Element | null, iedName: string): string {
-  if (element === null) {
-    return 'NONE';
-  }
-  return `${identity(element)}`.substring(iedName.length);
-}
-
 /**
  * The control blocks of one IED which another IED is subscribed to, with the
  * subscriptions, the supervision and any SEL message-quality ExtRef.
@@ -109,8 +103,8 @@ export function getMappingInfo(
           return fcda
             ? [
               {
-                FCDA: identityNoIed(fcda, fromName),
-                ExtRef: identityNoIed(extRef, toName)
+                FCDA: toRef(fcda),
+                ExtRef: toRef(extRef)
               }
             ]
             : [];
@@ -126,17 +120,17 @@ export function getMappingInfo(
         : undefined;
 
       cbMappings.push({
-        id: identityNoIed(cb, fromName),
+        id: toRef(cb),
         name: cb.getAttribute('name')!,
         from: fromName,
         to: toName,
         type: cb.tagName,
         mappings,
-        supervision: supLn ? identityNoIed(supLn, toName) : 'None',
+        supervision: supLn ? toRef(supLn) : 'None',
         ...(selMqExtRef && {
           selSupervision: {
             name: selMqExtRef.getAttribute('intAddr') ?? 'No internal address!!',
-            ExtRef: identityNoIed(selMqExtRef, toName)
+            ExtRef: toRef(selMqExtRef)
           }
         })
       });

@@ -66,3 +66,8 @@ export function resolveRef(
   }
   return find(doc, tag, `${iedName}${ref}`);
 }
+
+/** Whether a reference is by position, which only holds for IEDs with the same ExtRefs in the same order. */
+export function isPositionalRef(ref: string): boolean {
+  return />#\d+$/.test(ref);
+}
