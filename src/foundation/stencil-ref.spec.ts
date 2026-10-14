@@ -1,11 +1,25 @@
 import { expect } from '@open-wc/testing';
-import { find, identity } from '@openscd/scl-lib';
+import { identity } from '@openscd/scl-lib';
 
-import { resolveRef, toRef } from './stencil-ref.js';
+import {
+  inputsRef,
+  isLaterBindingRef,
+  resolveRef,
+  resolveSink,
+  toRef
+} from './stencil-ref.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
 
 const doc = () => new DOMParser().parseFromString(fixtureXml, 'application/xml');
 const one = (d: XMLDocument, selector: string) => d.querySelector(selector)!;
+
+/** A copy of an IED under a new name. */
+function copyIed(d: XMLDocument, from: string, name: string): Element {
+  const copy = one(d, `IED[name="${from}"]`).cloneNode(true) as Element;
+  copy.setAttribute('name', name);
+  d.documentElement.appendChild(copy);
+  return copy;
+}
 
 describe('stencil-ref', () => {
   describe('toRef', () => {
@@ -16,27 +30,36 @@ describe('stencil-ref', () => {
       expect(toRef(gc1)).to.equal('>>LD0>GC1');
     });
 
-    it('keeps an ExtRef with intAddr stable whatever it is subscribed to', () => {
+    it('names an ExtRef with intAddr by its address, whatever it is subscribed to', () => {
       const d = doc();
-      const i1 = one(d, 'IED[name="SUB1"] ExtRef[intAddr="I1"]');
-      expect(toRef(i1)).to.equal('>>LD0>I1[0]');
-    });
-
-    it('stores an ExtRef without intAddr by position in its Inputs', () => {
-      const d = doc();
-      const extRef = one(d, 'IED[name="EDN1"] ExtRef');
-      expect(toRef(extRef)).to.equal('>>LD0>#0');
-    });
-
-    it('counts only siblings without intAddr when positioning', () => {
-      const d = doc();
-      const inputs = one(d, 'IED[name="EDN1"] Inputs');
-      const first = d.createElementNS(inputs.namespaceURI, 'ExtRef');
-      first.setAttribute('intAddr', 'X');
-      inputs.insertBefore(first, inputs.firstChild);
-      expect(toRef(one(d, 'IED[name="EDN1"] ExtRef:not([intAddr])'))).to.equal(
-        '>>LD0>#0'
+      expect(toRef(one(d, 'IED[name="SUB1"] ExtRef[intAddr="I1"]'))).to.equal(
+        '>>LD0>I1[0]'
       );
+    });
+
+    it('names an ExtRef without intAddr by the signal it refers to, within its Inputs', () => {
+      const d = doc();
+      expect(toRef(one(d, 'IED[name="EDN1"] ExtRef'))).to.equal(
+        '>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal'
+      );
+    });
+  });
+
+  describe('later binding references', () => {
+    it('are the ones that name an intAddr', () => {
+      expect(isLaterBindingRef('>>LD0>I1[0]')).to.be.true;
+      expect(isLaterBindingRef('>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')).to.be.false;
+    });
+  });
+
+  describe('inputsRef', () => {
+    it('is the identity of the logical node holding the Inputs', () => {
+      expect(inputsRef('>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')).to.equal('>>LD0');
+      expect(inputsRef('>>LD0>I1[0]')).to.equal('>>LD0');
+    });
+
+    it('does not depend on the signal, which is not a location', () => {
+      expect(inputsRef('>>LD0>OTHER LD9/ XXXX 1 Foo bar')).to.equal('>>LD0');
     });
   });
 
@@ -48,8 +71,7 @@ describe('stencil-ref', () => {
         ['SampledValueControl', 'PUB1', 'SampledValueControl'],
         ['FCDA', 'PUB1', 'DataSet[name="DS_S"] FCDA'],
         ['ExtRef', 'SUB1', 'ExtRef[intAddr="I3"]'],
-        ['LN', 'SUB1', 'LN[lnClass="LSVS"]'],
-        ['ExtRef', 'EDN1', 'ExtRef']
+        ['LN', 'SUB1', 'LN[lnClass="LSVS"]']
       ];
       cases.forEach(([tag, ied, selector]) => {
         const element = one(d, `IED[name="${ied}"] ${selector}`);
@@ -59,60 +81,53 @@ describe('stencil-ref', () => {
       });
     });
 
-    it('resolves a reference on another IED with the same structure', () => {
-      const d = doc();
-      const copy = one(d, 'IED[name="EDN1"]').cloneNode(true) as Element;
-      copy.setAttribute('name', 'EDN2');
-      d.documentElement.appendChild(copy);
-
-      const ref = toRef(one(d, 'IED[name="EDN1"] ExtRef'));
-      expect(resolveRef(d, 'ExtRef', 'EDN2', ref)).to.equal(
-        one(d, 'IED[name="EDN2"] ExtRef')
-      );
-    });
-
-    it('returns null for an unknown IED, a position out of range or nonsense', () => {
+    it('returns null for an unknown IED or reference', () => {
       const d = doc();
       expect(resolveRef(d, 'GSEControl', 'NOPE', '>>LD0>GC1')).to.be.null;
-      expect(resolveRef(d, 'ExtRef', 'EDN1', '>>LD0>#7')).to.be.null;
-      expect(resolveRef(d, 'ExtRef', 'NOPE', '>>LD0>#0')).to.be.null;
       expect(resolveRef(d, 'FCDA', 'PUB1', 'NONE')).to.be.null;
     });
   });
 
-  describe('why an ExtRef without intAddr is stored by position', () => {
-    // scl-lib identifies such an ExtRef by what it is subscribed to,
-    // including the name of the publisher it is subscribed to.
-    it("scl-lib's identity only finds an ExtRef that is already subscribed to that source", () => {
+  describe('resolveSink', () => {
+    it('is the existing ExtRef for a later binding reference', () => {
       const d = doc();
-      const subscribed = one(d, 'IED[name="EDN1"] ExtRef');
-      expect(`${identity(subscribed)}`).to.equal('EDN1>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal');
-      expect(find(d, 'ExtRef', `${identity(subscribed)}`)).to.equal(subscribed);
-
-      // the same ExtRef on a clean IED, as a stencil is applied to
-      const copy = one(d, 'IED[name="EDN1"]').cloneNode(true) as Element;
-      copy.setAttribute('name', 'EDN2');
-      Array.from(copy.querySelector('ExtRef')!.attributes).forEach(attr =>
-        copy.querySelector('ExtRef')!.removeAttribute(attr.name)
+      expect(resolveSink(d, 'SUB1', '>>LD0>I2[0]')).to.equal(
+        one(d, 'IED[name="SUB1"] ExtRef[intAddr="I2"]')
       );
-      d.documentElement.appendChild(copy);
-
-      expect(find(d, 'ExtRef', 'EDN2>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')).to.be.null;
     });
 
-    it('finds the same ExtRef by position', () => {
+    it('is the Inputs where an ExtRef without intAddr is created, on any IED with that logical node', () => {
       const d = doc();
-      const copy = one(d, 'IED[name="EDN1"]').cloneNode(true) as Element;
-      copy.setAttribute('name', 'EDN2');
-      Array.from(copy.querySelector('ExtRef')!.attributes).forEach(attr =>
-        copy.querySelector('ExtRef')!.removeAttribute(attr.name)
-      );
-      d.documentElement.appendChild(copy);
+      const copy = copyIed(d, 'EDN1', 'EDN2');
+      const ref = toRef(one(d, 'IED[name="EDN1"] ExtRef'));
 
-      expect(resolveRef(d, 'ExtRef', 'EDN2', '>>LD0>#0')).to.equal(
-        copy.querySelector('ExtRef')
+      expect(resolveSink(d, 'EDN1', ref)).to.equal(one(d, 'IED[name="EDN1"] Inputs'));
+      expect(resolveSink(d, 'EDN2', ref)).to.equal(copy.querySelector('Inputs'));
+    });
+
+    it('does not need an ExtRef, or the signal, to be there', () => {
+      const d = doc();
+      const copy = copyIed(d, 'EDN1', 'EDN2');
+      copy.querySelector('ExtRef')!.remove();
+      expect(
+        resolveSink(d, 'EDN2', '>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')
+      ).to.equal(copy.querySelector('Inputs'));
+    });
+
+    it('falls back to the logical node when it has no Inputs yet', () => {
+      const d = doc();
+      const copy = copyIed(d, 'EDN1', 'EDN2');
+      copy.querySelector('Inputs')!.remove();
+      expect(resolveSink(d, 'EDN2', '>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')).to.equal(
+        copy.querySelector('LN0')
       );
+    });
+
+    it('is null for an IED or logical node that does not exist', () => {
+      const d = doc();
+      expect(resolveSink(d, 'NOPE', '>>LD0>x')).to.be.null;
+      expect(resolveSink(d, 'EDN1', '>>LD9>x')).to.be.null;
+      expect(resolveSink(d, 'SUB1', '>>LD0>I9[0]')).to.be.null;
     });
   });
 });
-

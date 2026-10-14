@@ -39,7 +39,6 @@ import {
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
 import { planApply } from './foundation/plan-apply.js';
-import { positionalExtRefs } from './foundation/review.js';
 import {
   defaultVersion,
   removeApplicationVersion,
@@ -286,15 +285,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     this.storeSettings();
 
-    const positional = positionalExtRefs(this.iedMappingStencilData).length;
-    this.notify(
-      positional === 0
-        ? `New application created: ${category} > ${name}`
-        : `New application created: ${category} > ${name}. ${positional} ExtRef${
-          positional === 1 ? ' has' : 's have'
-        } no intAddr and will be matched by position, so they only work on IEDs with the same ExtRefs in the same order.`,
-      positional === 0 ? 'success' : 'warning'
-    );
+    this.notify(`New application created: ${category} > ${name}`, 'success');
     this.resetCreateApplication();
   }
 

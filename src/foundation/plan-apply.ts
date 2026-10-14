@@ -9,8 +9,12 @@ import type { Connection } from '@openscd/scl-lib';
 import type { EditV2, SetAttributes } from '@openscd/oscd-api';
 
 import { combinations } from './combinations.js';
-import { matchSrcAttributes } from './match.js';
-import { resolveRef } from './stencil-ref.js';
+import {
+  findIed,
+  isSubscribedTo,
+  matchSrcAttributes
+} from './match.js';
+import { inputsRef, isLaterBindingRef, resolveRef, resolveSink } from './stencil-ref.js';
 import type { Application } from './types.js';
 
 /** What applying a stencil does for one part of a control block. */
@@ -44,19 +48,51 @@ export type ApplyPlan = {
   present: number;
 };
 
+/**
+ * Whether the IED only accepts inputs bound through its own tool, so the
+ * system tool may bind the ExtRefs it supplies but not create new ones
+ * (IEC 61850-7-1 Annex H, `ClientServices` attribute `noIctBinding`).
+ */
+function requiresIctBinding(doc: XMLDocument, iedName: string): boolean {
+  return (
+    findIed(doc, iedName)?.querySelector(
+      ':scope > Services > ClientServices[noIctBinding="true"], :scope > AccessPoint > Services > ClientServices[noIctBinding="true"]'
+    ) != null
+  );
+}
+
 /** The id of an element on a function's IED, as used in error messages. */
 function newIedIdentity(iedName: string | undefined, id: string): string {
   return `${iedName}${id}`;
 }
 
 /** Whether an ExtRef is already subscribed to the FCDA of a control block. */
-function isBound(sink: Element, fcda: Element, control: Element): boolean {
+function binds(extRef: Element, fcda: Element, control: Element): boolean {
   return (
-    sink.getAttribute('iedName') ===
+    extRef.getAttribute('iedName') ===
       control.closest('IED')?.getAttribute('name') &&
-    matchDataAttributes(sink, fcda) &&
-    matchSrcAttributes(sink, control)
+    matchDataAttributes(extRef, fcda) &&
+    isSubscribedTo(extRef, control)
   );
+}
+
+/**
+ * Whether the sink already holds a subscription to the FCDA. A sink is an
+ * ExtRef with `intAddr`, or the `Inputs` or logical node in which an ExtRef
+ * would be created, so any ExtRef there counts.
+ */
+function isBound(sink: Element, fcda: Element, control: Element): boolean {
+  const extRefs =
+    sink.tagName === 'ExtRef'
+      ? [sink]
+      : Array.from(
+        sink.querySelectorAll(
+          sink.tagName === 'Inputs'
+            ? ':scope > ExtRef'
+            : ':scope > Inputs > ExtRef'
+        )
+      );
+  return extRefs.some(extRef => binds(extRef, fcda, control));
 }
 
 /**
@@ -128,10 +164,23 @@ export function planApply(
             return;
           }
 
-          const newSink = resolveRef(doc, 'ExtRef', newToIed, mapping.ExtRef);
+          if (
+            !isLaterBindingRef(mapping.ExtRef) &&
+            requiresIctBinding(doc, newToIed)
+          ) {
+            const message = `Cannot create ExtRef on ${newToIed}: it only accepts later binding (ClientServices noIctBinding)`;
+            if (!plan.errors.includes(message)) {
+              plan.errors.push(message);
+            }
+            return;
+          }
+
+          const newSink = resolveSink(doc, newToIed, mapping.ExtRef);
           if (!newSink) {
             plan.errors.push(
-              `Could not find ExtRef: ${newIedIdentity(newToIed, mapping.ExtRef)}`
+              isLaterBindingRef(mapping.ExtRef)
+                ? `Could not find ExtRef: ${newIedIdentity(newToIed, mapping.ExtRef)}`
+                : `Could not find logical node for input: ${newIedIdentity(newToIed, inputsRef(mapping.ExtRef))}`
             );
             return;
           }

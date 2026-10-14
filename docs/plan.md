@@ -14,7 +14,7 @@ Status: **draft v2 for review**. Branch: `upgrade`.
 | 7 | Languages | English (source), German, Portuguese, via `@lit/localize` |
 | – | Redesign | A bolder redesign is welcome. **Using stencils is the main job. Creating and managing them is secondary.** See §5 |
 | 9 | `matchSrcAttributes` fix (defect 11) | Approved as proposed in §2 |
-| 10 | ExtRefs without `intAddr` | Included, identified by their **LN identity plus position within that LN** (not blocked or excluded). Flagged with a warning in the review step. *My reading of "by the LN identity"; please correct if you meant something else* |
+| 10 | ExtRefs without `intAddr` | Supported. The location is the identity of the `Inputs` (its logical node); on apply the ExtRef is created from the FCDA and control block, as IEC 61850-6 has the system tool do. See §4 |
 | 11 | Several stencils | Keep an import **library** of stencils, with the most recently used shown first |
 | 12 | Distribution-provided `stencilUrl` | Not in the MVP |
 | 13 | Redesign | Apply-first stepper, Manage behind a mode switch: go ahead |
@@ -123,20 +123,21 @@ A stencil stores elements as scl-lib `identity()` strings with the IED name remo
 
 Apply puts the new IED name in front and resolves the element.
 
-### Findings
+### Findings (checked against IEC 61850-6 Ed 2.1 and 61850-7-1 Ed 2.1 Annex H)
 
-- **The identity format is stable across scl-lib versions.** I diffed `tBaseElement/identity.ts` in `openscd/scl-lib` from 0.13.2 to 2.0.1. The only change is to `LNode` with `iedName="None"`, which stencils never store. A golden test will confirm this on a fixture.
-- **ExtRefs with `intAddr`** (all later-binding ExtRefs, and SEL message-quality ExtRefs) have the identity `<LN identity>>intAddr[n]`. This is the ExtRef's identity within its LN and is independent of what it is subscribed to, so it is adequate.
-- **ExtRefs without `intAddr`** (Edition 1 / early-binding style) get an identity built from their current subscription, including the original publisher's name. scl-lib's `find()` does resolve such an identity, but only to an ExtRef that is *already subscribed to that same source*. An unsubscribed ExtRef on a fresh IED, which is what applying a stencil targets, can never be found that way (see the spec in `stencil-ref.spec.ts`).
+- **The identity format is stable across scl-lib versions.** `tBaseElement/identity.ts` in `openscd/scl-lib` is unchanged from 0.13.2 to 2.0.1 except for `LNode` with `iedName="None"`, which stencils never store. A golden test checks this on the fixture.
+- **The standard identifies an ExtRef by its attributes within an `Inputs`.** Part 6 defines `uniqueExtRefInInputs` over iedName, ldInst, prefix, lnClass, lnInst, doName, daName and intAddr. scl-lib's `identity()` follows that.
+- **ExtRefs with `intAddr` are later binding.** Table 51 makes `intAddr` mandatory in an ICD/IID input template, and the ExtRef has no iedName/ldInst. The IED tool supplies it, the system tool may bind it but not create or remove it, and the identity `<LN>>intAddr[n]` finds it whatever it is bound to.
+- **ExtRefs without `intAddr` are not placeholders.** In an SCD they are complete external references (Table 51: iedName, ldInst, lnClass, doName and serviceType mandatory), and Part 6 says the system tool *creates and removes* them. A clean IED therefore has no ExtRef to fill. Applying a stencil must create it. (An earlier version of this plan stored such ExtRefs by position and filled whatever ExtRef was at that position. That was wrong: no such slot exists, and it could overwrite an unrelated ExtRef.)
+- **Whether creating them is allowed is a property of the IED.** 61850-7-1 Annex H: an IED declares `ClientServices@noIctBinding`. If it is true, only the IED tool may supply inputs (later binding) and the system tool must not create ExtRefs.
+- **Not handled yet:** Annex H also says subscriptions are configured through the publisher's `GSEControl.IEDName` / `SampledValueControl.IEDName`, in addition to `Inputs`. Neither scl-lib's `subscribe` nor the other OpenPowerShift subscriber plugins write it, so the stencil does not either. See the open questions.
 
 ### Design
 
-- A small module `foundation/stencil-ref.ts` builds, parses and resolves the reference strings for the four element types (control block, FCDA, ExtRef, LN). It does not depend on scl-lib's `find()`.
-- A spec cross-checks it against scl-lib's `identity()` for every element type on the fixture, so any drift in scl-lib shows up in CI rather than in users' files.
-- ExtRefs **without `intAddr`** are written as `<LN identity>>#n`, where `n` is the position among that LN's ExtRefs that have no `intAddr`. They are resolved by `stencil-ref.ts` only. The review step warns that they are matched by position, so this only works when the target IED has the same ExtRefs in the same order (typically IEDs from the same ICD template).
-- Files carry `"schemaVersion": 2`. A file without `schemaVersion` is v1 (today's format). v2 differs only by the new field and the `#n` form, so a v1 file loads unchanged. Saving always writes v2.
-- A file with a `schemaVersion` newer than the plugin knows is rejected with a clear message.
-- If structured fields are ever needed, that is a later bump to v3 with a converter.
+- `foundation/stencil-ref.ts` stores a reference as scl-lib's `identity()` with the IED name removed, so existing files keep working unchanged. For an ExtRef with `intAddr` that names the ExtRef. For one without, only the part up to the last `>`, the identity of the logical node holding the `Inputs`, is used as a location. The signal in the rest of the string is ignored: on apply it is worked out from the FCDA and control block being subscribed.
+- Apply finds the existing ExtRef for a later binding reference, and for any other creates the ExtRef in that `Inputs` (or logical node, if it has no `Inputs` yet) through scl-lib's `subscribe`. An ExtRef already in that `Inputs` for the same signal and control block counts as present, so applying twice changes nothing.
+- Apply reports an error instead of creating ExtRefs on an IED with `noIctBinding="true"`.
+- Files carry `"schemaVersion": 2`. A file without it is v1 and loads unchanged, since the stored strings are the same. Saving always writes v2. A newer version is rejected with a clear message.
 
 `stencil-io.ts` handles: parse, validate (hand-written type guards, errors given as a path plus a message), migrate (v1 to v2, which only adds the field), and serialize.
 
@@ -242,7 +243,7 @@ src/
   foundation/
     types.ts            v1 and v2 types
     stencil-io.ts       parse / validate / migrate / serialize / filename
-    stencil-ref.ts      identity string ⇄ element (build, parse, resolve), incl. `#n` form
+    stencil-ref.ts      identity string ⇄ element (build, resolve), and the Inputs sink of an ExtRef reference
     stencil-model.ts    pure reducers: upsertVersion, deleteVersion, renameFunction, setDeprecated…
     capture.ts          getMappingInfo successor: doc + IEDs → ControlBlockLink[]
     match.ts            matchSrcAttributes (fixed), SEL quality detection
@@ -302,7 +303,7 @@ Each phase ends with `npm i → tsc --noEmit → build → lint → test` passin
    - *Deferred to phase 7:* wrapping strings in `msg()` and splitting the 2000-line component. Phase 7 rewrites these views, so doing either now would be thrown away. Phase 7 builds the new components with `msg()` from the start, and phase 8 adds the `de` and `pt` locale files.
    - *Note:* oscd-ui 0.1.1 also ships `oscd-ace-editor`, which the phase 7 JSON editor should use instead of adding `ace-builds` directly.
 5. **Bug fixes (done).** Defects 1-11 are fixed, each with specs at the pure and component level. New pure modules: `match`, `stencil-model` (immutable library operations), `stencil-io` (validation, `schemaVersion`, file name) and `storage`. `getMappingInfo` is rewritten: IEDs are found without selectors, a missing DataSet no longer throws, and a subscription whose data is not in the control block is skipped. The version picker for deprecated versions is deferred to phase 7, where the Use view is rebuilt; until then the newest current version is used.
-6. **Schema v2 (done).** `stencil-io` reads files without `schemaVersion` as v1, stamps v2, rejects newer versions, and writes v2. Capture stores every reference with `stencil-ref.toRef`, so an ExtRef without `intAddr` is written as `<Inputs identity>>#n`. `review.positionalExtRefs` lists them, and creating an application warns about them (the phase 7 review step will show the list). Specs: every captured reference resolves back to its element for every IED pair, the position survives capture and resolve, and a stencil with positional ExtRefs applies correctly to a clean IED.
+6. **Schema v2 (done).** `stencil-io` reads files without `schemaVersion` as v1, stamps v2, rejects newer versions, and writes v2. References keep the v1 string form. An ExtRef without `intAddr` is created in the `Inputs` it was captured from, found again for "already present", and refused on an IED with `noIctBinding="true"` (see §4). Specs: every captured reference resolves for every IED pair, a clean IED with no ExtRef or no `Inputs` gets the ExtRefs created, unrelated ExtRefs are left alone, and a second apply changes nothing.
 7. **Redesign.**
    - Apply stepper (choose, assign with auto-assign, review with dry run).
    - Manage mode (library tree, version detail, capture wizard, tag IEDs).

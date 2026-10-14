@@ -8,44 +8,35 @@ export type RefTag =
   | 'ExtRef'
   | 'LN';
 
-/**
- * Separates the identity of an `Inputs` element from the position of an
- * ExtRef without `intAddr` among its siblings that also lack `intAddr`.
- */
-const POSITION = '>#';
-
 function iedNameOf(element: Element): string {
   return element.closest('IED')?.getAttribute('name') ?? '';
 }
 
-function withoutIed(id: string, iedName: string): string {
-  return id.substring(iedName.length);
+/**
+ * The identity of an element without its IED name, as stored in a stencil:
+ * scl-lib's `identity()` with the IED name removed.
+ *
+ * An ExtRef with `intAddr` (later binding) is `<Inputs identity>>intAddr[n]`.
+ * An ExtRef without it is identified by the signal it refers to, which is how
+ * IEC 61850-6 identifies it too (`uniqueExtRefInInputs`).
+ */
+export function toRef(element: Element): string {
+  return `${identity(element)}`.substring(iedNameOf(element).length);
 }
 
-function hasNoIntAddr(element: Element): boolean {
-  return element.tagName === 'ExtRef' && !element.hasAttribute('intAddr');
-}
-
-function extRefsWithoutIntAddr(inputs: Element): Element[] {
-  return Array.from(inputs.children).filter(hasNoIntAddr);
+/** Whether an ExtRef reference is by `intAddr`, so it names an ExtRef that already exists. */
+export function isLaterBindingRef(ref: string): boolean {
+  return ref.endsWith(']');
 }
 
 /**
- * The identity of an element without its IED name, as stored in a stencil.
- *
- * It is scl-lib's `identity()` with the IED name removed, except for an
- * ExtRef without `intAddr`. scl-lib builds that from the current subscription,
- * which cannot be matched on another IED, so it is stored as the position
- * among the ExtRefs without `intAddr`: `<Inputs identity>>#<n>`.
+ * The `Inputs` of an ExtRef reference, as the identity of its logical node.
+ * The signal in the rest of the reference is not used: where an ExtRef
+ * without `intAddr` is concerned, only the logical node is a location, and
+ * the signal itself is worked out from the control block that is subscribed.
  */
-export function toRef(element: Element): string {
-  const iedName = iedNameOf(element);
-  if (hasNoIntAddr(element)) {
-    const inputs = element.parentElement!;
-    const position = extRefsWithoutIntAddr(inputs).indexOf(element);
-    return `${withoutIed(`${identity(inputs)}`, iedName)}${POSITION}${position}`;
-  }
-  return withoutIed(`${identity(element)}`, iedName);
+export function inputsRef(ref: string): string {
+  return ref.substring(0, ref.lastIndexOf('>'));
 }
 
 /** The element a stored reference points at on the given IED, if any. */
@@ -55,19 +46,27 @@ export function resolveRef(
   iedName: string,
   ref: string
 ): Element | null {
-  const at = ref.lastIndexOf(POSITION);
-  const position = at >= 0 ? ref.substring(at + POSITION.length) : '';
-
-  if (tag === 'ExtRef' && /^\d+$/.test(position)) {
-    const inputs = find(doc, 'Inputs', `${iedName}${ref.substring(0, at)}`);
-    return inputs
-      ? (extRefsWithoutIntAddr(inputs)[Number(position)] ?? null)
-      : null;
-  }
   return find(doc, tag, `${iedName}${ref}`);
 }
 
-/** Whether a reference is by position, which only holds for IEDs with the same ExtRefs in the same order. */
-export function isPositionalRef(ref: string): boolean {
-  return />#\d+$/.test(ref);
+/**
+ * Where a subscription is made on the given IED: the existing ExtRef for a
+ * later binding reference, otherwise the `Inputs` (or the logical node, if
+ * it has none yet) in which a new ExtRef is created.
+ */
+export function resolveSink(
+  doc: XMLDocument,
+  iedName: string,
+  ref: string
+): Element | null {
+  if (isLaterBindingRef(ref)) {
+    return resolveRef(doc, 'ExtRef', iedName, ref);
+  }
+
+  const owner = `${iedName}${inputsRef(ref)}`;
+  return (
+    find(doc, 'Inputs', owner) ??
+    find(doc, 'LN0', owner) ??
+    find(doc, 'LN', owner)
+  );
 }

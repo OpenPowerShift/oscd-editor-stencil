@@ -2,7 +2,7 @@ import { expect } from '@open-wc/testing';
 import { identity, controlBlockObjRef } from '@openscd/scl-lib';
 
 import { getMappingInfo } from './mapping-info.js';
-import { resolveRef, toRef } from './stencil-ref.js';
+import { isLaterBindingRef, resolveRef, resolveSink, toRef } from './stencil-ref.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
 import { legacyMappingInfo } from '../testing/golden/legacy-getMappingInfo.js';
 import { sclLib013Identities } from '../testing/golden/scl-lib-0.13.3-identities.js';
@@ -58,7 +58,7 @@ describe('getMappingInfo', () => {
       expect(mapping[0].mappings).to.deep.equal([
         {
           FCDA: '>>LD0>DS_G2>LD0/ GGIO 1.Ind3 stVal (ST)',
-          ExtRef: '>>LD0>#0'
+          ExtRef: '>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal'
         }
       ]);
     });
@@ -135,11 +135,10 @@ describe('getMappingInfo', () => {
   });
 
   describe('stored references', () => {
-    const tagOf = (type: string) =>
-      type === 'GSEControl' || type === 'SampledValueControl' ? type : 'GSEControl';
+    const tagOf = (type: string) => type as 'GSEControl';
 
-    /** EDN1 gets a second ExtRef without intAddr, so positions 0 and 1 both exist. */
-    const withTwoPositionalExtRefs = (): XMLDocument => {
+    /** EDN1 gets a second ExtRef without intAddr. */
+    const withTwoEdition1ExtRefs = (): XMLDocument => {
       addExtRef(
         'EDN1',
         '<ExtRef iedName="PUB1" ldInst="LD0" lnClass="GGIO" lnInst="1" doName="Ind1" daName="stVal"/>'
@@ -147,28 +146,35 @@ describe('getMappingInfo', () => {
       return doc;
     };
 
-    it('stores an ExtRef without intAddr by its position among such ExtRefs', () => {
-      withTwoPositionalExtRefs();
+    it('stores an ExtRef without intAddr as the signal it refers to', () => {
+      withTwoEdition1ExtRefs();
       const byId = Object.fromEntries(
         getMappingInfo(doc, 'PUB1', 'EDN1').map(cb => [cb.name, cb.mappings[0].ExtRef])
       );
-      expect(byId).to.deep.equal({ GC1: '>>LD0>#1', GC2: '>>LD0>#0' });
+      expect(byId).to.deep.equal({
+        GC1: '>>LD0>PUB1 LD0/ GGIO 1 Ind1 stVal',
+        GC2: '>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal'
+      });
     });
 
-    it('resolves every stored reference to the element it came from, for every IED pair', () => {
-      withTwoPositionalExtRefs();
+    it('stores references that resolve for every IED pair', () => {
+      withTwoEdition1ExtRefs();
       const names = Array.from(doc.querySelectorAll(':root > IED')).map(ied => ied.getAttribute('name')!);
       let checked = 0;
 
       names.forEach(from =>
         names.forEach((to) => {
           getMappingInfo(doc, from, to).forEach((cb) => {
-            expect(resolveRef(doc, tagOf(cb.type) as 'GSEControl', from, cb.id), cb.id).to.equal(
+            expect(resolveRef(doc, tagOf(cb.type), from, cb.id), cb.id).to.equal(
               doc.querySelector(`IED[name="${from}"] ${cb.type}[name="${cb.name}"]`)
             );
             cb.mappings.forEach((mapping) => {
               expect(resolveRef(doc, 'FCDA', from, mapping.FCDA), mapping.FCDA).to.exist;
-              expect(resolveRef(doc, 'ExtRef', to, mapping.ExtRef), mapping.ExtRef).to.exist;
+              // the Inputs where the ExtRef is, or created, whichever kind it is
+              expect(resolveSink(doc, to, mapping.ExtRef), mapping.ExtRef).to.exist;
+              if (isLaterBindingRef(mapping.ExtRef)) {
+                expect(toRef(resolveRef(doc, 'ExtRef', to, mapping.ExtRef)!)).to.equal(mapping.ExtRef);
+              }
               checked += 2;
             });
             if (cb.supervision !== 'None') {
@@ -182,16 +188,5 @@ describe('getMappingInfo', () => {
       );
       expect(checked).to.be.greaterThan(8);
     });
-
-    it('finds the same ExtRef again after capture, whatever its position', () => {
-      withTwoPositionalExtRefs();
-      getMappingInfo(doc, 'PUB1', 'EDN1').forEach(cb =>
-        cb.mappings.forEach((mapping) => {
-          const extRef = resolveRef(doc, 'ExtRef', 'EDN1', mapping.ExtRef)!;
-          expect(toRef(extRef)).to.equal(mapping.ExtRef);
-        })
-      );
-    });
   });
 });
-

@@ -330,47 +330,142 @@ describe('planApply', () => {
     });
   });
 
-  describe('ExtRefs without intAddr', () => {
-    it('recreates a subscription on the ExtRef at the same position of a clean IED', () => {
-      doc
-        .querySelector('IED[name="EDN1"] Inputs')!
-        .appendChild(
-          doc.importNode(
-            new DOMParser()
-              .parseFromString(
-                `<ExtRef xmlns="${doc.documentElement.namespaceURI}" iedName="PUB1" ldInst="LD0" lnClass="GGIO" lnInst="1" doName="Ind1" daName="stVal"/>`,
-                'application/xml'
-              )
-              .documentElement,
-            true
-          )
-        );
-      cloneAsClean(doc, 'PUB1', 'PUB2');
-      cloneAsClean(doc, 'EDN1', 'EDN2');
-      const application = applicationFrom(
-        getMappingInfo(doc, 'PUB1', 'EDN1'),
-        'PUBF',
-        'EDNF'
-      );
+  describe('ExtRefs without intAddr (not later binding)', () => {
+    // IEC 61850-6 has the system tool create such ExtRefs itself, so a clean
+    // IED does not have one to fill: it is created in the Inputs.
+    let application: Application;
+    const functions = new Map([
+      ['PUBF', 'PUB2'],
+      ['EDNF', 'EDN2']
+    ]);
 
-      const plan = planApply(
-        doc,
-        application,
-        new Map([
-          ['PUBF', 'PUB2'],
-          ['EDNF', 'EDN2']
-        ])
+    const addEdition1ExtRef = (): void => {
+      doc.querySelector('IED[name="EDN1"] Inputs')!.appendChild(
+        doc.importNode(
+          new DOMParser().parseFromString(
+            `<ExtRef xmlns="${doc.documentElement.namespaceURI}" iedName="PUB1" ldInst="LD0" lnClass="GGIO" lnInst="1" doName="Ind1" daName="stVal"/>`,
+            'application/xml'
+          ).documentElement,
+          true
+        )
       );
+    };
+
+    /** A clean copy of EDN1 with the given part of its Inputs removed. */
+    const cleanEdn = (keep: 'nothing' | 'unrelated' | 'no-inputs'): Element => {
+      const copy = doc.querySelector('IED[name="EDN1"]')!.cloneNode(true) as Element;
+      copy.setAttribute('name', 'EDN2');
+      doc.documentElement.appendChild(copy);
+      const inputs = copy.querySelector('Inputs')!;
+      inputs.querySelectorAll('ExtRef').forEach(e => e.remove());
+      if (keep === 'unrelated') {
+        const other = doc.createElementNS(doc.documentElement.namespaceURI, 'ExtRef');
+        other.setAttribute('iedName', 'OTHER');
+        other.setAttribute('ldInst', 'LD7');
+        other.setAttribute('lnClass', 'GGIO');
+        other.setAttribute('lnInst', '1');
+        other.setAttribute('doName', 'Alm1');
+        inputs.appendChild(other);
+      }
+      if (keep === 'no-inputs') {
+        inputs.remove();
+      }
+      return copy;
+    };
+
+    beforeEach(() => {
+      addEdition1ExtRef();
+      cloneAsClean(doc, 'PUB1', 'PUB2');
+      application = applicationFrom(getMappingInfo(doc, 'PUB1', 'EDN1'), 'PUBF', 'EDNF');
+    });
+
+    const extRefsOf = (ied: string) =>
+      Array.from(doc.querySelectorAll(`IED[name="${ied}"] ExtRef`));
+
+    it('creates the ExtRefs in the Inputs of an IED that has none', () => {
+      cleanEdn('nothing');
+      const plan = planApply(doc, application, functions);
+      expect(plan.errors).to.be.empty;
+      expect(plan).to.include({ subscriptions: 2, present: 0 });
+      plan.edits.forEach(edit => handleEdit(edit));
+
+      expect(
+        extRefsOf('EDN2').map(e => `${e.getAttribute('iedName')} ${e.getAttribute('doName')} ${e.getAttribute('srcCBName')} ${e.getAttribute('serviceType')}`).sort()
+      ).to.deep.equal(['PUB2 Ind1 GC1 GOOSE', 'PUB2 Ind3 GC2 GOOSE']);
+      expect(extRefsOf('EDN2').every(e => !e.hasAttribute('intAddr'))).to.be.true;
+    });
+
+    it('creates the Inputs too when the logical node has none', () => {
+      const copy = cleanEdn('no-inputs');
+      const plan = planApply(doc, application, functions);
       expect(plan.errors).to.be.empty;
       plan.edits.forEach(edit => handleEdit(edit));
 
-      const [first, second] = Array.from(
-        doc.querySelectorAll('IED[name="EDN2"] ExtRef')
+      expect(copy.querySelectorAll('LN0 > Inputs > ExtRef')).to.have.lengthOf(2);
+    });
+
+    it('leaves the ExtRefs that are already there alone', () => {
+      cleanEdn('unrelated');
+      planApply(doc, application, functions).edits.forEach(edit => handleEdit(edit));
+
+      const other = extRefsOf('EDN2').find(e => e.getAttribute('iedName') === 'OTHER')!;
+      expect(other.getAttribute('doName')).to.equal('Alm1');
+      expect(extRefsOf('EDN2')).to.have.lengthOf(3);
+    });
+
+    it('creates nothing the second time', () => {
+      cleanEdn('nothing');
+      planApply(doc, application, functions).edits.forEach(edit => handleEdit(edit));
+
+      const again = planApply(doc, application, functions);
+      expect(again.edits).to.be.empty;
+      expect(again).to.include({ subscriptions: 0, present: 2 });
+      expect(extRefsOf('EDN2')).to.have.lengthOf(2);
+    });
+
+    it('does not take an ExtRef for the same signal from another control block as its own', () => {
+      cleanEdn('nothing');
+      planApply(doc, application, functions).edits.forEach(edit => handleEdit(edit));
+      // the same data, but taken from GC2 instead of GC1
+      extRefsOf('EDN2').find(e => e.getAttribute('doName') === 'Ind1')!.setAttribute('srcCBName', 'GC2');
+      expect(planApply(doc, application, functions).subscriptions).to.equal(1);
+    });
+
+    it('does not create ExtRefs on an IED that only accepts later binding', () => {
+      const copy = cleanEdn('nothing');
+      copy.insertBefore(
+        new DOMParser().parseFromString(
+          `<Services xmlns="${doc.documentElement.namespaceURI}"><ClientServices noIctBinding="true"/></Services>`,
+          'application/xml'
+        ).documentElement,
+        copy.firstChild
       );
-      // position 0 was subscribed to GC2 (Ind3), position 1 to GC1 (Ind1)
-      expect(attrs(first)).to.include({ iedName: 'PUB2', srcCBName: 'GC2', doName: 'Ind3' });
-      expect(attrs(second)).to.include({ iedName: 'PUB2', srcCBName: 'GC1', doName: 'Ind1' });
+
+      const plan = planApply(doc, application, functions);
+      expect(plan.edits).to.be.empty;
+      expect(plan.errors).to.deep.equal([
+        'Cannot create ExtRef on EDN2: it only accepts later binding (ClientServices noIctBinding)'
+      ]);
+    });
+
+    it('creates ExtRefs when the IED allows the system tool to bind inputs', () => {
+      const copy = cleanEdn('nothing');
+      copy.insertBefore(
+        new DOMParser().parseFromString(
+          `<Services xmlns="${doc.documentElement.namespaceURI}"><ClientServices noIctBinding="false"/></Services>`,
+          'application/xml'
+        ).documentElement,
+        copy.firstChild
+      );
+      expect(planApply(doc, application, functions).subscriptions).to.equal(2);
+    });
+
+    it('names a logical node that does not exist', () => {
+      cleanEdn('nothing');
+      application.ControlBlocks[0].mappings[0].ExtRef = '>>LD9>PUB1 LD0/ GGIO 1 Ind1 stVal';
+      expect(planApply(doc, application, functions).errors).to.include(
+        'Could not find logical node for input: EDN2>>LD9'
+      );
     });
   });
 });
-
