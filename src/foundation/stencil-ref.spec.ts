@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { identity } from '@openscd/scl-lib';
+import { find, identity } from '@openscd/scl-lib';
 
 import { resolveRef, toRef } from './stencil-ref.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
@@ -79,4 +79,40 @@ describe('stencil-ref', () => {
       expect(resolveRef(d, 'FCDA', 'PUB1', 'NONE')).to.be.null;
     });
   });
+
+  describe('why an ExtRef without intAddr is stored by position', () => {
+    // scl-lib identifies such an ExtRef by what it is subscribed to,
+    // including the name of the publisher it is subscribed to.
+    it("scl-lib's identity only finds an ExtRef that is already subscribed to that source", () => {
+      const d = doc();
+      const subscribed = one(d, 'IED[name="EDN1"] ExtRef');
+      expect(`${identity(subscribed)}`).to.equal('EDN1>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal');
+      expect(find(d, 'ExtRef', `${identity(subscribed)}`)).to.equal(subscribed);
+
+      // the same ExtRef on a clean IED, as a stencil is applied to
+      const copy = one(d, 'IED[name="EDN1"]').cloneNode(true) as Element;
+      copy.setAttribute('name', 'EDN2');
+      Array.from(copy.querySelector('ExtRef')!.attributes).forEach(attr =>
+        copy.querySelector('ExtRef')!.removeAttribute(attr.name)
+      );
+      d.documentElement.appendChild(copy);
+
+      expect(find(d, 'ExtRef', 'EDN2>>LD0>PUB1 LD0/ GGIO 1 Ind3 stVal')).to.be.null;
+    });
+
+    it('finds the same ExtRef by position', () => {
+      const d = doc();
+      const copy = one(d, 'IED[name="EDN1"]').cloneNode(true) as Element;
+      copy.setAttribute('name', 'EDN2');
+      Array.from(copy.querySelector('ExtRef')!.attributes).forEach(attr =>
+        copy.querySelector('ExtRef')!.removeAttribute(attr.name)
+      );
+      d.documentElement.appendChild(copy);
+
+      expect(resolveRef(d, 'ExtRef', 'EDN2', '>>LD0>#0')).to.equal(
+        copy.querySelector('ExtRef')
+      );
+    });
+  });
 });
+

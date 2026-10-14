@@ -127,7 +127,7 @@ Apply puts the new IED name in front and resolves the element.
 
 - **The identity format is stable across scl-lib versions.** I diffed `tBaseElement/identity.ts` in `openscd/scl-lib` from 0.13.2 to 2.0.1. The only change is to `LNode` with `iedName="None"`, which stencils never store. A golden test will confirm this on a fixture.
 - **ExtRefs with `intAddr`** (all later-binding ExtRefs, and SEL message-quality ExtRefs) have the identity `<LN identity>>intAddr[n]`. This is the ExtRef's identity within its LN and is independent of what it is subscribed to, so it is adequate.
-- **ExtRefs without `intAddr`** (Edition 1 / early-binding style) get an identity built from their current subscription, including the original publisher's name, and scl-lib's `find()` does not resolve them. These cannot be matched on a fresh IED.
+- **ExtRefs without `intAddr`** (Edition 1 / early-binding style) get an identity built from their current subscription, including the original publisher's name. scl-lib's `find()` does resolve such an identity, but only to an ExtRef that is *already subscribed to that same source*. An unsubscribed ExtRef on a fresh IED, which is what applying a stencil targets, can never be found that way (see the spec in `stencil-ref.spec.ts`).
 
 ### Design
 
