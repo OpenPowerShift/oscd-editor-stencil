@@ -6,7 +6,6 @@ import type { EditV2 } from '@openscd/oscd-api';
 
 
 import OscdEditorStencil from './oscd-editor-stencil.js';
-import { getMappingInfo } from './foundation/mapping-info.js';
 import { fixtureXml } from './testing/fixture-scd.js';
 import { makeApplication, makeStencil, makeVersion } from './testing/stencils.js';
 
@@ -96,7 +95,7 @@ describe('oscd-editor-stencil UI', () => {
     expect(plugin.shadowRoot!.querySelector('oscd-stencil-manage')).to.exist;
 
     await showTab(2);
-    expect(plugin.shadowRoot!.textContent).to.contain('Enter Stencil Data');
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.exist;
 
     await showTab(3);
     expect(plugin.shadowRoot!.querySelector('#outputView')).to.exist;
@@ -104,8 +103,11 @@ describe('oscd-editor-stencil UI', () => {
 
   describe('adding stencil metadata to IEDs', () => {
     const openDialog = async () => {
-      await showTab(2);
-      await click('oscd-outlined-button', 'Add Stencil Metadata to IEDs');
+      await showTab(1);
+      plugin.shadowRoot!.querySelector('oscd-stencil-manage')!.dispatchEvent(
+        new CustomEvent('stencil-tag', { bubbles: true, composed: true })
+      );
+      await plugin.updateComplete;
     };
 
     it('offers every IED of the document', async () => {
@@ -380,47 +382,40 @@ describe('oscd-editor-stencil UI', () => {
     });
   });
 
-  describe('creating an application', () => {
-    const create = async (fields: Record<string, string>) => {
+  describe('capturing an application', () => {
+    it('shows the capture wizard on the Create tab', async () => {
       await showTab(2);
-      plugin.iedMappingStencilData = getMappingInfo(doc, 'PUB1', 'SUB1');
-      plugin.uniqueIeds = ['PUB1', 'SUB1'];
-      plugin.templateCreationStage = 2;
+      expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.exist;
+    });
+
+    it('keeps what was captured in the stencil and library, and says so', async () => {
+      await showTab(2);
+      const stencil = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
+      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+        new CustomEvent('stencil-capture', {
+          detail: { stencil, category: 'Bus', name: 'BZ', version: '1.0.0' },
+          bubbles: true,
+          composed: true
+        })
+      );
       await plugin.updateComplete;
-      Object.entries(fields).forEach(([id, value]) => {
-        (plugin.shadowRoot!.querySelector(`#${id}`) as HTMLInputElement).value = value;
-      });
-      await click('oscd-filled-button', 'Add Application');
-    };
 
-    it('adds a new version to an existing application instead of a second application', async () => {
-      plugin.stencilData = makeStencil([
-        makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])
-      ]);
-      await create({ appcat: 'Bus', appname: 'BZ', appver: '2.0.0' });
-
-      expect(plugin.stencilData.applications).to.have.lengthOf(1);
-      expect(plugin.stencilData.applications[0].versions.map(v => v.version)).to.deep.equal(['1.0.0', '2.0.0']);
+      expect(plugin.stencilData).to.equal(stencil);
+      expect(plugin.library).to.have.lengthOf(1);
     });
 
-    it('replaces a version with the same number in place', async () => {
-      plugin.stencilData = makeStencil([
-        makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')])
-      ]);
-      await create({ appcat: 'Bus', appname: 'BZ', appver: '1.0.0', appverdesc: 'again' });
-
-      expect(plugin.stencilData.applications).to.have.lengthOf(1);
-      expect(plugin.stencilData.applications[0].versions.map(v => `${v.version}:${v.description}`)).to.deep.equal(['1.0.0:again', '2.0.0:version 2.0.0']);
-    });
-
-    it('creates the first application of an empty stencil with the functions it was given', async () => {
-      await create({ appcat: 'Bus', appname: 'BZ', appver: '1.0.0' });
-
-      const [app] = plugin.stencilData.applications;
-      expect(app).to.include({ category: 'Bus', name: 'BZ' });
-      expect(Object.keys(app.versions[0].IEDS).sort()).to.deep.equal(['PUB1', 'SUB1']);
-      expect(app.versions[0].ControlBlocks).to.have.lengthOf(2);
+    it('opens the tagging dialog when the wizard asks', async () => {
+      await showTab(2);
+      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+        new CustomEvent('stencil-tag', { bubbles: true, composed: true })
+      );
+      await plugin.updateComplete;
+      const dialog = plugin.shadowRoot!.querySelector('#ied-stencil-metadata') as HTMLElement & {
+        open: boolean;
+        updateComplete: Promise<unknown>;
+      };
+      await dialog.updateComplete;
+      expect(dialog.open).to.be.true;
     });
   });
 });
-
