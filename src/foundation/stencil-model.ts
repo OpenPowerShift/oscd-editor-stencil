@@ -1,5 +1,6 @@
 import type {
   Application,
+  IedRequirement,
   StencilData,
   VersionedApplications
 } from './types.js';
@@ -157,5 +158,206 @@ export function summarizeVersion(version: Application): VersionSummary {
     smv: blocks.filter(cb => cb.type === 'SampledValueControl').length,
     subscriptions: blocks.reduce((sum, cb) => sum + cb.mappings.length, 0),
     supervisions: blocks.filter(cb => cb.supervision !== 'None').length
+  };
+}
+
+/** The text fields of an application that can be edited. */
+export type ApplicationInfo = ApplicationKey & { description: string };
+
+/** The fields of an application version that can be edited. */
+export type VersionInfo = {
+  version: string;
+  description: string;
+  deprecated: boolean;
+};
+
+/** The reason an edit cannot be made, or `null` when it can. */
+export type EditProblem = string | null;
+
+/** Why an application cannot be given this category and name, if so. */
+export function applicationProblem(
+  stencil: StencilData,
+  from: ApplicationKey,
+  to: ApplicationKey
+): EditProblem {
+  if (!to.category.trim() || !to.name.trim()) {
+    return 'Category and name are needed';
+  }
+  const clash =
+    !sameApplication(from, to) &&
+    stencil.applications.some(app => sameApplication(app, to));
+  return clash ? 'An application with this category and name exists' : null;
+}
+
+/** Why a version cannot be given this version string, if so. */
+export function versionProblem(
+  stencil: StencilData,
+  key: ApplicationKey,
+  from: string,
+  to: string
+): EditProblem {
+  if (!to.trim()) {
+    return 'A version is needed';
+  }
+  return from !== to && hasApplicationVersion(stencil, key, to)
+    ? 'This version exists'
+    : null;
+}
+
+/**
+ * Changes the category, name and description of an application. When there
+ * is a problem the stencil is returned as it was.
+ */
+export function updateApplication(
+  stencil: StencilData,
+  key: ApplicationKey,
+  info: ApplicationInfo
+): StencilData {
+  if (applicationProblem(stencil, key, info)) {
+    return stencil;
+  }
+  return {
+    ...stencil,
+    applications: stencil.applications.map(app =>
+      sameApplication(app, key)
+        ? {
+          ...app,
+          category: info.category.trim(),
+          name: info.name.trim(),
+          description: info.description
+        }
+        : app
+    )
+  };
+}
+
+/**
+ * Changes the version string, description and deprecation of one version.
+ * When there is a problem the stencil is returned as it was.
+ */
+export function updateVersion(
+  stencil: StencilData,
+  key: ApplicationKey,
+  version: string,
+  info: VersionInfo
+): StencilData {
+  if (versionProblem(stencil, key, version, info.version)) {
+    return stencil;
+  }
+  return {
+    ...stencil,
+    applications: stencil.applications.map(app =>
+      sameApplication(app, key)
+        ? {
+          ...app,
+          versions: app.versions.map(v =>
+            v.version === version
+              ? { ...v, ...info, version: info.version.trim() }
+              : v
+          )
+        }
+        : app
+    )
+  };
+}
+
+/** Why a function cannot be given this name, if so. */
+export function functionProblem(
+  version: Application,
+  from: string,
+  to: string
+): EditProblem {
+  if (!to.trim()) {
+    return 'A function name is needed';
+  }
+  return from !== to && to in version.IEDS
+    ? 'A function with this name exists'
+    : null;
+}
+
+/**
+ * Renames a function of a version, keeping its position and following it in
+ * the control blocks. When there is a problem the version is returned as it was.
+ */
+export function renameFunction(
+  version: Application,
+  from: string,
+  to: string
+): Application {
+  if (functionProblem(version, from, to) || !(from in version.IEDS)) {
+    return version;
+  }
+  const name = to.trim();
+  const rename = (fn: string): string => (fn === from ? name : fn);
+  return {
+    ...version,
+    IEDS: Object.fromEntries(
+      Object.entries(version.IEDS).map(([fn, ied]) => [rename(fn), ied])
+    ),
+    ControlBlocks: version.ControlBlocks.map(cb => ({
+      ...cb,
+      from: rename(cb.from),
+      to: rename(cb.to)
+    }))
+  };
+}
+
+/** Changes what a function requires of its IED. */
+export function updateRequirement(
+  version: Application,
+  fn: string,
+  requirement: Pick<IedRequirement, 'manufacturer' | 'type'> & {
+    id: string;
+    idVersion: string;
+  }
+): Application {
+  const existing = version.IEDS[fn];
+  if (!existing) {
+    return version;
+  }
+  return {
+    ...version,
+    IEDS: {
+      ...version.IEDS,
+      [fn]: {
+        ...existing,
+        manufacturer: requirement.manufacturer,
+        type: requirement.type,
+        privates: [
+          {
+            'OpenSCD-Stencil-Id': requirement.id,
+            'OpenSCD-Stencil-Version': requirement.idVersion
+          }
+        ]
+      }
+    }
+  };
+}
+
+/** Replaces a version of an application with an edited one. */
+export function replaceVersion(
+  stencil: StencilData,
+  key: ApplicationKey,
+  version: string,
+  next: Application
+): StencilData {
+  return {
+    ...stencil,
+    applications: stencil.applications.map(app =>
+      sameApplication(app, key)
+        ? { ...app, versions: app.versions.map(v => (v.version === version ? next : v)) }
+        : app
+    )
+  };
+}
+
+/** Removes an application with all its versions. The stencil is not changed. */
+export function removeApplication(
+  stencil: StencilData,
+  key: ApplicationKey
+): StencilData {
+  return {
+    ...stencil,
+    applications: stencil.applications.filter(app => !sameApplication(app, key))
   };
 }

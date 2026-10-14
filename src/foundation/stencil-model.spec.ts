@@ -1,7 +1,16 @@
 import { expect } from '@open-wc/testing';
 
 import {
+  applicationProblem,
   compareVersions,
+  functionProblem,
+  removeApplication,
+  renameFunction,
+  replaceVersion,
+  updateApplication,
+  updateRequirement,
+  updateVersion,
+  versionProblem,
   defaultVersion,
   hasApplicationVersion,
   removeApplicationVersion,
@@ -224,6 +233,113 @@ describe('stencil-model', () => {
       smv: 1,
       subscriptions: 3,
       supervisions: 1
+    });
+  });
+  describe('editing', () => {
+    const stencil = makeStencil([
+      makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')]),
+      makeApplication('Bus', 'Other', [makeVersion('1.0.0')])
+    ]);
+
+    it('renames an application and refuses a name already used', () => {
+      const renamed = updateApplication(stencil, key, {
+        category: ' Line ',
+        name: 'Zone',
+        description: 'd'
+      });
+      expect(renamed.applications[0]).to.include({
+        category: 'Line',
+        name: 'Zone',
+        description: 'd'
+      });
+      expect(stencil.applications[0].name).to.equal('BZ');
+
+      const clash = { category: 'Bus', name: 'Other', description: '' };
+      expect(applicationProblem(stencil, key, clash)).to.be.a('string');
+      expect(updateApplication(stencil, key, clash)).to.equal(stencil);
+      expect(applicationProblem(stencil, key, { ...key })).to.equal(null);
+      expect(
+        applicationProblem(stencil, key, { category: '', name: 'x' })
+      ).to.be.a('string');
+    });
+
+    it('changes a version and refuses one that exists', () => {
+      const next = updateVersion(stencil, key, '1.0.0', {
+        version: '1.1.0',
+        description: 'new',
+        deprecated: true
+      });
+      expect(next.applications[0].versions[0]).to.include({
+        version: '1.1.0',
+        description: 'new',
+        deprecated: true
+      });
+      expect(versionProblem(stencil, key, '1.0.0', '2.0.0')).to.be.a('string');
+      expect(versionProblem(stencil, key, '1.0.0', '1.0.0')).to.equal(null);
+      expect(versionProblem(stencil, key, '1.0.0', ' ')).to.be.a('string');
+      expect(
+        updateVersion(stencil, key, '1.0.0', {
+          version: '2.0.0',
+          description: '',
+          deprecated: false
+        })
+      ).to.equal(stencil);
+    });
+
+    it('renames a function in place and in the control blocks', () => {
+      const version = {
+        ...makeVersion('1.0.0'),
+        IEDS: {
+          A: makeVersion('1.0.0').IEDS.Fn,
+          B: makeVersion('1.0.0').IEDS.Fn
+        },
+        ControlBlocks: [{ from: 'A', to: 'B' }, { from: 'B', to: 'A' }] as never
+      };
+      const renamed = renameFunction(version, 'A', 'Publisher');
+      expect(Object.keys(renamed.IEDS)).to.deep.equal(['Publisher', 'B']);
+      expect(renamed.ControlBlocks.map(cb => [cb.from, cb.to])).to.deep.equal([
+        ['Publisher', 'B'],
+        ['B', 'Publisher']
+      ]);
+      expect(functionProblem(version, 'A', 'B')).to.be.a('string');
+      expect(functionProblem(version, 'A', ' ')).to.be.a('string');
+      expect(renameFunction(version, 'A', 'B')).to.equal(version);
+      expect(renameFunction(version, 'Missing', 'C')).to.equal(version);
+    });
+
+    it('changes what a function requires', () => {
+      const version = makeVersion('1.0.0');
+      const next = updateRequirement(version, 'Fn', {
+        manufacturer: 'ABB',
+        type: 'REL',
+        id: 'X',
+        idVersion: '2.0.0'
+      });
+      expect(next.IEDS.Fn).to.include({ manufacturer: 'ABB', type: 'REL' });
+      expect(next.IEDS.Fn.privates).to.deep.equal([
+        { 'OpenSCD-Stencil-Id': 'X', 'OpenSCD-Stencil-Version': '2.0.0' }
+      ]);
+      expect(
+        updateRequirement(version, 'Nope', {
+          manufacturer: '',
+          type: '',
+          id: '',
+          idVersion: ''
+        })
+      ).to.equal(version);
+    });
+
+    it('removes an application with its versions', () => {
+      const result = removeApplication(stencil, key);
+      expect(result.applications.map(app => app.name)).to.deep.equal(['Other']);
+      expect(stencil.applications).to.have.lengthOf(2);
+    });
+
+    it('replaces a version', () => {
+      const next = { ...makeVersion('1.0.0'), description: 'changed' };
+      const result = replaceVersion(stencil, key, '1.0.0', next);
+      expect(result.applications[0].versions[0].description).to.equal('changed');
+      expect(result.applications[0].versions[1].version).to.equal('2.0.0');
     });
   });
 });

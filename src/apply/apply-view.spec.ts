@@ -5,7 +5,7 @@ import type { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/Os
 import type { EditV2 } from '@openscd/oscd-api';
 
 import { OscdStencilApply } from './apply-view.js';
-import type { StencilApplyDetail, StencilDeleteDetail } from './apply-view.js';
+import type { StencilApplyDetail } from './apply-view.js';
 import { getMappingInfo } from '../foundation/mapping-info.js';
 import { tagIedEdits } from '../foundation/ied-tags.js';
 import type { Application, StencilData } from '../foundation/types.js';
@@ -63,7 +63,6 @@ describe('oscd-stencil-apply', () => {
   let doc: XMLDocument;
   let stencil: StencilData;
   let applied: StencilApplyDetail[];
-  let deleted: StencilDeleteDetail[];
 
   const q = <T extends Element>(selector: string) =>
     el.shadowRoot!.querySelector(selector) as T;
@@ -111,12 +110,8 @@ describe('oscd-stencil-apply', () => {
       html`<oscd-stencil-apply .doc=${doc} .stencil=${stencil}></oscd-stencil-apply>`
     );
     applied = [];
-    deleted = [];
     el.addEventListener('stencil-apply', e =>
       applied.push((e as CustomEvent<StencilApplyDetail>).detail)
-    );
-    el.addEventListener('stencil-delete-version', e =>
-      deleted.push((e as CustomEvent<StencilDeleteDetail>).detail)
     );
   });
 
@@ -212,13 +207,6 @@ describe('oscd-stencil-apply', () => {
       expect(el.application?.name).to.equal('BZ');
       expect(q<OscdSelectionList>('#applications').items[0].selected).to.be.true;
       expect(q('#summary')).to.exist;
-    });
-
-    it('asks the plugin to delete the version', async () => {
-      await click('#delete');
-      expect(deleted).to.deep.equal([
-        { category: 'Bus', name: 'BZ', version: '1.0.0' }
-      ]);
     });
   });
 

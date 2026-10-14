@@ -50,13 +50,6 @@ export type StencilApplyDetail = {
   plan: ApplyPlan;
 };
 
-/** Raised when the user deletes the selected version of an application. */
-export type StencilDeleteDetail = {
-  category: string;
-  name: string;
-  version: string;
-};
-
 const steps: { id: Exclude<Step, 'done'>; label: () => string }[] = [
   { id: 'choose', label: () => msg('Choose application') },
   { id: 'assign', label: () => msg('Assign IEDs') },
@@ -198,24 +191,6 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.dispatchEvent(
       new CustomEvent<StencilApplyDetail>('stencil-apply', {
         detail,
-        bubbles: true,
-        composed: true
-      })
-    );
-  }
-
-  private delete(): void {
-    if (!this.application || !this.version) {
-      return;
-    }
-
-    this.dispatchEvent(
-      new CustomEvent<StencilDeleteDetail>('stencil-delete-version', {
-        detail: {
-          category: this.application.category,
-          name: this.application.name,
-          version: this.version.version
-        },
         bubbles: true,
         composed: true
       })
@@ -403,9 +378,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       </ul>
 
       <div class="actions">
-        <oscd-text-button class="danger" id="delete" @click=${() => this.delete()}
-          >${msg('Delete this version')}</oscd-text-button
-        >
+        <span class="spacer"></span>
         <oscd-filled-button id="next" @click=${() => (this.step = 'assign')}
           >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
         >

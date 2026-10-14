@@ -17,6 +17,7 @@ describe('oscd-editor-stencil', () => {
 
   beforeEach(async () => {
     localStorage.removeItem('oscd-stencil');
+    localStorage.removeItem('oscd-stencil-library');
     plugin = await fixture(html`<oscd-editor-stencil></oscd-editor-stencil>`);
   });
 
@@ -37,6 +38,9 @@ describe('oscd-editor-stencil', () => {
     expect('editCount' in plugin).to.be.false;
   });
 });
+
+const fileEvent = (content: string) =>
+  ({ target: { files: { item: () => new File([content], 'stencil.json') } } }) as unknown as Event;
 
 describe('oscd-editor-stencil UI', () => {
   let plugin: OscdEditorStencil;
@@ -61,6 +65,7 @@ describe('oscd-editor-stencil UI', () => {
 
   beforeEach(async () => {
     localStorage.removeItem('oscd-stencil');
+    localStorage.removeItem('oscd-stencil-library');
     doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
     plugin = await fixture(
       html`<oscd-editor-stencil .doc=${doc}></oscd-editor-stencil>`
@@ -75,28 +80,31 @@ describe('oscd-editor-stencil UI', () => {
     plugin.remove();
   });
 
-  it('has Apply, Create and View tabs built from oscd-ui components', () => {
+  it('has Apply, Manage, Create and JSON tabs built from oscd-ui components', () => {
     const tabs = plugin.shadowRoot!.querySelector('oscd-tabs') as OscdTabs;
     expect(tabs.activeTabIndex).to.equal(0);
     const labels = Array.from(
       plugin.shadowRoot!.querySelectorAll('oscd-primary-tab')
-    ).map(tab => tab.textContent?.replace(/\s+/g, '').replace('play_circle', '').replace('construction', '').replace('frame_source', ''));
-    expect(labels).to.deep.equal(['Apply', 'Create', 'View']);
+    ).map(tab => tab.textContent?.replace(/\s+/g, '').replace('play_circle', '').replace('construction', '').replace('frame_source', '').replace('folder_managed', ''));
+    expect(labels).to.deep.equal(['Apply', 'Manage', 'Create', 'JSON']);
   });
 
   it('shows the matching view when a tab is selected', async () => {
     expect(plugin.shadowRoot!.querySelector('#stencilName')).to.exist;
 
     await showTab(1);
-    expect(plugin.shadowRoot!.textContent).to.contain('Enter Stencil Data');
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-manage')).to.exist;
 
     await showTab(2);
+    expect(plugin.shadowRoot!.textContent).to.contain('Enter Stencil Data');
+
+    await showTab(3);
     expect(plugin.shadowRoot!.querySelector('#outputView')).to.exist;
   });
 
   describe('adding stencil metadata to IEDs', () => {
     const openDialog = async () => {
-      await showTab(1);
+      await showTab(2);
       await click('oscd-outlined-button', 'Add Stencil Metadata to IEDs');
     };
 
@@ -188,38 +196,127 @@ describe('oscd-editor-stencil UI', () => {
       expect(edits[0].detail.edit).to.deep.equal(batch);
       expect(escaped).to.equal(0);
     });
+  });
 
-    it('deletes a version from the stencil, keeps the rest and stores the result', async () => {
+  describe('the manage view', () => {
+    const manage = () =>
+      plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & {
+        currentId: string;
+        library: unknown[];
+      };
+
+    const raise = <T>(name: string, detail?: T) =>
+      manage().dispatchEvent(
+        new CustomEvent(name, { detail, bubbles: true, composed: true })
+      );
+
+    const stored = () =>
+      JSON.parse(localStorage.getItem('oscd-stencil-library')!).entries as {
+        stencil: { applications: { versions: unknown[] }[] };
+      }[];
+
+    beforeEach(async () => {
       plugin.stencilData = makeStencil([
         makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')])
       ]);
-      await plugin.updateComplete;
-
-      raise('stencil-delete-version', { category: 'Bus', name: 'BZ', version: '2.0.0' });
-      await plugin.updateComplete;
-
-      expect(plugin.stencilData.applications[0].versions.map(v => v.version)).to.deep.equal(['1.0.0']);
-      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).applications[0].versions).to.have.lengthOf(1);
+      await showTab(1);
     });
 
-    it('removes the application with its last version', async () => {
-      plugin.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
+    it('keeps an edited stencil in the library', async () => {
+      raise('stencil-change', makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]));
       await plugin.updateComplete;
-      raise('stencil-delete-version', { category: 'Bus', name: 'BZ', version: '1.0.0' });
+
+      expect(plugin.stencilData.applications[0].versions).to.have.lengthOf(1);
+      expect(stored()).to.have.lengthOf(1);
+      expect(stored()[0].stencil.applications[0].versions).to.have.lengthOf(1);
+      expect(manage().currentId).to.not.equal('');
+    });
+
+    it('switches between stencils of the library, and imports one into it', async () => {
+      raise('stencil-change', plugin.stencilData);
+      const first = plugin.currentId;
+      await plugin.loadStencil(
+        fileEvent(JSON.stringify({ ...makeStencil(), name: 'Other', version: '3.0.0' }))
+      );
+      expect(plugin.library).to.have.lengthOf(2);
+      expect(plugin.stencilData.name).to.equal('Other');
+
+      raise('stencil-select', first);
+      await plugin.updateComplete;
+      expect(plugin.stencilData.name).to.equal('My Stencil');
+
+      raise('stencil-select', 'nonexistent');
+      expect(plugin.stencilData.name).to.equal('My Stencil');
+    });
+
+    it('removes a stencil from the library and falls back to the next one', async () => {
+      raise('stencil-change', plugin.stencilData);
+      const first = plugin.currentId;
+      await plugin.loadStencil(
+        fileEvent(JSON.stringify({ ...makeStencil(), name: 'Other', version: '3.0.0' }))
+      );
+
+      raise('stencil-remove', plugin.currentId);
+      await plugin.updateComplete;
+      expect(plugin.currentId).to.equal(first);
+      expect(plugin.library).to.have.lengthOf(1);
+
+      raise('stencil-remove', first);
+      await plugin.updateComplete;
+      expect(plugin.currentId).to.equal('');
       expect(plugin.stencilData.applications).to.be.empty;
+    });
+
+    it('opens the file chooser to import and downloads on export', async () => {
+      let opened = 0;
+      const input = plugin.shadowRoot!.querySelector('#changeStencil') as HTMLInputElement;
+      input.click = () => (opened += 1);
+      raise('stencil-import');
+      expect(opened).to.equal(1);
+
+      const original = HTMLAnchorElement.prototype.click;
+      let downloaded: string | undefined;
+      HTMLAnchorElement.prototype.click = function click() {
+        downloaded = this.download;
+      };
+      try {
+        raise('stencil-export');
+      } finally {
+        HTMLAnchorElement.prototype.click = original;
+      }
+      expect(downloaded).to.equal('My_Stencil_1.0.0.json');
+    });
+
+    it('offers to tag IEDs with what the version requires', async () => {
+      raise('stencil-tag', makeVersion('1.0.0'));
+      await plugin.updateComplete;
+      const id = plugin.shadowRoot!.querySelector('#stencil-id') as HTMLInputElement;
+      expect(id.value).to.equal('ID');
+      const dialog = plugin.shadowRoot!.querySelector('#ied-stencil-metadata') as HTMLElement & {
+        open: boolean;
+        updateComplete: Promise<unknown>;
+      };
+      await dialog.updateComplete;
+      expect(dialog.open).to.be.true;
+    });
+
+    it('picks a stencil from the Apply header when there are several', async () => {
+      raise('stencil-change', plugin.stencilData);
+      await plugin.loadStencil(
+        fileEvent(JSON.stringify({ ...makeStencil(), name: 'Other', version: '3.0.0' }))
+      );
+      await showTab(0);
+      expect(plugin.shadowRoot!.querySelector('#recent')).to.exist;
     });
   });
 
   describe('loading and editing the stencil as text', () => {
-    const fileEvent = (content: string) =>
-      ({ target: { files: { item: () => new File([content], 'stencil.json') } } }) as unknown as Event;
-
     it('loads a stencil file even when no application is selected', async () => {
       await plugin.loadStencil(
         fileEvent(JSON.stringify(makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])])))
       );
       expect(plugin.stencilData.applications).to.have.lengthOf(1);
-      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).schemaVersion).to.equal(2);
+      expect(JSON.parse(localStorage.getItem('oscd-stencil-library')!).entries[0].stencil.schemaVersion).to.equal(2);
     });
 
     it('keeps the current stencil and does not throw for a file that is not JSON', async () => {
@@ -234,8 +331,8 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.stencilData).to.equal(before);
     });
 
-    it('does not take invalid text typed into the View tab', async () => {
-      await showTab(2);
+    it('does not take invalid text typed into the JSON tab', async () => {
+      await showTab(3);
       const before = plugin.stencilData;
       const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
       field.value = '{ broken';
@@ -244,8 +341,8 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.stencilData).to.equal(before);
     });
 
-    it('takes valid text typed into the View tab', async () => {
-      await showTab(2);
+    it('takes valid text typed into the JSON tab', async () => {
+      await showTab(3);
       const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
       field.value = JSON.stringify(makeStencil([makeApplication('Bus', 'BZ', [makeVersion('3.0.0')])]));
       field.dispatchEvent(new Event('change'));
@@ -254,7 +351,7 @@ describe('oscd-editor-stencil UI', () => {
     });
 
     it('starts with an empty stencil when the stored one is damaged', async () => {
-      localStorage.setItem('oscd-stencil', '{ damaged');
+      localStorage.setItem('oscd-stencil-library', '{ damaged');
       const fresh = await fixture<OscdEditorStencil>(html`<oscd-editor-stencil></oscd-editor-stencil>`);
       expect(fresh.stencilData.applications).to.be.empty;
       fresh.remove();
@@ -285,7 +382,7 @@ describe('oscd-editor-stencil UI', () => {
 
   describe('creating an application', () => {
     const create = async (fields: Record<string, string>) => {
-      await showTab(1);
+      await showTab(2);
       plugin.iedMappingStencilData = getMappingInfo(doc, 'PUB1', 'SUB1');
       plugin.uniqueIeds = ['PUB1', 'SUB1'];
       plugin.templateCreationStage = 2;

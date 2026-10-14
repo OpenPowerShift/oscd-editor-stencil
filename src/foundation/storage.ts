@@ -21,7 +21,7 @@ export function loadStoredStencil(
   }
 }
 
-/** Keeps the stencil. @returns whether it could be stored. */
+/** Keeps the stencil. Tells whether it could be stored. */
 export function storeStencil(
   stencil: StencilData,
   storage: Pick<Storage, 'setItem'> = localStorage

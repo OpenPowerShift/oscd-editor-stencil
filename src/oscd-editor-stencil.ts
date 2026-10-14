@@ -8,6 +8,7 @@ import {
 } from 'lit';
 
 import { property, query, queryAll, state } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdActionList } from '@omicronenergy/oscd-ui/action-list/OscdActionList.js';
@@ -21,6 +22,8 @@ import { OscdListItem } from '@omicronenergy/oscd-ui/list/OscdListItem.js';
 import { OscdMenu } from '@omicronenergy/oscd-ui/menu/OscdMenu.js';
 import { OscdMenuItem } from '@omicronenergy/oscd-ui/menu/OscdMenuItem.js';
 import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
+import { OscdOutlinedSelect } from '@omicronenergy/oscd-ui/select/OscdOutlinedSelect.js';
+import { OscdSelectOption } from '@omicronenergy/oscd-ui/select/OscdSelectOption.js';
 import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
 import { OscdPrimaryTab } from '@omicronenergy/oscd-ui/tabs/OscdPrimaryTab.js';
 import { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
@@ -39,7 +42,6 @@ import {
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
 import {
-  removeApplicationVersion,
   renameStencil,
   upsertApplicationVersion
 } from './foundation/stencil-model.js';
@@ -48,22 +50,27 @@ import {
   serializeStencil,
   stencilFileName
 } from './foundation/stencil-io.js';
+import { newStencil } from './foundation/storage.js';
 import {
-  loadStoredStencil,
-  newStencil,
-  storeStencil
-} from './foundation/storage.js';
+  addStencil,
+  loadLibrary,
+  recentFirst,
+  removeStencilEntry,
+  storeLibrary,
+  updateStencilEntry,
+  useStencilEntry
+} from './foundation/library.js';
+import type { Library } from './foundation/library.js';
 import { tagIedEdits } from './foundation/ied-tags.js';
 import type {
+  Application,
   IedRequirement as IED,
   StencilData
 } from './foundation/types.js';
 import { iedSelectItems } from './foundation/ied-items.js';
 import { OscdStencilApply } from './apply/apply-view.js';
-import type {
-  StencilApplyDetail,
-  StencilDeleteDetail
-} from './apply/apply-view.js';
+import { OscdStencilManage } from './manage/manage-view.js';
+import type { StencilApplyDetail } from './apply/apply-view.js';
 import { themeStyles } from './theme.js';
 
  
@@ -89,6 +96,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 ) {
   static scopedElements = {
     'oscd-stencil-apply': OscdStencilApply,
+    'oscd-stencil-manage': OscdStencilManage,
+    'oscd-outlined-select': OscdOutlinedSelect,
+    'oscd-select-option': OscdSelectOption,
     'oscd-action-list': OscdActionList,
     'oscd-checkbox': OscdCheckbox,
     'oscd-dialog': OscdDialog,
@@ -123,6 +133,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   @property() uniqueIeds: string[] = [];
 
   @property() stencilData: StencilData = newStencil();
+
+  /** The stencils that have been imported. */
+  @state() library: Library = [];
+
+  /** The library id of `stencilData`, empty while it is not in the library. */
+  @state() currentId = '';
 
   @property() templateCreationStage: number = 0;
 
@@ -298,16 +314,23 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
   }
 
-  /** Replaces the stencil with a validated one. @returns whether it was valid. */
-  protected useStencil(json: string): boolean {
+  /** Replaces the stencil with a validated one. Tells whether it was valid. */
+  protected useStencil(json: string, replaceCurrent = false): boolean {
     const { stencil, errors } = parseStencil(json);
     if (!stencil) {
       this.notify(errors.join('. '), 'error');
       return false;
     }
 
+    if (replaceCurrent && this.currentId) {
+      this.library = updateStencilEntry(this.library, this.currentId, stencil);
+    } else {
+      const added = addStencil(this.library, stencil, Date.now());
+      this.library = added.library;
+      this.currentId = added.id;
+    }
     this.stencilData = stencil;
-    this.storeSettings();
+    storeLibrary(this.library);
     return true;
   }
 
@@ -336,26 +359,71 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   /**
    * Restore settings from local storage, applying appropriate defaults
-   * if not set or unreadable.
+   * if not set or unreadable. The most recently used stencil is current.
    */
   protected restoreSettings(): void {
-    this.stencilData = loadStoredStencil();
+    this.library = loadLibrary();
+    const [latest] = recentFirst(this.library);
+    this.currentId = latest?.id ?? '';
+    this.stencilData = latest?.stencil ?? newStencil();
   }
 
+  /** Keeps the current stencil in the library. */
   protected storeSettings(): void {
-    storeStencil(this.stencilData);
+    const pristine =
+      !this.currentId &&
+      this.stencilData.applications.length === 0 &&
+      this.stencilData.name === newStencil().name;
+    if (pristine) {
+      return;
+    }
+
+    if (this.currentId) {
+      this.library = updateStencilEntry(
+        this.library,
+        this.currentId,
+        this.stencilData
+      );
+    } else {
+      const added = addStencil(this.library, this.stencilData, Date.now());
+      this.library = added.library;
+      this.currentId = added.id;
+    }
+    storeLibrary(this.library);
+  }
+
+  private selectStencil(id: string): void {
+    const entry = this.library.find(candidate => candidate.id === id);
+    if (!entry) {
+      return;
+    }
+
+    this.library = useStencilEntry(this.library, id, Date.now());
+    this.currentId = id;
+    this.stencilData = entry.stencil;
+    storeLibrary(this.library);
+  }
+
+  private removeStencil(id: string): void {
+    this.library = removeStencilEntry(this.library, id);
+    storeLibrary(this.library);
+    const [latest] = recentFirst(this.library);
+    this.currentId = latest?.id ?? '';
+    this.stencilData = latest?.stencil ?? newStencil();
+    this.notify(msg('Removed from the library'), 'success');
+  }
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+
+    // keep the stencil in local storage
+    if (changedProperties.has('stencilData')) {
+      this.storeSettings();
+    }
   }
 
   protected updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
-
-    // update local storage for stored plugin settings
-    const storageUpdateRequired = Array.from(changedProperties.keys()).some(
-      prop => prop === 'stencilData'
-    );
-    if (storageUpdateRequired) {
-      this.storeSettings();
-    }
 
     // reset application if switching to create tab
     if (Array.from(changedProperties.keys()).includes('tabIndex')) {
@@ -444,18 +512,49 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     this.dispatchEvent(newEditEventV2(edits, { title }));
   }
 
-  private onDeleteVersion(event: CustomEvent<StencilDeleteDetail>): void {
+  private onStencilChange(event: CustomEvent<StencilData>): void {
     event.stopPropagation();
-    this.stencilData = removeApplicationVersion(
-      this.stencilData,
-      event.detail,
-      event.detail.version
-    );
+    this.stencilData = event.detail;
     this.storeSettings();
-    this.notify(
-      `Deleted ${event.detail.name} ${event.detail.version}`,
-      'success'
-    );
+  }
+
+  private onTag(event: CustomEvent<Application | undefined>): void {
+    event.stopPropagation();
+    const tag = event.detail
+      ? Object.values(event.detail.IEDS)[0]?.privates[0]
+      : undefined;
+    this.metadataIedItems = iedSelectItems(this.doc, true);
+    this.iedStencilMetadataUI.show();
+    if (tag) {
+      this.stencilMetadataIdUI.value = tag['OpenSCD-Stencil-Id'];
+      this.stencilMetadataVerUI.value = tag['OpenSCD-Stencil-Version'];
+    }
+  }
+
+  private renderManage(): TemplateResult {
+    return html`<oscd-stencil-manage
+      .stencil=${this.stencilData}
+      .library=${recentFirst(this.library)}
+      .currentId=${this.currentId}
+      @stencil-change=${this.onStencilChange}
+      @stencil-select=${(e: CustomEvent<string>) => {
+        e.stopPropagation();
+        this.selectStencil(e.detail);
+      }}
+      @stencil-remove=${(e: CustomEvent<string>) => {
+        e.stopPropagation();
+        this.removeStencil(e.detail);
+      }}
+      @stencil-import=${(e: Event) => {
+        e.stopPropagation();
+        this.changeStencilUI.click();
+      }}
+      @stencil-export=${(e: Event) => {
+        e.stopPropagation();
+        this.saveStencilAsFile();
+      }}
+      @stencil-tag=${this.onTag}
+    ></oscd-stencil-manage>`;
   }
 
   renderUse(): TemplateResult {
@@ -467,23 +566,34 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           >
         </h1>
         <div id="menuUse">
+          ${this.library.length > 1
+            ? html`<oscd-outlined-select
+                id="recent"
+                label=${msg('Stencil')}
+                .value=${this.currentId}
+                @change=${(e: Event) =>
+                  this.selectStencil((e.target as OscdOutlinedSelect).value)}
+              >
+                ${recentFirst(this.library).map(
+                  entry =>
+                    html`<oscd-select-option
+                      value=${entry.id}
+                      ?selected=${entry.id === this.currentId}
+                      ><div slot="headline">
+                        ${entry.stencil.name} ${entry.stencil.version}
+                      </div></oscd-select-option
+                    >`
+                )}
+              </oscd-outlined-select>`
+            : nothing}
           <oscd-outlined-button
             id="changeStencilBtn"
             class="button"
             @click=${() => {
               this.changeStencilUI.click();
             }}
-            >Open
+            >${msg('Open')}
             <oscd-icon slot="icon">file_open</oscd-icon>
-          </oscd-outlined-button>
-          <oscd-outlined-button
-            id="saveStencilBtn"
-            class="button"
-            @click=${() => {
-              this.saveStencilAsFile();
-            }}
-            >Save
-            <oscd-icon slot="icon">save</oscd-icon>
           </oscd-outlined-button>
         </div>
       </div>
@@ -491,17 +601,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         .doc=${this.doc}
         .stencil=${this.stencilData}
         @stencil-apply=${this.onApply}
-        @stencil-delete-version=${this.onDeleteVersion}
       ></oscd-stencil-apply>
-      <input
-        id="changeStencil"
-        @click=${({ target }: MouseEvent) => {
-          (<HTMLInputElement>target).value = '';
-        }}
-        @change=${this.loadStencil}
-        type="file"
-        accept=".json"
-      />
     `;
   }
 
@@ -992,7 +1092,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         label="Stencil Settings File"
         @change=${(event: Event) => {
           const target = event.target as OscdOutlinedTextField;
-          if (target && this.useStencil(target.value)) {
+          if (target && this.useStencil(target.value, true)) {
             this.notify('Stencil settings updated', 'success');
           }
         }}
@@ -1185,26 +1285,39 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           if (this.tabIndex === 0) {
             this.showSupervisions = true;
             this.allowEditColumns = false;
-          } else if (this.tabIndex === 1) {
+          } else if (this.tabIndex === 2) {
             this.showSupervisions = true;
           }
         }}
       >
         <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon">play_circle</oscd-icon>Apply
+          <oscd-icon slot="icon">play_circle</oscd-icon>${msg('Apply')}
         </oscd-primary-tab>
         <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon">construction</oscd-icon>Create
+          <oscd-icon slot="icon">folder_managed</oscd-icon>${msg('Manage')}
         </oscd-primary-tab>
         <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon">frame_source</oscd-icon>View
+          <oscd-icon slot="icon">construction</oscd-icon>${msg('Create')}
+        </oscd-primary-tab>
+        <oscd-primary-tab inline-icon>
+          <oscd-icon slot="icon">frame_source</oscd-icon>JSON
         </oscd-primary-tab>
       </oscd-tabs>
       <section>
         ${this.tabIndex === 0 ? this.renderUse() : nothing}
-        ${this.tabIndex === 1 ? this.renderCreate() : nothing}
-        ${this.tabIndex === 2 ? this.renderView() : nothing}
+        ${this.tabIndex === 1 ? this.renderManage() : nothing}
+        ${this.tabIndex === 2 ? this.renderCreate() : nothing}
+        ${this.tabIndex === 3 ? this.renderView() : nothing}
       </section>
+      <input
+        id="changeStencil"
+        @click=${({ target }: MouseEvent) => {
+          (<HTMLInputElement>target).value = '';
+        }}
+        @change=${this.loadStencil}
+        type="file"
+        accept=".json"
+      />
       ${this.renderTemplateIedsSelector()}
       <oscd-snackbar id="snackBarMessage"></oscd-snackbar>
       ${this.renderAddStencilMetadata()}`;
