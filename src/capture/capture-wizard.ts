@@ -1,6 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
@@ -219,6 +220,16 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  private go(tab: 'apply' | 'manage'): void {
+    this.dispatchEvent(
+      new CustomEvent('stencil-goto', {
+        detail: tab,
+        bubbles: true,
+        composed: true
+      })
+    );
+  }
+
   private check(blocks: ControlBlockInfo[], event: Event): void {
     this.chosen = setChosen(
       this.chosen,
@@ -234,11 +245,11 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       ${steps.map(
         (step, i) => html`<li
           class="${i === current ? 'current' : i < current || this.step === 'done' ? 'complete' : ''}"
-          aria-current="${i === current ? 'step' : 'false'}"
+          aria-current=${ifDefined(i === current ? 'step' : undefined)}
         >
           <span class="number"
             >${i < current || this.step === 'done'
-              ? html`<oscd-icon>check</oscd-icon>`
+              ? html`<oscd-icon aria-hidden="true">check</oscd-icon>`
               : i + 1}</span
           >
           ${step.label()}
@@ -266,7 +277,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
           id="next"
           ?disabled=${this.selectedIeds.length < 2}
           @click=${() => this.findBlocks()}
-          >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
+          >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -294,7 +305,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     if (this.blocks.length === 0) {
       return html`<div class="card">
         <p id="none" class="reason">
-          <oscd-icon>info</oscd-icon>${msg('None of the chosen IEDs is subscribed to another one, so there is nothing to capture. Go back and choose other IEDs.')}
+          <oscd-icon aria-hidden="true">info</oscd-icon>${msg('None of the chosen IEDs is subscribed to another one, so there is nothing to capture. Go back and choose other IEDs.')}
         </p>
         <div class="actions">
           <oscd-text-button id="back" @click=${() => (this.step = 'ieds')}
@@ -396,7 +407,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
           id="next"
           ?disabled=${this.chosen.size === 0}
           @click=${() => this.toDetails()}
-          >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
+          >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -405,10 +416,12 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
   private detailField(
     id: keyof Details,
     label: string,
-    multiline = false
+    multiline = false,
+    required = false
   ): TemplateResult {
     return html`<oscd-outlined-text-field
       id=${id}
+      ?required=${required}
       label=${label}
       type=${multiline ? 'textarea' : 'text'}
       .value=${this.details[id]}
@@ -427,10 +440,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     return html`<div class="card">
       <h2>${msg('Name the application')}</h2>
       <div class="fields">
-        ${this.detailField('category', msg('Category'))}
-        ${this.detailField('name', msg('Name'))}
+        ${this.detailField('category', msg('Category'), false, true)}
+        ${this.detailField('name', msg('Name'), false, true)}
         ${this.detailField('description', msg('Description'), true)}
-        ${this.detailField('version', msg('Version'))}
+        ${this.detailField('version', msg('Version'), false, true)}
         ${this.detailField('versionDescription', msg('Version description'), true)}
       </div>
 
@@ -455,6 +468,11 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
           ></oscd-outlined-text-field>`
         )}
       </div>
+      ${this.detailsComplete
+        ? nothing
+        : html`<p class="muted" id="details-hint">
+            ${msg('Fill in category, name and version, and give each function a different name, to continue.')}
+          </p>`}
       <div class="actions">
         <oscd-text-button id="back" @click=${() => (this.step = 'blocks')}
           >${msg('Back')}</oscd-text-button
@@ -467,7 +485,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
             this.replace = false;
             this.step = 'review';
           }}
-          >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
+          >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -491,7 +509,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       </p>
       ${untagged.length > 0
         ? html`<p class="reason" id="untagged" role="note">
-            <oscd-icon>info</oscd-icon>
+            <oscd-icon aria-hidden="true">info</oscd-icon>
             <span
               >${msg(str`These IEDs have no stencil tag, so any IED of the same manufacturer and type will match their function: ${untagged.join(', ')}.`)}
               <oscd-text-button id="tag" @click=${() => this.dispatchEvent(new CustomEvent('stencil-tag', { bubbles: true, composed: true }))}
@@ -524,7 +542,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
           id="save"
           ?disabled=${exists && !this.replace}
           @click=${() => this.save()}
-          >${msg('Save to stencil')}<oscd-icon slot="icon">save</oscd-icon></oscd-filled-button
+          >${msg('Save to stencil')}<oscd-icon slot="icon" aria-hidden="true">save</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -538,10 +556,16 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
           str`${this.details.category.trim()} › ${this.details.name.trim()} ${this.saved?.version ?? ''} is in the stencil.`
         )}
       </p>
+      <p class="muted">
+        ${msg(str`It is kept in this browser as part of ${this.stencil.name} ${this.stencil.version}. Export it from Manage to keep a copy.`)}
+      </p>
       <div class="actions">
+        <oscd-text-button id="another" @click=${() => this.reset()}
+          >${msg('Capture another')}</oscd-text-button
+        >
         <span class="spacer"></span>
-        <oscd-filled-button id="another" @click=${() => this.reset()}
-          >${msg('Capture another')}</oscd-filled-button
+        <oscd-filled-button id="manage" @click=${() => this.go('manage')}
+          >${msg('Open in Manage')}<oscd-icon slot="icon" aria-hidden="true">folder_managed</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -564,7 +588,8 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     ...themeStyles,
     css`
       :host {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
+        container-type: inline-size;
         display: block;
         padding: 12px;
       }
@@ -584,11 +609,11 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       }
 
       .muted {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       .hint {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         padding: 24px 8px;
       }
 
@@ -603,18 +628,36 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
       .steps li {
         align-items: center;
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         display: flex;
         gap: 8px;
       }
 
       .steps li.current {
-        color: var(--oscd-primary);
-        font-weight: 500;
+        color: var(--oscd-base03);
+        font-weight: 600;
+      }
+
+      .steps li.current .number {
+        border-color: var(--oscd-primary);
+        border-width: 2px;
+      }
+
+      .steps li.complete .number {
+        background: var(--oscd-primary);
+        border-color: var(--oscd-primary);
+        color: var(--oscd-base03);
+      }
+
+      @container (max-width: 560px) {
+        .steps {
+          flex-direction: column;
+          gap: 8px;
+        }
       }
 
       .steps li.complete {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
       }
 
       .number {
@@ -640,12 +683,17 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       }
 
       .card.wide {
+        overflow-x: auto;
         max-width: 1100px;
       }
 
       oscd-selection-list {
         max-height: 50vh;
         overflow-y: auto;
+      }
+
+      p + .fields {
+        margin-top: 12px;
       }
 
       .fields {
@@ -657,6 +705,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       .actions {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         margin-top: 16px;
       }
@@ -689,7 +738,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
       th,
       td {
-        border: 1px solid var(--oscd-base1);
+        border: 1px solid var(--stencil-border);
         padding: 4px 8px;
         text-align: left;
       }

@@ -103,8 +103,8 @@ describe('oscd-stencil-apply', () => {
       const steps = qa('.steps li');
       expect(steps.map(s => s.getAttribute('aria-current'))).to.deep.equal([
         'step',
-        'false',
-        'false'
+        null,
+        null
       ]);
     });
   });
@@ -193,6 +193,23 @@ describe('oscd-stencil-apply', () => {
       expect(other).to.deep.equal(['', 'SUB1', 'SUB2']);
     });
 
+    it('says why it cannot continue yet', async () => {
+      expect(q('#needs-two')).to.exist;
+      await assign('Publisher', 'PUB2');
+      await assign('Subscriber', 'SUB2');
+      expect(q('#needs-two')).to.not.exist;
+    });
+
+    it('explains what automatic assignment could not decide, until something changes', async () => {
+      await click('#auto');
+      expect(q('#auto-note').textContent).to.contain('Publisher').and.contain('Subscriber');
+      expect(q('#auto-note').textContent).to.not.contain('Relay');
+      expect(el.assignment.get('Relay')).to.equal('SELR');
+
+      await assign('Publisher', 'PUB2');
+      expect(q('#auto-note')).to.not.exist;
+    });
+
     it('needs two functions before it can continue', async () => {
       const next = () => q<HTMLElement & { disabled: boolean }>('#next');
       expect(next().disabled).to.be.true;
@@ -244,6 +261,26 @@ describe('oscd-stencil-apply', () => {
       expect(q('#plan-summary').textContent!.replace(/\s+/g, ' ')).to.contain(
         '3 new subscriptions · 2 new supervisions · 0 SEL quality links · 0 already present'
       );
+    });
+
+    it('names the functions that have no IED and are not applied', () => {
+      expect(q('#unassigned').textContent).to.contain('Relay');
+    });
+
+    it('plans again when the document was edited while reviewing', async () => {
+      el.plan!.edits.forEach((edit: EditV2) => handleEdit(edit));
+      el.docVersion = 2;
+      await el.updateComplete;
+      expect(q('#nothing')).to.exist;
+      expect(q<HTMLElement & { disabled: boolean }>('#apply').disabled).to.be.true;
+    });
+
+    it('applies nothing that was not shown: a changed document shows the new plan instead', async () => {
+      el.plan!.edits.forEach((edit: EditV2) => handleEdit(edit));
+      await click('#apply');
+      expect(applied).to.be.empty;
+      expect(el.step).to.equal('review');
+      expect(q('#nothing')).to.exist;
     });
 
     it('does not change the document before applying', () => {

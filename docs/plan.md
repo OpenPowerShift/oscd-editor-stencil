@@ -332,3 +332,13 @@ Each phase ends with `npm i → tsc --noEmit → build → lint → test` passin
 ## 9. Open questions
 
 None outstanding. Implementation starts with Phase 0 and Phase 1.
+
+## 9. Review round (three independent reviewers)
+
+Three reviewers (workflow, visual design and accessibility, adversarial testing) used the demo and read the code. Fixed:
+
+- **Correctness:** an untagged function stayed matchable after its requirements were edited; names were compared before trimming (a trailing space could merge or duplicate); a created `Inputs` was created once per control block instead of once; capture on hundreds of IEDs was cubic; blocked local storage threw and a failed save was silent; SEL quality links were not idempotent when a stale `srcPrefix` was present; the reviewed plan could go stale (it is now planned again when the document or stencil changes, and Apply only applies what was shown).
+- **Workflow:** a first-run screen with Open and Create; tabs keep their progress when you switch; automatic assignment explains what it left; the reason a button is disabled is written next to it; the review names functions that have no IED; "Show deprecated" only appears when something is deprecated; the capture result says where the application is kept and goes to Manage; clearer button names; the delete confirmation is red.
+- **Visual:** text, muted text, GOOSE/SV colours, delete text and table borders now meet WCAG AA in the light and dark demos (`--stencil-text`, `--stencil-border`, `--stencil-danger` are mixed from the palette); the current step is marked without relying on the primary colour; narrow panels stack steps, function rows and grids; decorative icons are hidden from screen readers and non-current steps no longer say `aria-current="false"`.
+
+Not done, left for a decision: merging JSON into Manage as an "Advanced" section and renaming Create, the doubled keyboard stop on each application row (it comes from oscd-ui's selection list), a visible selected state in that list, a 48 px touch target on coarse pointers, `validateStencil` referential checks (control blocks pointing at missing functions, duplicate applications), and translating the planner's diagnostics.

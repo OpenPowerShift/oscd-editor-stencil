@@ -330,14 +330,6 @@
   <source>This cannot be applied yet:</source>
   <target>Isto ainda não pode ser aplicado:</target>
 </trans-unit>
-<trans-unit id="sd89a2e529b31ef43">
-  <source>Revert</source>
-  <target>Reverter</target>
-</trans-unit>
-<trans-unit id="s7181a5504472e856">
-  <source>Apply changes</source>
-  <target>Aplicar alterações</target>
-</trans-unit>
 <trans-unit id="s8bfc48019cc626f3">
   <source>Stencil</source>
   <target>Stencil</target>
@@ -457,10 +449,6 @@
 <trans-unit id="sa885fa2c58bcbbbd">
   <source>Removed from the library</source>
   <target>Removido da biblioteca</target>
-</trans-unit>
-<trans-unit id="s1f7698c061c208c9">
-  <source>Open</source>
-  <target>Abrir</target>
 </trans-unit>
 <trans-unit id="s4ffd52dde21767ae">
   <source>Saved <x id="0" equiv-text="${category}"/> › <x id="1" equiv-text="${name} ${version}"/> to the stencil</source>
@@ -589,6 +577,58 @@
 <trans-unit id="sa66a897b245e91f9">
   <source>Add Metadata</source>
   <target>Adicionar metadados</target>
+</trans-unit>
+<trans-unit id="s124cf9976bd465f6">
+  <source>More than one IED fits <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Choose those yourself.</source>
+  <target>Mais do que um IED serve para <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Escolha-os você mesmo.</target>
+</trans-unit>
+<trans-unit id="sd5861151d2ad7981">
+  <source>Assign at least two functions to continue.</source>
+  <target>Atribua pelo menos duas funções para continuar.</target>
+</trans-unit>
+<trans-unit id="sf9a09f84e8c9b101">
+  <source>These functions have no IED, so their control blocks are not applied: <x id="0" equiv-text="${this.unassigned().join(', ')}"/>.</source>
+  <target>Estas funções não têm IED, por isso os seus blocos de controlo não são aplicados: <x id="0" equiv-text="${this.unassigned().join(', ')}"/>.</target>
+</trans-unit>
+<trans-unit id="s6715ac3aa97f67c3">
+  <source>Fill in category, name and version, and give each function a different name, to continue.</source>
+  <target>Preencha a categoria, o nome e a versão e dê um nome diferente a cada função para continuar.</target>
+</trans-unit>
+<trans-unit id="se3008e48a6df6b15">
+  <source>It is kept in this browser as part of <x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/>. Export it from Manage to keep a copy.</source>
+  <target>Fica guardada neste navegador como parte de <x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/>. Exporte-a em «Gerir» para manter uma cópia.</target>
+</trans-unit>
+<trans-unit id="s432d0d324919781f">
+  <source>Open in Manage</source>
+  <target>Abrir em «Gerir»</target>
+</trans-unit>
+<trans-unit id="sdbba25abbd42a114">
+  <source>Discard edits</source>
+  <target>Descartar edições</target>
+</trans-unit>
+<trans-unit id="s0135e8439e9d641f">
+  <source>The stencils could not be kept in this browser. Export them to keep a copy.</source>
+  <target>Não foi possível guardar os stencils neste navegador. Exporte-os para manter uma cópia.</target>
+</trans-unit>
+<trans-unit id="s8af4dec6545d20dc">
+  <source>Apply a stencil</source>
+  <target>Aplicar um stencil</target>
+</trans-unit>
+<trans-unit id="s552dcb80f46b455f">
+  <source>A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not opened one yet.</source>
+  <target>Um stencil configura numa só operação as subscrições GOOSE e de valores amostrados de um grupo de IEDs. Ainda não abriu nenhum.</target>
+</trans-unit>
+<trans-unit id="s211257771a9b9674">
+  <source>Open a stencil file</source>
+  <target>Abrir um ficheiro de stencil</target>
+</trans-unit>
+<trans-unit id="sc706dc55369b5ae2">
+  <source>Create one from this document</source>
+  <target>Criar um a partir deste documento</target>
+</trans-unit>
+<trans-unit id="s193307634d5471ed">
+  <source>Open stencil…</source>
+  <target>Abrir stencil…</target>
 </trans-unit>
 </body>
 </file>

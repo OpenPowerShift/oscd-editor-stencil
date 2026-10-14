@@ -1,6 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
@@ -92,6 +93,12 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
   @property({ attribute: false }) stencil!: StencilData;
 
+  /** Changes whenever the document is edited, so a reviewed plan can be checked again. */
+  @property({ attribute: false }) docVersion?: unknown;
+
+  /** Why automatic assignment left functions unassigned. */
+  @state() autoNote = '';
+
   @state() step: Step = 'choose';
 
   @state() showDeprecated = false;
@@ -114,6 +121,16 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     if (changed.has('stencil') && this.application) {
       this.keepSelectionIn(this.stencil);
     }
+    // what was reviewed must still be what will be applied
+    if (
+      this.step === 'review' &&
+      this.version &&
+      (changed.has('docVersion') || changed.has('stencil') || changed.has('doc'))
+    ) {
+      this.plan = this.doc
+        ? planApply(this.doc, this.version, this.assignment)
+        : null;
+    }
   }
 
   /** Returns to the first step, forgetting the application and assignment. */
@@ -124,6 +141,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.assignment = new Map();
     this.plan = null;
     this.applied = null;
+    this.autoNote = '';
   }
 
   /** Follows the selected application into a new stencil, or resets. */
@@ -164,6 +182,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   }
 
   private assign(fn: string, iedName: string): void {
+    this.autoNote = '';
     const next = new Map(this.assignment);
     if (iedName) {
       next.set(fn, iedName);
@@ -181,17 +200,48 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.step = 'review';
   }
 
+  /** Assigns every function that has one candidate and explains the rest. */
+  private autoAssignFunctions(): void {
+    const version = this.version!;
+    this.assignment = autoAssign(this.doc!, version, this.assignment);
+
+    const taken = new Set(this.assignment.values());
+    const ambiguous = functionNames(version).filter(
+      name =>
+        !this.assignment.has(name) &&
+        candidateIeds(this.doc!, version.IEDS[name], taken).length > 1
+    );
+    this.autoNote =
+      ambiguous.length > 0
+        ? msg(
+          str`More than one IED fits ${ambiguous.join(', ')}. Choose those yourself.`
+        )
+        : '';
+  }
+
   private apply(): void {
-    if (!this.plan || !this.application || !this.version) {
+    if (!this.plan || !this.application || !this.version || !this.doc) {
+      return;
+    }
+
+    // the document may have changed since the review: plan again, and only
+    // apply what was shown
+    const fresh = planApply(this.doc, this.version, this.assignment);
+    if (
+      fresh.edits.length !== this.plan.edits.length ||
+      fresh.subscriptions !== this.plan.subscriptions ||
+      fresh.supervisions !== this.plan.supervisions
+    ) {
+      this.plan = fresh;
       return;
     }
 
     const detail: StencilApplyDetail = {
-      edits: this.plan.edits,
+      edits: fresh.edits,
       title: `Apply stencil ${this.application.name} ${this.version.version}`,
-      plan: this.plan
+      plan: fresh
     };
-    this.applied = this.plan;
+    this.applied = fresh;
     this.step = 'done';
     this.dispatchEvent(
       new CustomEvent<StencilApplyDetail>('stencil-apply', {
@@ -266,11 +316,11 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       ${steps.map(
         (step, i) => html`<li
           class="${i === current ? 'current' : i < current || this.step === 'done' ? 'complete' : ''}"
-          aria-current="${i === current ? 'step' : 'false'}"
+          aria-current=${ifDefined(i === current ? 'step' : undefined)}
         >
           <span class="number"
             >${i < current || this.step === 'done'
-              ? html`<oscd-icon>check</oscd-icon>`
+              ? html`<oscd-icon aria-hidden="true">check</oscd-icon>`
               : i + 1}</span
           >
           ${step.label()}
@@ -376,7 +426,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       <ul class="needs">
         ${functionNames(version).map(
           name => html`<li>
-            <oscd-icon>developer_board</oscd-icon>
+            <oscd-icon aria-hidden="true">developer_board</oscd-icon>
             <span><strong>${name}</strong> ${describeRequirement(version.IEDS[name])}</span>
           </li>`
         )}
@@ -385,7 +435,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       <div class="actions">
         <span class="spacer"></span>
         <oscd-filled-button id="next" @click=${() => (this.step = 'assign')}
-          >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
+          >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -400,15 +450,17 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
     return html`<div class="choose">
       <section aria-label="${msg('Applications')}">
-        <label class="switch"
-          ><oscd-switch
-            id="show-deprecated"
-            touch-target="wrapper"
-            ?selected=${this.showDeprecated}
-            @change=${() => this.toggleDeprecated()}
-          ></oscd-switch
-          >${msg('Show deprecated')}</label
-        >
+        ${this.stencil.applications.some(app => app.versions.some(v => v.deprecated))
+          ? html`<label class="switch"
+              ><oscd-switch
+                id="show-deprecated"
+                touch-target="wrapper"
+                ?selected=${this.showDeprecated}
+                @change=${() => this.toggleDeprecated()}
+              ></oscd-switch
+              >${msg('Show deprecated')}</label
+            >`
+          : nothing}
         ${this.renderApplicationList()}
       </section>
       <section aria-label="${msg('Details')}">${this.renderVersionDetails()}</section>
@@ -428,14 +480,14 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
     return html`<li class="function" data-function="${name}">
       <div class="who">
-        <oscd-icon>developer_board</oscd-icon>
+        <oscd-icon aria-hidden="true">developer_board</oscd-icon>
         <div>
           <strong>${name}</strong>
           <div class="muted">${describeRequirement(requirement)}</div>
         </div>
       </div>
       ${reason !== null
-        ? html`<p class="reason" role="note"><oscd-icon>info</oscd-icon>${reason}</p>`
+        ? html`<p class="reason" role="note"><oscd-icon aria-hidden="true">info</oscd-icon>${reason}</p>`
         : html`<oscd-outlined-select
             label="${msg('IED')}"
             @change=${(event: Event) =>
@@ -468,8 +520,13 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         ${functionNames(version).map(name => this.renderFunction(version, name))}
       </ul>
       <p class="muted" id="assigned">
-        ${msg(str`${assigned} of ${Object.keys(version.IEDS).length} functions assigned`)}
+        ${msg(str`${assigned} of ${Object.keys(version.IEDS).length} functions assigned`)}${assigned < 2
+          ? html` · <span id="needs-two">${msg('Assign at least two functions to continue.')}</span>`
+          : nothing}
       </p>
+      ${this.autoNote
+        ? html`<p class="reason" id="auto-note" role="status"><oscd-icon aria-hidden="true">info</oscd-icon>${this.autoNote}</p>`
+        : nothing}
       <div class="actions">
         <oscd-text-button id="back" @click=${() => (this.step = 'choose')}
           >${msg('Back')}</oscd-text-button
@@ -478,28 +535,37 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         <oscd-outlined-button
           id="clear"
           ?disabled=${assigned === 0}
-          @click=${() => (this.assignment = new Map())}
+          @click=${() => {
+            this.assignment = new Map();
+            this.autoNote = '';
+          }}
           >${msg('Clear')}</oscd-outlined-button
         >
         <oscd-outlined-button
           id="auto"
-          @click=${() => (this.assignment = autoAssign(this.doc!, version, this.assignment))}
-          ><oscd-icon slot="icon">auto_fix_high</oscd-icon>${msg('Assign automatically')}</oscd-outlined-button
+          @click=${() => this.autoAssignFunctions()}
+          ><oscd-icon slot="icon" aria-hidden="true">auto_fix_high</oscd-icon>${msg('Assign automatically')}</oscd-outlined-button
         >
         <oscd-filled-button
           id="next"
           ?disabled=${assigned < 2}
           @click=${() => this.goToReview()}
-          >${msg('Next')}<oscd-icon slot="icon">arrow_forward</oscd-icon></oscd-filled-button
+          >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
   }
 
+  private unassigned(): string[] {
+    return this.version
+      ? functionNames(this.version).filter(name => !this.assignment.has(name))
+      : [];
+  }
+
   private renderStatus(status: PartStatus, count?: number): TemplateResult {
     const label = statusText[status]();
     return html`<span class="status ${status}"
-      >${status === 'present' ? html`<oscd-icon>check</oscd-icon>` : nothing}${count !== undefined
+      >${status === 'present' ? html`<oscd-icon aria-hidden="true">check</oscd-icon>` : nothing}${count !== undefined
         ? `${count} `
         : ''}${label}</span
     >`;
@@ -555,6 +621,11 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         </tbody>
       </table>
 
+      ${this.unassigned().length > 0
+        ? html`<p class="reason" id="unassigned" role="note"><oscd-icon aria-hidden="true">info</oscd-icon>${msg(
+          str`These functions have no IED, so their control blocks are not applied: ${this.unassigned().join(', ')}.`
+        )}</p>`
+        : nothing}
       ${plan.errors.length > 0
         ? html`<div class="problems" role="alert" id="problems">
             <strong>${msg('These could not be found and will be skipped:')}</strong>
@@ -574,7 +645,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           id="apply"
           ?disabled=${nothingToDo}
           @click=${() => this.apply()}
-          >${msg('Apply')}<oscd-icon slot="icon">draw_collage</oscd-icon></oscd-filled-button
+          >${msg('Apply')}<oscd-icon slot="icon" aria-hidden="true">draw_collage</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -592,7 +663,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       </p>
       <p class="muted">${msg('This is one change. Use undo in the menu bar to revert it.')}</p>
       ${plan.errors.length > 0
-        ? html`<p class="reason" role="note"><oscd-icon>info</oscd-icon>${msg(str`${plan.errors.length} items could not be found and were skipped.`)}</p>`
+        ? html`<p class="reason" role="note"><oscd-icon aria-hidden="true">info</oscd-icon>${msg(str`${plan.errors.length} items could not be found and were skipped.`)}</p>`
         : nothing}
       <div class="actions">
         <span class="spacer"></span>
@@ -627,7 +698,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       :host {
         container-type: inline-size;
         display: block;
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
         padding: 12px;
       }
 
@@ -642,11 +713,11 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       }
 
       .muted {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       .hint {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         padding: 24px 8px;
       }
 
@@ -660,18 +731,36 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
       .steps li {
         align-items: center;
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         display: flex;
         gap: 8px;
       }
 
       .steps li.current {
-        color: var(--oscd-primary);
-        font-weight: 500;
+        color: var(--oscd-base03);
+        font-weight: 600;
+      }
+
+      .steps li.current .number {
+        border-color: var(--oscd-primary);
+        border-width: 2px;
+      }
+
+      .steps li.complete .number {
+        background: var(--oscd-primary);
+        border-color: var(--oscd-primary);
+        color: var(--oscd-base03);
+      }
+
+      @container (max-width: 560px) {
+        .steps {
+          flex-direction: column;
+          gap: 8px;
+        }
       }
 
       .steps li.complete {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
       }
 
       .number {
@@ -719,6 +808,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       }
 
       .card.wide {
+        overflow-x: auto;
         max-width: 960px;
       }
 
@@ -765,6 +855,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       .actions {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         justify-content: flex-end;
         margin-top: 16px;
@@ -775,7 +866,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       }
 
       .danger {
-        --md-text-button-label-text-color: var(--oscd-error);
+        --md-text-button-label-text-color: var(--stencil-danger);
         margin-right: auto;
       }
 
@@ -794,7 +885,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
       th,
       td {
-        border-bottom: 1px solid var(--oscd-base1);
+        border-bottom: 1px solid var(--stencil-border);
         padding: 6px 8px;
         text-align: left;
       }
@@ -807,16 +898,16 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       }
 
       .status.new {
-        color: var(--oscd-primary);
-        font-weight: 500;
+        color: var(--oscd-base03);
+        font-weight: 600;
       }
 
       .status.error {
-        color: var(--oscd-error);
+        color: var(--stencil-danger);
       }
 
       .status.none {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       oscd-icon.goose {
@@ -831,6 +922,12 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         border-left: 4px solid var(--oscd-error);
         margin: 12px 0;
         padding: 4px 12px;
+      }
+
+      @container (max-width: 640px) {
+        .function {
+          grid-template-columns: minmax(0, 1fr);
+        }
       }
     `
   ];

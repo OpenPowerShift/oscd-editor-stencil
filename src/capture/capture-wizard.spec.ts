@@ -172,6 +172,13 @@ describe('oscd-stencil-capture', () => {
       expect(q<HTMLButtonElement>('#next').disabled).to.be.false;
     });
 
+    it('says what is missing while it cannot continue', async () => {
+      expect(q('#details-hint')).to.exist;
+      await fillDetails();
+      expect(q('#details-hint')).to.not.exist;
+      expect(q<OscdOutlinedTextField>('#category').required).to.be.true;
+    });
+
     it('refuses empty or repeated function names, explaining which', async () => {
       await fillDetails();
       await type('[data-ied="SUB1"]', 'PUB1');
@@ -230,6 +237,11 @@ describe('oscd-stencil-capture', () => {
       expect(Object.keys(next.applications[0].versions[0].IEDS)).to.deep.equal(['Publisher', 'SUB1']);
       expect(stencil.applications).to.be.empty;
       expect(q('#done')).to.exist;
+
+      let went = '';
+      el.addEventListener('stencil-goto', e => (went = (e as CustomEvent<string>).detail));
+      await click('#manage');
+      expect(went).to.equal('manage');
 
       await click('#another');
       expect(q('#ieds')).to.exist;

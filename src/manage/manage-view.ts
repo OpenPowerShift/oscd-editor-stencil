@@ -206,10 +206,10 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           )}
         </oscd-outlined-select>
         <oscd-outlined-button id="import" @click=${() => this.emit('stencil-import')}
-          >${msg('Import')}<oscd-icon slot="icon">file_open</oscd-icon></oscd-outlined-button
+          >${msg('Import')}<oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon></oscd-outlined-button
         >
         <oscd-outlined-button id="export" @click=${() => this.emit('stencil-export')}
-          >${msg('Export')}<oscd-icon slot="icon">download</oscd-icon></oscd-outlined-button
+          >${msg('Export')}<oscd-icon slot="icon" aria-hidden="true">download</oscd-icon></oscd-outlined-button
         >
         <oscd-text-button
           id="remove-stencil"
@@ -388,7 +388,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         >
         <span class="spacer"></span>
         <oscd-outlined-button id="tag" @click=${() => this.emit('stencil-tag', version)}
-          >${msg('Tag IEDs in this document…')}<oscd-icon slot="icon">sell</oscd-icon></oscd-outlined-button
+          >${msg('Tag IEDs in this document…')}<oscd-icon slot="icon" aria-hidden="true">sell</oscd-icon></oscd-outlined-button
         >
       </div>
     </div>
@@ -451,6 +451,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         >
         <oscd-filled-button
           id="confirm-ok"
+          class="danger-filled"
           @click=${() => {
             confirmation?.run();
             this.confirming = null;
@@ -488,7 +489,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
                 }) =>
                   html`<oscd-tree-item ?selected=${selected}>
                     ${node.icon
-                      ? html`<oscd-icon slot="start">${node.icon}</oscd-icon>`
+                      ? html`<oscd-icon slot="start" aria-hidden="true">${node.icon}</oscd-icon>`
                       : nothing}
                     <span slot="headline">${node.label}</span>
                   </oscd-tree-item>`}
@@ -519,7 +520,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     ...themeStyles,
     css`
       :host {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
         container-type: inline-size;
         display: block;
         padding: 12px;
@@ -587,6 +588,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         }
       }
 
+      @container (max-width: 520px) {
+        .requirement {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
       .fields {
         display: grid;
         gap: 12px;
@@ -607,12 +614,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
       .muted,
       .hint {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       .actions {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         margin-top: 16px;
       }
@@ -622,7 +630,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       }
 
       .danger {
-        --md-text-button-label-text-color: var(--oscd-error);
+        --md-text-button-label-text-color: var(--stencil-danger);
+      }
+
+      .danger-filled {
+        --md-filled-button-container-color: var(--stencil-danger);
+        --md-filled-button-label-text-color: var(--oscd-base3);
+        --md-filled-button-icon-color: var(--oscd-base3);
       }
 
       #remove-stencil {

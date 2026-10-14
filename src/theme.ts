@@ -45,13 +45,30 @@ export const themeStyles = [
       --md-sys-shape-corner-large: calc(2 * var(--oscd-shape));
       --md-icon-font: var(--oscd-icon-font);
 
+      /* the palette colours darkened (base03 is the strongest text colour in
+         any palette) so that icons and text made with them can be read */
       --stencil-goose-color: var(
         --oscd-editor-stencil-goose-color,
-        var(--oscd-primary)
+        color-mix(in srgb, var(--oscd-primary) 55%, var(--oscd-base03))
       );
       --stencil-sv-color: var(
         --oscd-editor-stencil-sv-color,
-        var(--oscd-secondary)
+        color-mix(in srgb, var(--oscd-secondary) 75%, var(--oscd-base03))
+      );
+      --stencil-danger: color-mix(
+        in srgb,
+        var(--oscd-error) 55%,
+        var(--oscd-base03)
+      );
+      --stencil-text: color-mix(
+        in srgb,
+        var(--oscd-base01) 70%,
+        var(--oscd-base03)
+      );
+      --stencil-border: color-mix(
+        in srgb,
+        var(--oscd-base0) 80%,
+        var(--oscd-base03)
       );
 
       font-family: var(--oscd-text-font), sans-serif;

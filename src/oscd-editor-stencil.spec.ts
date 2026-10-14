@@ -27,9 +27,27 @@ describe('oscd-editor-stencil', () => {
   it('renders the stencil header once a document is loaded', async () => {
     plugin.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
     plugin.docVersion = 1;
+    plugin.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
     await plugin.updateComplete;
 
     expect(plugin.shadowRoot?.querySelector('#stencilName')).to.exist;
+  });
+
+  it('starts with a way to open or create a stencil when there is none', async () => {
+    expect(plugin.shadowRoot?.querySelector('#first-run')).to.exist;
+    expect(plugin.shadowRoot?.querySelector('#stencilName')).to.not.exist;
+    expect((plugin.shadowRoot!.querySelector('#first-create') as HTMLButtonElement).disabled).to.be.true;
+
+    let opened = 0;
+    (plugin.shadowRoot!.querySelector('#changeStencil') as HTMLInputElement).click = () => (opened += 1);
+    (plugin.shadowRoot!.querySelector('#first-open') as HTMLElement).click();
+    expect(opened).to.equal(1);
+
+    plugin.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+    await plugin.updateComplete;
+    (plugin.shadowRoot!.querySelector('#first-create') as HTMLElement).click();
+    await plugin.updateComplete;
+    expect(plugin.tabIndex).to.equal(2);
   });
 
   it('accepts docVersion and does not expose the legacy editCount', () => {
@@ -69,6 +87,8 @@ describe('oscd-editor-stencil UI', () => {
     plugin = await fixture(
       html`<oscd-editor-stencil .doc=${doc}></oscd-editor-stencil>`
     );
+    plugin.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
+    await plugin.updateComplete;
     edits = [];
     plugin.addEventListener('oscd-edit-v2', event =>
       edits.push(event as CustomEvent)
@@ -99,6 +119,28 @@ describe('oscd-editor-stencil UI', () => {
 
     await showTab(3);
     expect(plugin.shadowRoot!.querySelector('oscd-stencil-json')).to.exist;
+  });
+
+  it('keeps the progress of a tab when another tab is shown and then this one again', async () => {
+    const before = plugin.shadowRoot!.querySelector('oscd-stencil-apply') as HTMLElement & {
+      application: unknown;
+    };
+    (before as unknown as { application: unknown }).application = plugin.stencilData.applications[0];
+
+    await showTab(1);
+    expect(plugin.shadowRoot!.querySelector('.view[hidden] oscd-stencil-apply')).to.equal(before);
+    await showTab(0);
+
+    const after = plugin.shadowRoot!.querySelector('oscd-stencil-apply') as HTMLElement & {
+      application: unknown;
+    };
+    expect(after).to.equal(before);
+    expect(after.application).to.equal(plugin.stencilData.applications[0]);
+  });
+
+  it('opens a tab only when it is first shown, so the JSON editor is not loaded for nothing', () => {
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-json')).to.not.exist;
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.not.exist;
   });
 
   describe('adding stencil metadata to IEDs', () => {
@@ -181,6 +223,8 @@ describe('oscd-editor-stencil UI', () => {
       const bare = await fixture<OscdEditorStencil>(
         html`<oscd-editor-stencil></oscd-editor-stencil>`
       );
+      bare.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
+      await bare.updateComplete;
       const view = bare.shadowRoot!.querySelector('oscd-stencil-apply')!;
       expect(view.shadowRoot!.textContent).to.contain('Please open a file');
       bare.remove();
@@ -393,6 +437,18 @@ describe('oscd-editor-stencil UI', () => {
 
       expect(plugin.stencilData).to.equal(stencil);
       expect(plugin.library).to.have.lengthOf(1);
+    });
+
+    it('goes to Manage when the wizard asks', async () => {
+      await showTab(2);
+      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+        new CustomEvent('stencil-goto', { detail: 'manage', bubbles: true, composed: true })
+      );
+      expect(plugin.tabIndex).to.equal(1);
+      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+        new CustomEvent('stencil-goto', { detail: 'apply', bubbles: true, composed: true })
+      );
+      expect(plugin.tabIndex).to.equal(0);
     });
 
     it('opens the tagging dialog when the wizard asks', async () => {

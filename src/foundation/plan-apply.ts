@@ -300,7 +300,7 @@ export function planApply(
         if (!supervision) {
           item.supervision = 'error';
           plan.errors.push(
-            `Could not instantiate supervision: ${newSupervisionId}`
+            `Could not instantiate supervision ${newSupervisionId}: ${newToIed} may have no free ${cb.type === 'GSEControl' ? 'LGOS' : 'LSVS'} instance`
           );
           return;
         }

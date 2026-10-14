@@ -152,13 +152,13 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
           id="revert"
           ?disabled=${!this.changed}
           @click=${() => this.revert()}
-          >${msg('Revert')}</oscd-text-button
+          >${msg('Discard edits')}</oscd-text-button
         >
         <oscd-filled-button
           id="apply"
           ?disabled=${!valid || !this.changed}
           @click=${() => this.apply()}
-          >${msg('Apply changes')}<oscd-icon slot="icon">check</oscd-icon></oscd-filled-button
+          >${msg('Save to stencil')}<oscd-icon slot="icon" aria-hidden="true">check</oscd-icon></oscd-filled-button
         >
       </div>`;
   }
@@ -167,18 +167,18 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
     ...themeStyles,
     css`
       :host {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
         display: block;
         padding: 12px;
       }
 
       .editor {
-        border: 1px solid var(--oscd-base1);
+        border: 1px solid var(--stencil-border);
         height: 60vh;
       }
 
       .muted {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         padding: 12px;
       }
 

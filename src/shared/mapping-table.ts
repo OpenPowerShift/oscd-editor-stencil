@@ -145,12 +145,12 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
     ...themeStyles,
     css`
       :host {
-        color: var(--oscd-base00);
+        color: var(--stencil-text);
         display: block;
       }
 
       .empty {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       .switch {
@@ -179,8 +179,8 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
 
       th,
       td {
-        border-bottom: 1px solid var(--oscd-base1);
-        border-right: 1px solid var(--oscd-base1);
+        border-bottom: 1px solid var(--stencil-border);
+        border-right: 1px solid var(--stencil-border);
         padding: 4px 8px;
         text-align: left;
         vertical-align: top;
@@ -214,7 +214,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       }
 
       .ied {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         display: block;
         font-weight: 400;
       }
@@ -242,28 +242,29 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       }
 
       .supervision {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
         display: block;
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
       }
 
       .marker {
         display: block;
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
         font-weight: 500;
       }
 
       .marker.new {
-        color: var(--oscd-primary);
+        color: var(--oscd-base03);
+        font-weight: 600;
       }
 
       .marker.error {
-        color: var(--oscd-error);
+        color: var(--stencil-danger);
       }
 
       .marker.present,
       .marker.skipped {
-        color: var(--oscd-base0);
+        color: var(--stencil-text);
       }
 
       .marker.skipped {
