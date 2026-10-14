@@ -180,7 +180,8 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
         margin-bottom: 8px;
       }
 
-      /* scrollbars only appear when the table is larger than the room it has */
+      /* the columns are only as wide as their content, and a scrollbar only
+         appears when the table is wider than the room it has */
       .scroll {
         max-height: 60vh;
         overflow: auto;
@@ -189,7 +190,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       table {
         border-collapse: separate;
         border-spacing: 0;
-        width: 100%;
+        width: max-content;
       }
 
       caption {
@@ -253,7 +254,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       }
 
       td.mapped {
-        min-width: 96px;
+        min-width: 5.5rem;
       }
 
       .service {
