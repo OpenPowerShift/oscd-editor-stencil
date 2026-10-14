@@ -92,15 +92,16 @@ function fromStored(value: unknown): LibraryEntry[] {
  * included when there is no library yet, so existing users keep it.
  */
 export function loadLibrary(
-  storage: Pick<Storage, 'getItem'> = localStorage,
+  storage?: Pick<Storage, 'getItem'>,
   newId: () => string = () => crypto.randomUUID()
 ): Library {
   try {
-    const stored = storage.getItem(LIBRARY_KEY);
+    const store = storage ?? localStorage;
+    const stored = store.getItem(LIBRARY_KEY);
     if (stored) {
       return fromStored(JSON.parse(stored));
     }
-    const legacy = storage.getItem(STORAGE_KEY);
+    const legacy = store.getItem(STORAGE_KEY);
     const { stencil } = legacy ? parseStencil(legacy) : { stencil: undefined };
     return stencil ? [{ id: newId(), stencil, lastUsed: Date.now() }] : [];
   } catch {
@@ -111,7 +112,7 @@ export function loadLibrary(
 /** Keeps the library. Tells whether it could be stored. */
 export function storeLibrary(
   library: Library,
-  storage: Pick<Storage, 'setItem'> = localStorage
+  storage?: Pick<Storage, 'setItem'>
 ): boolean {
   try {
     const stored: Stored = {
@@ -122,7 +123,7 @@ export function storeLibrary(
         stencil: JSON.parse(serializeStencil(entry.stencil))
       }))
     };
-    storage.setItem(LIBRARY_KEY, JSON.stringify(stored));
+    (storage ?? localStorage).setItem(LIBRARY_KEY, JSON.stringify(stored));
     return true;
   } catch {
     return false;

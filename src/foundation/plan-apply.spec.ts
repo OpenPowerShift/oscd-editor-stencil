@@ -150,8 +150,13 @@ describe('planApply', () => {
         ['SUBF', 'SUB2']
       ]);
       const first = planApply(doc, application, functions);
-      // apply only the first subscription of the first control block
-      handleEdit(first.edits[0]);
+      // apply only the first subscription
+      const subscription = first.edits.find((edit) => {
+        const target = (edit as { element?: Element; node?: Node }).element
+          ?? (edit as { node?: Node }).node;
+        return (target as Element | undefined)?.tagName === 'ExtRef';
+      })!;
+      handleEdit(subscription);
 
       const next = planApply(doc, application, functions);
       expect(next.present).to.equal(1);
@@ -402,6 +407,8 @@ describe('planApply', () => {
       plan.edits.forEach(edit => handleEdit(edit));
 
       expect(copy.querySelectorAll('LN0 > Inputs > ExtRef')).to.have.lengthOf(2);
+      // two control blocks use the same logical node: its Inputs is created once
+      expect(copy.querySelectorAll('LN0 > Inputs')).to.have.lengthOf(1);
     });
 
     it('leaves the ExtRefs that are already there alone', () => {

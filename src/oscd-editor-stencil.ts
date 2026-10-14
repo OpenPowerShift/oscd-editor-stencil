@@ -115,7 +115,24 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   /** Shows a message in the snackbar. */
   notify(message: string, variant: SnackbarVariant = 'info'): void {
-    this.snackBarMessageUI.show({ message, variant });
+    this.snackBarMessageUI?.show({ message, variant });
+  }
+
+  private warnedAboutStorage = false;
+
+  /** Keeps the library, and says once if the browser does not let it. */
+  private persist(): void {
+    if (
+      !storeLibrary(this.library) &&
+      !this.warnedAboutStorage &&
+      this.snackBarMessageUI
+    ) {
+      this.warnedAboutStorage = true;
+      this.notify(
+        msg('The stencils could not be kept in this browser. Export them to keep a copy.'),
+        'error'
+      );
+    }
   }
 
   saveStencilAsFile(): void {
@@ -154,7 +171,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       this.currentId = added.id;
     }
     this.stencilData = stencil;
-    storeLibrary(this.library);
+    this.persist();
     return true;
   }
 
@@ -205,7 +222,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       this.library = added.library;
       this.currentId = added.id;
     }
-    storeLibrary(this.library);
+    this.persist();
   }
 
   private selectStencil(id: string): void {
@@ -217,12 +234,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     this.library = useStencilEntry(this.library, id, Date.now());
     this.currentId = id;
     this.stencilData = entry.stencil;
-    storeLibrary(this.library);
+    this.persist();
   }
 
   private removeStencil(id: string): void {
     this.library = removeStencilEntry(this.library, id);
-    storeLibrary(this.library);
+    this.persist();
     const [latest] = recentFirst(this.library);
     this.currentId = latest?.id ?? '';
     this.stencilData = latest?.stencil ?? newStencil();

@@ -123,6 +123,8 @@ export function planApply(
     present: 0
   };
   const usedSupervisionLns = new Set<Element>();
+  // one call for everything, so an `Inputs` that has to be created is created once
+  const allConnections: Connection[] = [];
 
   [...combinations([...functionToIed.keys()], 2)].forEach(
     ([fn1, fn2]: string[]) => {
@@ -234,9 +236,9 @@ export function planApply(
                 iedName: newFromIed,
                 srcCBName: newCb.getAttribute('name'),
                 srcLDInst: newCb.closest('LDevice')?.getAttribute('inst'),
-                ...(srcPrefix && { srcPrefix }),
+                srcPrefix: srcPrefix || null,
                 srcLNClass: logicalNode?.getAttribute('lnClass'),
-                ...(srcLNInst && { srcLNInst })
+                srcLNInst: srcLNInst || null
               }
             };
           }
@@ -251,14 +253,10 @@ export function planApply(
           plan.present += 1;
         }
 
-        plan.edits.push(
-          ...(selSupervision ? [selSupervision] : []),
-          ...subscribe(connections, {
-            force: true,
-            ignoreSupervision: true,
-            checkOnlyBType: true
-          })
-        );
+        allConnections.push(...connections);
+        if (selSupervision) {
+          plan.edits.push(selSupervision);
+        }
 
         if (cb.supervision === 'None') {
           return;
@@ -312,6 +310,14 @@ export function planApply(
         plan.edits.push(supervision);
       });
     }
+  );
+
+  plan.edits.push(
+    ...subscribe(allConnections, {
+      force: true,
+      ignoreSupervision: true,
+      checkOnlyBType: true
+    })
   );
 
   return plan;

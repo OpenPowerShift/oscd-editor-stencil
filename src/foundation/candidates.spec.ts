@@ -44,6 +44,11 @@ describe('candidates', () => {
   });
 
   describe('requirements', () => {
+    it('ignores blank tags, which no IED can have', () => {
+      expect(requiredTags(requirement('SIEMENS', '7SS85', ['', '']))).to.be.empty;
+      expect(requiredTags(requirement('SIEMENS', '7SS85', [' ', '1.0.0']))).to.be.empty;
+    });
+
     it('ignores the placeholder written when the captured IED had no tag', () => {
       const untagged = requirement(
         'SIEMENS',

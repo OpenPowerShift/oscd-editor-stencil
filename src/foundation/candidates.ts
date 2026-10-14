@@ -16,7 +16,13 @@ export function requiredTags(requirement: IedRequirement): Tag[] {
       id: priv['OpenSCD-Stencil-Id'],
       version: priv['OpenSCD-Stencil-Version']
     }))
-    .filter(tag => tag.id !== NO_ID && tag.version !== NO_VERSION);
+    .filter(
+      tag =>
+        tag.id.trim() !== '' &&
+        tag.version.trim() !== '' &&
+        tag.id !== NO_ID &&
+        tag.version !== NO_VERSION
+    );
 }
 
 /** A readable form of what a function needs, such as `SIEMENS 7SS85, tagged BZ 1.0.0`. */

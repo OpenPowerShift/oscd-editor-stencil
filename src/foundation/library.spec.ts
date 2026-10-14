@@ -103,4 +103,20 @@ describe('library', () => {
     expect(loadLibrary(blocked)).to.deep.equal([]);
     expect(storeLibrary([], blocked)).to.be.false;
   });
+
+  it('copes with a browser that does not give access to local storage', () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'localStorage')!;
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('blocked');
+      }
+    });
+    try {
+      expect(loadLibrary()).to.deep.equal([]);
+      expect(storeLibrary([])).to.be.false;
+    } finally {
+      Object.defineProperty(window, 'localStorage', original);
+    }
+  });
 });

@@ -1,4 +1,5 @@
 import { combinations } from './combinations.js';
+import { findIed, inputsOf } from './match.js';
 import { getMappingInfo } from './mapping-info.js';
 import type { ControlBlockInfo } from './mapping-info.js';
 import { readIedTag } from './ied-tags.js';
@@ -16,9 +17,24 @@ export function discoverControlBlocks(
   doc: XMLDocument,
   iedNames: string[]
 ): ControlBlockInfo[] {
+  // an IED can only be subscribed to the IEDs its ExtRefs name, so the
+  // pairs without one are not looked at: this keeps large selections fast
+  const sources = new Map<string, Set<string>>(
+    iedNames.map(name => [
+      name,
+      new Set(
+        inputsOf(findIed(doc, name) ?? doc.createElement('IED'))
+          .map(extRef => extRef.getAttribute('iedName'))
+          .filter((source): source is string => source !== null)
+      )
+    ])
+  );
+  const subscribedTo = (from: string, to: string): ControlBlockInfo[] =>
+    sources.get(to)?.has(from) ? getMappingInfo(doc, from, to) : [];
+
   return Array.from(combinations(iedNames, 2)).flatMap(([a, b]) => [
-    ...getMappingInfo(doc, a, b),
-    ...getMappingInfo(doc, b, a)
+    ...subscribedTo(a, b),
+    ...subscribedTo(b, a)
   ]);
 }
 
@@ -106,7 +122,7 @@ export function buildVersion(
 ): Application {
   const functionOf = (ied: string): string => (names[ied] ?? ied).trim();
 
-  const IEDS: Record<string, IedRequirement> = {};
+  const IEDS: Record<string, IedRequirement> = Object.create(null);
   involvedIeds(blocks).forEach((name) => {
     const ied = doc.querySelector(`IED[name="${name}"]`);
     if (!ied) {

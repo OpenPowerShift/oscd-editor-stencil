@@ -84,4 +84,19 @@ describe('capture', () => {
     const version = buildVersion(doc, blocks, {}, { version: '1', description: '', deprecated: false });
     expect(Object.keys(version.IEDS)).to.deep.equal(['PUB1']);
   });
+
+  it('stays fast when many IEDs are selected', () => {
+    const doc = load();
+    const ied = doc.querySelector('IED[name="SUB1"]')!;
+    const names: string[] = [];
+    for (let i = 0; i < 300; i += 1) {
+      const copy = ied.cloneNode(true) as Element;
+      copy.setAttribute('name', `X${i}`);
+      doc.documentElement.appendChild(copy);
+      names.push(`X${i}`);
+    }
+    const started = performance.now();
+    discoverControlBlocks(doc, names);
+    expect(performance.now() - started).to.be.lessThan(2000);
+  });
 });

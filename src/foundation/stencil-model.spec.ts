@@ -335,6 +335,37 @@ describe('stencil-model', () => {
       expect(stencil.applications).to.have.lengthOf(2);
     });
 
+    it('compares what will be written, so a trailing space cannot merge or duplicate', () => {
+      const version = {
+        ...makeVersion('1.0.0'),
+        IEDS: { A: makeVersion('1.0.0').IEDS.Fn, B: makeVersion('1.0.0').IEDS.Fn }
+      };
+      expect(functionProblem(version, 'A', 'B ')).to.be.a('string');
+      expect(renameFunction(version, 'A', 'B ')).to.equal(version);
+      expect(functionProblem(version, 'A', 'A ')).to.equal(null);
+      expect(versionProblem(stencil, key, '1.0.0', '2.0.0 ')).to.be.a('string');
+      expect(
+        applicationProblem(stencil, key, { category: 'Bus ', name: 'Other ' })
+      ).to.be.a('string');
+    });
+
+    it('accepts function names that are also names of Object properties', () => {
+      const version = makeVersion('1.0.0');
+      expect(functionProblem(version, 'Fn', 'constructor')).to.equal(null);
+      expect(functionProblem(version, 'Fn', 'toString')).to.equal(null);
+      expect(Object.keys(renameFunction(version, 'Fn', 'constructor').IEDS)).to.deep.equal(['constructor']);
+    });
+
+    it('leaves a function untagged when both tag fields are emptied', () => {
+      const next = updateRequirement(makeVersion('1.0.0'), 'Fn', {
+        manufacturer: 'M',
+        type: 'T',
+        id: ' ',
+        idVersion: ''
+      });
+      expect(next.IEDS.Fn.privates).to.deep.equal([]);
+    });
+
     it('replaces a version', () => {
       const next = { ...makeVersion('1.0.0'), description: 'changed' };
       const result = replaceVersion(stencil, key, '1.0.0', next);

@@ -8,10 +8,25 @@ const serviceTypes: Partial<Record<string, string>> = {
 
 /** The IED directly under the SCL root with the given name. */
 export function findIed(doc: XMLDocument, name: string): Element | undefined {
-  return Array.from(doc.querySelectorAll(':root > IED')).find(
-    ied => ied.getAttribute('name') === name
-  );
+  const known = iedsByName.get(doc);
+  const cached = known?.get(name);
+  if (cached?.isConnected && cached.getAttribute('name') === name) {
+    return cached;
+  }
+
+  // the cache is rebuilt when an IED is missing, renamed or removed
+  const rebuilt = new Map<string, Element>();
+  doc.querySelectorAll(':root > IED').forEach((ied) => {
+    const iedName = ied.getAttribute('name');
+    if (iedName !== null && !rebuilt.has(iedName)) {
+      rebuilt.set(iedName, ied);
+    }
+  });
+  iedsByName.set(doc, rebuilt);
+  return rebuilt.get(name);
 }
+
+const iedsByName = new WeakMap<XMLDocument, Map<string, Element>>();
 
 /** Every ExtRef in the inputs of an IED's logical nodes. */
 export function inputsOf(ied: Element): Element[] {

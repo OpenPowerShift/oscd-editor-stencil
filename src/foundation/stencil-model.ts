@@ -183,9 +183,10 @@ export function applicationProblem(
   if (!to.category.trim() || !to.name.trim()) {
     return 'Category and name are needed';
   }
+  const target = { category: to.category.trim(), name: to.name.trim() };
   const clash =
-    !sameApplication(from, to) &&
-    stencil.applications.some(app => sameApplication(app, to));
+    !sameApplication(from, target) &&
+    stencil.applications.some(app => sameApplication(app, target));
   return clash ? 'An application with this category and name exists' : null;
 }
 
@@ -199,7 +200,7 @@ export function versionProblem(
   if (!to.trim()) {
     return 'A version is needed';
   }
-  return from !== to && hasApplicationVersion(stencil, key, to)
+  return from !== to.trim() && hasApplicationVersion(stencil, key, to.trim())
     ? 'This version exists'
     : null;
 }
@@ -270,7 +271,7 @@ export function functionProblem(
   if (!to.trim()) {
     return 'A function name is needed';
   }
-  return from !== to && to in version.IEDS
+  return from !== to.trim() && Object.prototype.hasOwnProperty.call(version.IEDS, to.trim())
     ? 'A function with this name exists'
     : null;
 }
@@ -323,12 +324,15 @@ export function updateRequirement(
         ...existing,
         manufacturer: requirement.manufacturer,
         type: requirement.type,
-        privates: [
-          {
-            'OpenSCD-Stencil-Id': requirement.id,
-            'OpenSCD-Stencil-Version': requirement.idVersion
-          }
-        ]
+        privates:
+          requirement.id.trim() === '' && requirement.idVersion.trim() === ''
+            ? []
+            : [
+              {
+                'OpenSCD-Stencil-Id': requirement.id,
+                'OpenSCD-Stencil-Version': requirement.idVersion
+              }
+            ]
       }
     }
   };
