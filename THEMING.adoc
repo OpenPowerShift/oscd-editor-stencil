@@ -1,0 +1,58 @@
+= Theming
+:toc: macro
+:icons: font
+
+The plugin follows the OpenSCD theming model described in
+https://github.com/openscd/oscd-api/blob/153e3d5428e44c03305aa40d2894c8440346bde7/docs/theming.md[`@openscd/oscd-api` docs/theming.md].
+All declarations are in link:src/theme.ts[`src/theme.ts`].
+
+toc::[]
+
+== How it works
+
+. *Distribution palette.*
+Each component initialises internal `--oscd-*` tokens from the `--oscd-theme-*` variables of the distribution, with Solarized defaults.
+The components only use the internal tokens, and the plugin never sets `--oscd-theme-*` itself.
+. *Material components.*
+`oscdMd3Mappings` from `@omicronenergy/oscd-ui` maps the same palette to the `--md-sys-color-*` roles used by buttons, fields, switches, dialogs and trees.
+The shape scale (`--md-sys-shape-corner-*`) is derived from `--oscd-theme-shape`.
+. *Editor.* The JSON editor uses the `--oscd-ace-editor-*` tokens of `oscd-ui`, which follow the same palette.
+
+There are no hard-coded colours in the components.
+GOOSE and sampled values are told apart by an icon as well as by colour.
+
+== Palette variables read
+
+[cols="1,2"]
+|===
+| Variable | Used for
+
+| `--oscd-theme-primary` | Selected steps, buttons, switches, GOOSE colour
+| `--oscd-theme-secondary` | Sampled value colour
+| `--oscd-theme-error` | Delete actions, problems
+| `--oscd-theme-base00`, `base0`, `base1` | Text, secondary text, borders
+| `--oscd-theme-base2`, `base3` | Cards and page backgrounds
+| `--oscd-theme-shape` | Corner radii
+| `--oscd-theme-text-font`, `text-font-mono`, `icon-font` | Fonts
+|===
+
+== Plugin hooks
+
+[cols="1,1,2"]
+|===
+| Hook | Default | Affects
+
+| `--oscd-editor-stencil-goose-color` | `--oscd-theme-primary` | GOOSE icons in the mapping table and in the capture wizard
+| `--oscd-editor-stencil-sv-color` | `--oscd-theme-secondary` | Sampled value icons
+|===
+
+Set a hook on the plugin element, on the shell, or on `:root`:
+
+[source,css]
+----
+oscd-editor-stencil {
+  --oscd-editor-stencil-goose-color: #cb4b16;
+}
+----
+
+`demo/index-themed.html` shows the plugin with a dark palette and custom service colours.
