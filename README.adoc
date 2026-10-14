@@ -67,6 +67,10 @@ The plugin does not change `IEDName` of control blocks.
 
 NOTE: An IED whose `ClientServices` has `noIctBinding="true"` accepts only the `ExtRef` elements its IED tool supplied. The plugin does not create new ones on it and reports that.
 
+== Help in the plugin
+
+The help icons (a question mark in a circle) next to key headings open a short explanation: what a stencil is, how to read the table of control blocks, how IEDs are assigned, what the review means, how the library works, how capturing works and what stencil tags are.
+
 == Managing stencils
 
 The *Manage* tab holds the library of stencils you have opened, with the most recently used first.
@@ -83,7 +87,7 @@ image::manage.png[Managing stencils,width=900]
 
 == Creating a stencil
 
-The *Create* tab captures an application from the open document, in four steps:
+*Capture from this document…* in the *Manage* tab makes an application from the open document, in four steps (a *Back to stencils* link returns to the library, and the wizard keeps its progress):
 
 . *Select IEDs*: at least two.
 . *Select control blocks*: the control blocks sent between the chosen IEDs, in a table where you can untick single cells, rows, columns or all of an IED.
@@ -96,9 +100,10 @@ image::capture.png[Selecting control blocks,width=900]
 
 == Editing the JSON
 
-The *JSON* tab shows the stencil in an editor with syntax highlighting.
-It is loaded when you open the tab.
-The text is checked as you type, and only valid text can be applied.
+*Edit as JSON* in *Manage* opens an editor with syntax highlighting, for the whole stencil.
+The same button on a selected application or version edits only that part, which is shorter and easier to read.
+The editor is loaded when you first open it.
+The text is checked as you type, and only valid text can be saved.
 
 === File format
 

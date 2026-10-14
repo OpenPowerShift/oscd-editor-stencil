@@ -342,3 +342,11 @@ Three reviewers (workflow, visual design and accessibility, adversarial testing)
 - **Visual:** text, muted text, GOOSE/SV colours, delete text and table borders now meet WCAG AA in the light and dark demos (`--stencil-text`, `--stencil-border`, `--stencil-danger` are mixed from the palette); the current step is marked without relying on the primary colour; narrow panels stack steps, function rows and grids; decorative icons are hidden from screen readers and non-current steps no longer say `aria-current="false"`.
 
 Not done, left for a decision: merging JSON into Manage as an "Advanced" section and renaming Create, the doubled keyboard stop on each application row (it comes from oscd-ui's selection list), a visible selected state in that list, a 48 px touch target on coarse pointers, `validateStencil` referential checks (control blocks pointing at missing functions, duplicate applications), and translating the planner's diagnostics.
+
+## 10. Tabs, JSON and help
+
+Decided after the review round: two tabs, **Apply** and **Manage**.
+
+- The capture wizard is opened from Manage (*Capture from this document…*, also from the first-run screen). It stays mounted, so leaving it does not lose progress.
+- JSON is edited from Manage, scoped to the whole stencil, an application or a version (`foundation/json-scope.ts`: the scope's text is checked with the rules of a whole file, and a category, name or version that another one has is refused). The editor leaves when what it edits is gone.
+- Help icons (`src/shared/help.ts`, `help-content.ts`) open a dialog with a longer explanation at the key points: what a stencil is, reading the mapping table, assigning IEDs, reviewing, the library, capturing (three places), stencil tags and the JSON.

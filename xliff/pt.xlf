@@ -458,10 +458,6 @@
   <source>Manage</source>
   <target>Gerir</target>
 </trans-unit>
-<trans-unit id="s382a2aa3984474dd">
-  <source>Create</source>
-  <target>Criar</target>
-</trans-unit>
 <trans-unit id="sb7d9a728a9bf81f8">
   <source>GOOSE</source>
   <target>GOOSE</target>
@@ -598,10 +594,6 @@
   <source>It is kept in this browser as part of <x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/>. Export it from Manage to keep a copy.</source>
   <target>Fica guardada neste navegador como parte de <x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/>. Exporte-a em «Gerir» para manter uma cópia.</target>
 </trans-unit>
-<trans-unit id="s432d0d324919781f">
-  <source>Open in Manage</source>
-  <target>Abrir em «Gerir»</target>
-</trans-unit>
 <trans-unit id="sdbba25abbd42a114">
   <source>Discard edits</source>
   <target>Descartar edições</target>
@@ -629,6 +621,218 @@
 <trans-unit id="s193307634d5471ed">
   <source>Open stencil…</source>
   <target>Abrir stencil…</target>
+</trans-unit>
+<trans-unit id="s1f8ee2b6d6ba997f">
+  <source>Assigning IEDs</source>
+  <target>Atribuir IEDs</target>
+</trans-unit>
+<trans-unit id="s67d00b3e8eaf8056">
+  <source>Reviewing before applying</source>
+  <target>Rever antes de aplicar</target>
+</trans-unit>
+<trans-unit id="s036b95681e582a9f">
+  <source>What is a stencil?</source>
+  <target>O que é um stencil?</target>
+</trans-unit>
+<trans-unit id="s6c65cb6e98f03e73">
+  <source>Capturing an application</source>
+  <target>Capturar uma aplicação</target>
+</trans-unit>
+<trans-unit id="s5858bbc91ca6dbf8">
+  <source>Choosing control blocks</source>
+  <target>Escolher blocos de controlo</target>
+</trans-unit>
+<trans-unit id="s3c62c693010b0536">
+  <source>Naming the application and its functions</source>
+  <target>Dar nome à aplicação e às funções</target>
+</trans-unit>
+<trans-unit id="s849b1507e3a7d614">
+  <source>Stencil tags</source>
+  <target>Etiquetas de stencil</target>
+</trans-unit>
+<trans-unit id="s0f238cd3488275ec">
+  <source>Show in stencils</source>
+  <target>Mostrar nos stencils</target>
+</trans-unit>
+<trans-unit id="sf185d9711019c02b">
+  <source>Edit as JSON</source>
+  <target>Editar como JSON</target>
+</trans-unit>
+<trans-unit id="s422d2e7d405483f9">
+  <source>About the JSON</source>
+  <target>Sobre o JSON</target>
+</trans-unit>
+<trans-unit id="s2b1bb0b27f5d1994">
+  <source>Stencil library</source>
+  <target>Biblioteca de stencils</target>
+</trans-unit>
+<trans-unit id="sb2ed120f2b914316">
+  <source>Managing stencils</source>
+  <target>Gerir stencils</target>
+</trans-unit>
+<trans-unit id="s4437305c57d56668">
+  <source>Capture from this document…</source>
+  <target>Capturar a partir deste documento…</target>
+</trans-unit>
+<trans-unit id="s4eb396c3e90a499c">
+  <source>Back to stencils</source>
+  <target>Voltar aos stencils</target>
+</trans-unit>
+<trans-unit id="s5e02b5394ea421f9">
+  <source>A stencil is a reusable, tested piece of communication configuration, for example a bus zone relay and the merging units that send it sampled values. Instead of subscribing every signal by hand in every project, you apply the stencil to the IEDs of your document.</source>
+  <target>Um stencil é uma parte reutilizável e testada da configuração de comunicação, por exemplo uma proteção de zona de barramento e as merging units que lhe enviam valores amostrados. Em vez de subscrever cada sinal à mão em cada projeto, aplica o stencil aos IEDs do seu documento.</target>
+</trans-unit>
+<trans-unit id="sd8f013ea93b36dfc">
+  <source>An application is one such group of IEDs, with a category and a name.</source>
+  <target>Uma aplicação é um desses grupos de IEDs, com uma categoria e um nome.</target>
+</trans-unit>
+<trans-unit id="se95641652fd7b45c">
+  <source>A version is a numbered release of an application. The newest version that is not deprecated is used unless you pick another.</source>
+  <target>Uma versão é uma edição numerada de uma aplicação. É usada a versão mais recente que não esteja obsoleta, a não ser que escolha outra.</target>
+</trans-unit>
+<trans-unit id="sb733c13ad564dbb2">
+  <source>A function is a role in the application, such as Publisher. It says what kind of IED can fill it: manufacturer, type and optionally a stencil tag.</source>
+  <target>Uma função é um papel na aplicação, como Publisher. Indica que tipo de IED a pode desempenhar: fabricante, tipo e, opcionalmente, uma etiqueta de stencil.</target>
+</trans-unit>
+<trans-unit id="s2df53b3077681caa">
+  <source>Applying changes your document in one step that you can undo. Stencils are kept in this browser, and you can import and export them as files.</source>
+  <target>Aplicar altera o seu documento numa só operação, que pode anular. Os stencils ficam guardados neste navegador e pode importá-los e exportá-los como ficheiros.</target>
+</trans-unit>
+<trans-unit id="s431136b735fbc59e">
+  <source>Each row is a control block that a function publishes. Each column is a function that subscribes to it.</source>
+  <target>Cada linha é um bloco de controlo que uma função publica. Cada coluna é uma função que o subscreve.</target>
+</trans-unit>
+<trans-unit id="sdc66758b0423128f">
+  <source>The round G and S icons tell GOOSE and sampled values apart. The number is how many signals the subscriber receives.</source>
+  <target>Os ícones redondos G e S distinguem GOOSE de valores amostrados. O número indica quantos sinais o subscritor recebe.</target>
+</trans-unit>
+<trans-unit id="s66a363233e345742">
+  <source>The grey line is the supervision, the logical node (LGOS or LSVS) that watches the subscription.</source>
+  <target>A linha cinzenta é a supervisão, o nó lógico (LGOS ou LSVS) que vigia a subscrição.</target>
+</trans-unit>
+<trans-unit id="scaacef509f1e0a43">
+  <source>Quality is the extra message quality input that SEL relays use.</source>
+  <target>Qualidade é a entrada adicional de qualidade de mensagem que os relés SEL usam.</target>
+</trans-unit>
+<trans-unit id="sf125819aef3b5466">
+  <source>Each function lists only the IEDs that can fill it: the same manufacturer and type, carrying the stencil tag the function asks for, and not already used by another function.</source>
+  <target>Cada função mostra apenas os IEDs que a podem desempenhar: o mesmo fabricante e tipo, com a etiqueta de stencil que a função pede e ainda não usados por outra função.</target>
+</trans-unit>
+<trans-unit id="s36690ac1813fb230">
+  <source>If a function has no choice it says why, for example that IEDs of the right type exist but none has the tag. Tag the IEDs first with Tag IEDs in Manage, or choose another stencil version.</source>
+  <target>Se uma função não tem escolha, é explicado porquê, por exemplo que existem IEDs do tipo certo mas nenhum tem a etiqueta. Etiquete primeiro os IEDs com «Etiquetar IEDs» em «Gerir», ou escolha outra versão do stencil.</target>
+</trans-unit>
+<trans-unit id="s7a46e33386079c0c">
+  <source>Assign automatically fills every function that has exactly one possible IED, and repeats while that makes more possible. It never overrides your choices and never guesses between several IEDs: those are left for you.</source>
+  <target>«Atribuir automaticamente» preenche cada função que tem exatamente um IED possível e repete enquanto isso tornar outras possíveis. Nunca substitui as suas escolhas e nunca adivinha entre vários IEDs: esses ficam para si.</target>
+</trans-unit>
+<trans-unit id="s40a9a4616612909b">
+  <source>You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two functions are needed.</source>
+  <target>Pode aplicar parte de um stencil: as funções sem IED são ignoradas, tal como os blocos de controlo que dependem delas. São necessárias pelo menos duas funções.</target>
+</trans-unit>
+<trans-unit id="s6dc6faf2e4715542">
+  <source>This is a dry run. Nothing in your document has changed yet. For each control block you see what applying will add, and what is already there.</source>
+  <target>Isto é uma simulação. Nada no seu documento foi alterado ainda. Para cada bloco de controlo vê o que a aplicação vai adicionar e o que já existe.</target>
+</trans-unit>
+<trans-unit id="s3543ac96a48a4890">
+  <source>Subscriptions are the ExtRef elements of the subscriber. Existing ones are filled in; where the stencil has none to fill, a complete reference is created.</source>
+  <target>As subscrições são os elementos ExtRef do subscritor. Os existentes são preenchidos; onde o stencil não tem nenhum para preencher, é criada uma referência completa.</target>
+</trans-unit>
+<trans-unit id="s61648c1be036e171">
+  <source>Supervisions are set up on a free LGOS or LSVS instance of the subscriber.</source>
+  <target>As supervisões são configuradas numa instância livre de LGOS ou LSVS do subscritor.</target>
+</trans-unit>
+<trans-unit id="se88e3ce09a41ddf6">
+  <source>For SEL relays the message quality input is linked too.</source>
+  <target>Nos relés SEL, a entrada de qualidade de mensagem também é ligada.</target>
+</trans-unit>
+<trans-unit id="sac746b967abb21c9">
+  <source>Anything that cannot be found, for example an IED that has no free supervision instance, is listed and skipped. The IED names of the control blocks are not changed.</source>
+  <target>O que não for encontrado, por exemplo um IED sem instância de supervisão livre, é listado e ignorado. Os nomes de IED dos blocos de controlo não são alterados.</target>
+</trans-unit>
+<trans-unit id="s5d0feb8c9c98a218">
+  <source>Apply makes one change. Use undo in the menu bar to take it back. Applying the same stencil again changes nothing, because what is present is recognised.</source>
+  <target>«Aplicar» faz uma única alteração. Use «Anular» na barra de menus para a reverter. Aplicar de novo o mesmo stencil não altera nada, porque o que existe é reconhecido.</target>
+</trans-unit>
+<trans-unit id="s40fcf9edd917ef0d">
+  <source>An IED whose ClientServices says noIctBinding is true only accepts the inputs its IED tool prepared, so the plugin does not create new ones on it and says so.</source>
+  <target>Um IED cujos ClientServices indicam noIctBinding verdadeiro só aceita as entradas preparadas pela sua ferramenta de IED, pelo que o plugin não cria novas e avisa.</target>
+</trans-unit>
+<trans-unit id="s1fc83448c2171073">
+  <source>This is your library of stencils. Every stencil you import is kept in this browser, the most recently used first. Browsers keep their data separately, so export a stencil to share it or to keep a copy.</source>
+  <target>Esta é a sua biblioteca de stencils. Cada stencil que importa fica guardado neste navegador, o mais recentemente usado primeiro. Os navegadores guardam os dados em separado, por isso exporte um stencil para o partilhar ou manter uma cópia.</target>
+</trans-unit>
+<trans-unit id="s4452a30ccfecb0e0">
+  <source>Select an application or a version in the tree to rename it, describe it, deprecate a version or change what a function needs. Changes are checked and saved as you make them. Editing a stencil never changes a document you have already applied it to.</source>
+  <target>Selecione uma aplicação ou versão na árvore para a renomear, descrever, tornar uma versão obsoleta ou alterar o que uma função requer. As alterações são verificadas e guardadas à medida que as faz. Editar um stencil nunca altera um documento ao qual já o aplicou.</target>
+</trans-unit>
+<trans-unit id="s41f1192bd6241100">
+  <source>A deprecated version stays in the stencil but is hidden when applying, unless you ask to see deprecated versions.</source>
+  <target>Uma versão obsoleta permanece no stencil mas fica oculta ao aplicar, a não ser que peça para ver as versões obsoletas.</target>
+</trans-unit>
+<trans-unit id="s4eace40ad0e504b1">
+  <source>To make a new application, capture it from the open document with the button above. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.</source>
+  <target>Para criar uma nova aplicação, capture-a a partir do documento aberto com o botão acima. Para alterações que os formulários não cobrem, edite o JSON do stencil, de uma aplicação ou de uma versão.</target>
+</trans-unit>
+<trans-unit id="s8a98fe79cdf9c4fa">
+  <source>Capturing turns IEDs you have already configured into a stencil. Choose the IEDs that belong together, for example one protection relay and its merging units.</source>
+  <target>Capturar transforma IEDs já configurados num stencil. Escolha os IEDs que pertencem juntos, por exemplo um relé de proteção e as suas merging units.</target>
+</trans-unit>
+<trans-unit id="s473c51bebca75494">
+  <source>Only control blocks that one of the chosen IEDs sends and another is subscribed to are found. If nothing is found, check that the subscriptions exist in the document.</source>
+  <target>Só são encontrados os blocos de controlo que um dos IEDs escolhidos envia e a que outro está subscrito. Se não for encontrado nada, verifique se as subscrições existem no documento.</target>
+</trans-unit>
+<trans-unit id="s340046b0f6279c49">
+  <source>The next steps let you untick what should not be part of the application, then name it and its functions.</source>
+  <target>Os passos seguintes permitem desmarcar o que não deve fazer parte da aplicação e depois dar nome a ela e às suas funções.</target>
+</trans-unit>
+<trans-unit id="sabd328ac226392d2">
+  <source>Each row is a control block of an IED, each column an IED that subscribes to it, and each tick a subscription to keep.</source>
+  <target>Cada linha é um bloco de controlo de um IED, cada coluna um IED que o subscreve e cada visto uma subscrição a manter.</target>
+</trans-unit>
+<trans-unit id="s5481b69cb46b6887">
+  <source>Ticking an IED, a row or a column ticks everything in it, and a box with a dash means only part of it is ticked. Leave out what is specific to your project, such as a link to a device that only exists there.</source>
+  <target>Marcar um IED, uma linha ou uma coluna marca tudo o que contém, e uma caixa com um traço significa que só parte está marcada. Deixe de fora o que é específico do seu projeto, como uma ligação a um dispositivo que só existe lá.</target>
+</trans-unit>
+<trans-unit id="s27275ecb7b3c175f">
+  <source>Category and name say what the application is. The version lets you keep older releases: saving the same category, name and version again replaces it, after asking you.</source>
+  <target>A categoria e o nome dizem o que a aplicação é. A versão permite manter edições anteriores: guardar de novo a mesma categoria, nome e versão substitui-a, depois de perguntar.</target>
+</trans-unit>
+<trans-unit id="s87a61ea5f0dbe77e">
+  <source>Each IED becomes a function. Choose names that describe the role, such as Publisher or Merging unit 1, not the IED name from this project, because the functions are what you see when applying the stencil to other IEDs.</source>
+  <target>Cada IED torna-se uma função. Escolha nomes que descrevam o papel, como Publisher ou Merging unit 1, e não o nome do IED deste projeto, porque as funções são o que vê ao aplicar o stencil a outros IEDs.</target>
+</trans-unit>
+<trans-unit id="sf07bc5bc6fe1af52">
+  <source>A stencil tag is a pair of Private elements on an IED, OpenSCD-Stencil-Id and OpenSCD-Stencil-Version. When a function records a tag, only IEDs with the same tag can fill it.</source>
+  <target>Uma etiqueta de stencil é um par de elementos Private num IED, OpenSCD-Stencil-Id e OpenSCD-Stencil-Version. Quando uma função regista uma etiqueta, só os IEDs com a mesma etiqueta a podem desempenhar.</target>
+</trans-unit>
+<trans-unit id="s5eb4e6e722a1bb24">
+  <source>Tags are useful when IEDs of the same type do different jobs, for example a bus protection relay and a line protection relay of the same model. Without a tag, any IED of the same manufacturer and type matches.</source>
+  <target>As etiquetas são úteis quando IEDs do mesmo tipo têm funções diferentes, por exemplo um relé de proteção de barramento e um de proteção de linha do mesmo modelo. Sem etiqueta, qualquer IED do mesmo fabricante e tipo corresponde.</target>
+</trans-unit>
+<trans-unit id="sb8d7901db3500dd5">
+  <source>This is the stencil as it is stored. The text is checked as you type, and only text that passes the checks can be saved. The problems are listed below the editor.</source>
+  <target>Este é o stencil tal como é guardado. O texto é verificado enquanto escreve, e só o texto que passa as verificações pode ser guardado. Os problemas são listados abaixo do editor.</target>
+</trans-unit>
+<trans-unit id="sf2bf05d0739927a6">
+  <source>Use the forms for everyday changes. Edit the JSON for what they do not cover, such as removing a single subscription.</source>
+  <target>Use os formulários para as alterações do dia a dia. Edite o JSON para o que eles não cobrem, como remover uma única subscrição.</target>
+</trans-unit>
+<trans-unit id="s352719d86112de9a">
+  <source>Help</source>
+  <target>Ajuda</target>
+</trans-unit>
+<trans-unit id="s5e8250fb85d64c23">
+  <source>Close</source>
+  <target>Fechar</target>
+</trans-unit>
+<trans-unit id="s646d17c3f815e421">
+  <source>Reading this table</source>
+  <target>Como ler esta tabela</target>
+</trans-unit>
+<trans-unit id="s205c3097c1de1f41">
+  <source>The file has a schema version, currently 2. Files from earlier versions of the plugin have none and are read unchanged. References to elements are written as the identity of the element without the IED name.</source>
+  <target>O ficheiro tem uma versão de esquema, atualmente 2. Os ficheiros de versões anteriores do plugin não a têm e são lidos sem alterações. As referências a elementos são escritas como a identidade do elemento sem o nome do IED.</target>
 </trans-unit>
 </body>
 </file>

@@ -40,6 +40,12 @@ import type {
 import { cellKey } from '../foundation/mapping-matrix.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
 import type { CellMarker } from '../shared/mapping-table.js';
+import { OscdStencilHelp } from '../shared/help.js';
+import {
+  helpAssign,
+  helpReview,
+  helpWhatIsAStencil
+} from '../shared/help-content.js';
 import { themeStyles } from '../theme.js';
 
 export type Step = 'choose' | 'assign' | 'review' | 'done';
@@ -75,6 +81,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-outlined-button': OscdOutlinedButton,
     'oscd-outlined-select': OscdOutlinedSelect,
     'oscd-select-option': OscdSelectOption,
@@ -515,7 +522,10 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     const assigned = this.assignment.size;
 
     return html`<div class="card wide">
-      <h2>${msg('Assign an IED to each function')}</h2>
+      <h2 class="with-help">
+        ${msg('Assign an IED to each function')}
+        <oscd-stencil-help heading=${msg('Assigning IEDs')}>${helpAssign()}</oscd-stencil-help>
+      </h2>
       <ul class="functions">
         ${functionNames(version).map(name => this.renderFunction(version, name))}
       </ul>
@@ -576,7 +586,10 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     const nothingToDo = plan.edits.length === 0;
 
     return html`<div class="card wide">
-      <h2>${msg('Review')}</h2>
+      <h2 class="with-help">
+        ${msg('Review')}
+        <oscd-stencil-help heading=${msg('Reviewing before applying')}>${helpReview()}</oscd-stencil-help>
+      </h2>
       <p class="summary" id="plan-summary">
         ${msg(str`${plan.subscriptions} new subscriptions`)} ·
         ${msg(str`${plan.supervisions} new supervisions`)} ·
@@ -685,7 +698,10 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       return html`<p class="hint">${msg('Please open a file to apply a stencil.')}</p>`;
     }
 
-    return html`${this.renderSteps()}
+    return html`<div class="steps-row">
+      ${this.renderSteps()}
+      <oscd-stencil-help heading=${msg('What is a stencil?')}>${helpWhatIsAStencil()}</oscd-stencil-help>
+    </div>
     ${this.step === 'choose' ? this.renderChoose() : nothing}
     ${this.step === 'assign' && this.version ? this.renderAssign() : nothing}
     ${this.step === 'review' && this.plan ? this.renderReview() : nothing}
@@ -928,6 +944,19 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         .function {
           grid-template-columns: minmax(0, 1fr);
         }
+      }
+
+      .with-help {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+      }
+
+      .steps-row {
+        align-items: flex-start;
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
       }
     `
   ];

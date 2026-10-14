@@ -47,7 +47,10 @@ describe('oscd-editor-stencil', () => {
     await plugin.updateComplete;
     (plugin.shadowRoot!.querySelector('#first-create') as HTMLElement).click();
     await plugin.updateComplete;
-    expect(plugin.tabIndex).to.equal(2);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(plugin.tabIndex).to.equal(1);
+    const manage = plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & { view: string };
+    expect(manage.view).to.equal('capture');
   });
 
   it('accepts docVersion and does not expose the legacy editCount', () => {
@@ -99,13 +102,13 @@ describe('oscd-editor-stencil UI', () => {
     plugin.remove();
   });
 
-  it('has Apply, Manage, Create and JSON tabs built from oscd-ui components', () => {
+  it('has Apply and Manage tabs built from oscd-ui components', () => {
     const tabs = plugin.shadowRoot!.querySelector('oscd-tabs') as OscdTabs;
     expect(tabs.activeTabIndex).to.equal(0);
     const labels = Array.from(
       plugin.shadowRoot!.querySelectorAll('oscd-primary-tab')
     ).map(tab => tab.textContent?.replace(/\s+/g, '').replace('play_circle', '').replace('construction', '').replace('frame_source', '').replace('folder_managed', ''));
-    expect(labels).to.deep.equal(['Apply', 'Manage', 'Create', 'JSON']);
+    expect(labels).to.deep.equal(['Apply', 'Manage']);
   });
 
   it('shows the matching view when a tab is selected', async () => {
@@ -114,11 +117,6 @@ describe('oscd-editor-stencil UI', () => {
     await showTab(1);
     expect(plugin.shadowRoot!.querySelector('oscd-stencil-manage')).to.exist;
 
-    await showTab(2);
-    expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.exist;
-
-    await showTab(3);
-    expect(plugin.shadowRoot!.querySelector('oscd-stencil-json')).to.exist;
   });
 
   it('keeps the progress of a tab when another tab is shown and then this one again', async () => {
@@ -138,9 +136,8 @@ describe('oscd-editor-stencil UI', () => {
     expect(after.application).to.equal(plugin.stencilData.applications[0]);
   });
 
-  it('opens a tab only when it is first shown, so the JSON editor is not loaded for nothing', () => {
-    expect(plugin.shadowRoot!.querySelector('oscd-stencil-json')).to.not.exist;
-    expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.not.exist;
+  it('opens a tab only when it is first shown', () => {
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-manage')).to.not.exist;
   });
 
   describe('adding stencil metadata to IEDs', () => {
@@ -377,10 +374,16 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.stencilData).to.equal(before);
     });
 
-    it('takes a stencil applied from the JSON tab', async () => {
-      await showTab(3);
+    it('takes a stencil saved from the JSON editor of Manage', async () => {
+      await showTab(1);
+      const manage = plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & {
+        view: string;
+        updateComplete: Promise<unknown>;
+      };
+      manage.view = 'json';
+      await manage.updateComplete;
       const next = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('3.0.0')])]);
-      plugin.shadowRoot!.querySelector('oscd-stencil-json')!.dispatchEvent(
+      manage.shadowRoot!.querySelector('oscd-stencil-json')!.dispatchEvent(
         new CustomEvent('stencil-change', { detail: next, bubbles: true, composed: true })
       );
       await plugin.updateComplete;
@@ -418,15 +421,26 @@ describe('oscd-editor-stencil UI', () => {
   });
 
   describe('capturing an application', () => {
-    it('shows the capture wizard on the Create tab', async () => {
-      await showTab(2);
-      expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.exist;
+    const manage = () =>
+      plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & {
+        openCapture(): void;
+        updateComplete: Promise<unknown>;
+      };
+    const wizard = () => manage().shadowRoot!.querySelector('oscd-stencil-capture')!;
+
+    beforeEach(async () => {
+      await showTab(1);
+      manage().openCapture();
+      await manage().updateComplete;
     });
 
-    it('keeps what was captured in the stencil and library, and says so', async () => {
-      await showTab(2);
+    it('shows the capture wizard inside Manage', () => {
+      expect(wizard()).to.exist;
+    });
+
+    it('keeps what was captured in the stencil and library', async () => {
       const stencil = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
-      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+      wizard().dispatchEvent(
         new CustomEvent('stencil-capture', {
           detail: { stencil, category: 'Bus', name: 'BZ', version: '1.0.0' },
           bubbles: true,
@@ -439,21 +453,8 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.library).to.have.lengthOf(1);
     });
 
-    it('goes to Manage when the wizard asks', async () => {
-      await showTab(2);
-      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
-        new CustomEvent('stencil-goto', { detail: 'manage', bubbles: true, composed: true })
-      );
-      expect(plugin.tabIndex).to.equal(1);
-      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
-        new CustomEvent('stencil-goto', { detail: 'apply', bubbles: true, composed: true })
-      );
-      expect(plugin.tabIndex).to.equal(0);
-    });
-
     it('opens the tagging dialog when the wizard asks', async () => {
-      await showTab(2);
-      plugin.shadowRoot!.querySelector('oscd-stencil-capture')!.dispatchEvent(
+      wizard().dispatchEvent(
         new CustomEvent('stencil-tag', { bubbles: true, composed: true })
       );
       await plugin.updateComplete;

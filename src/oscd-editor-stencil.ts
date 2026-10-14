@@ -42,10 +42,10 @@ import type { Application, StencilData } from './foundation/types.js';
 import { iedSelectItems } from './foundation/ied-items.js';
 import { OscdStencilApply } from './apply/apply-view.js';
 import type { StencilApplyDetail } from './apply/apply-view.js';
-import { OscdStencilCapture } from './capture/capture-wizard.js';
 import type { StencilCaptureDetail } from './capture/capture-wizard.js';
-import { OscdStencilJson } from './json/json-editor.js';
 import { OscdStencilManage } from './manage/manage-view.js';
+import { OscdStencilHelp } from './shared/help.js';
+import { helpWhatIsAStencil } from './shared/help-content.js';
 import { useLocale } from './localization.js';
 import { themeStyles } from './theme.js';
 
@@ -59,12 +59,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 ) {
   static scopedElements = {
     'oscd-stencil-apply': OscdStencilApply,
-    'oscd-stencil-capture': OscdStencilCapture,
-    'oscd-stencil-json': OscdStencilJson,
     'oscd-stencil-manage': OscdStencilManage,
     'oscd-dialog': OscdDialog,
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-outlined-button': OscdOutlinedButton,
     'oscd-outlined-select': OscdOutlinedSelect,
     'oscd-outlined-text-field': OscdOutlinedTextField,
@@ -343,9 +342,13 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     this.dispatchEvent(newEditEventV2(edits, { title }));
   }
 
-  private onGoto(event: CustomEvent<'apply' | 'manage'>): void {
-    event.stopPropagation();
-    this.tabIndex = event.detail === 'manage' ? 1 : 0;
+  /** Shows Manage with the capture wizard open. */
+  private async openCapture(): Promise<void> {
+    this.tabIndex = 1;
+    await this.updateComplete;
+    this.shadowRoot
+      ?.querySelector<OscdStencilManage>('oscd-stencil-manage')
+      ?.openCapture();
   }
 
   private onStencilChange(event: CustomEvent<StencilData>): void {
@@ -369,6 +372,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   private renderManage(): TemplateResult {
     return html`<oscd-stencil-manage
+      .doc=${this.doc}
       .stencil=${this.stencilData}
       .library=${recentFirst(this.library)}
       .currentId=${this.currentId}
@@ -390,12 +394,16 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         this.saveStencilAsFile();
       }}
       @stencil-tag=${this.onTag}
+      @stencil-capture=${this.onCapture}
     ></oscd-stencil-manage>`;
   }
 
   private renderFirstRun(): TemplateResult {
     return html`<div class="first-run" id="first-run">
-      <h1>${msg('Apply a stencil')}</h1>
+      <h1 class="with-help">
+        ${msg('Apply a stencil')}
+        <oscd-stencil-help heading=${msg('What is a stencil?')}>${helpWhatIsAStencil()}</oscd-stencil-help>
+      </h1>
       <p>
         ${msg('A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not opened one yet.')}
       </p>
@@ -406,7 +414,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         <oscd-outlined-button
           id="first-create"
           ?disabled=${!this.doc}
-          @click=${() => (this.tabIndex = 2)}
+          @click=${() => this.openCapture()}
           >${msg('Create one from this document')}<oscd-icon slot="icon" aria-hidden="true">construction</oscd-icon></oscd-outlined-button
         >
       </div>
@@ -477,23 +485,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     );
   }
 
-  private renderCapture(): TemplateResult {
-    return html`<oscd-stencil-capture
-      .doc=${this.doc}
-      .stencil=${this.stencilData}
-      @stencil-capture=${this.onCapture}
-      @stencil-goto=${this.onGoto}
-      @stencil-tag=${this.onTag}
-    ></oscd-stencil-capture>`;
-  }
-
-  private renderJson(): TemplateResult {
-    return html`<oscd-stencil-json
-      .stencil=${this.stencilData}
-      @stencil-change=${this.onStencilChange}
-    ></oscd-stencil-json>`;
-  }
-
   /** A tab that was opened once is kept, hidden, so leaving it loses nothing. */
   private renderTab(index: number, content: () => TemplateResult): TemplateResult | typeof nothing {
     return this.visited.has(index)
@@ -514,18 +505,10 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         <oscd-primary-tab inline-icon>
           <oscd-icon slot="icon" aria-hidden="true">folder_managed</oscd-icon>${msg('Manage')}
         </oscd-primary-tab>
-        <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon" aria-hidden="true">construction</oscd-icon>${msg('Create')}
-        </oscd-primary-tab>
-        <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon" aria-hidden="true">frame_source</oscd-icon>JSON
-        </oscd-primary-tab>
       </oscd-tabs>
       <section>
         ${this.renderTab(0, () => this.renderUse())}
         ${this.renderTab(1, () => this.renderManage())}
-        ${this.tabIndex === 2 || this.visited.has(2) ? this.renderTab(2, () => this.renderCapture()) : nothing}
-        ${this.renderTab(3, () => this.renderJson())}
       </section>
       <input
         id="changeStencil"
@@ -622,6 +605,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
       .button {
         margin: 10px;
+      }
+
+      .with-help {
+        align-items: center;
+        display: flex;
+        gap: 4px;
       }
     `
   ];

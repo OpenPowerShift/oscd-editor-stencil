@@ -7,6 +7,8 @@ import { OscdStencilApply } from './apply/apply-view.js';
 import { OscdStencilCapture } from './capture/capture-wizard.js';
 import { OscdStencilJson } from './json/json-editor.js';
 import { OscdStencilManage } from './manage/manage-view.js';
+import { OscdStencilHelp } from './shared/help.js';
+import { helpReview } from './shared/help-content.js';
 import { buildDocument, buildVersion } from './testing/apply-fixture.js';
 import { fixtureXml } from './testing/fixture-scd.js';
 import { makeApplication, makeStencil } from './testing/stencils.js';
@@ -15,6 +17,7 @@ customElements.define('oscd-stencil-apply', OscdStencilApply);
 customElements.define('oscd-stencil-capture', OscdStencilCapture);
 customElements.define('oscd-stencil-manage', OscdStencilManage);
 customElements.define('oscd-stencil-json', OscdStencilJson);
+customElements.define('oscd-stencil-help', OscdStencilHelp);
 
 mocha.timeout(10000);
 
@@ -149,6 +152,18 @@ describe('screenshots', () => {
       el.confirming = 'version';
       await el.updateComplete;
       await shoot(el, 'manage 3 confirm delete');
+    });
+  });
+
+  describe('help', () => {
+    it('opens a dialog with a longer explanation', async () => {
+      const el = await fixture<OscdStencilHelp>(
+        html`<oscd-stencil-help heading="Reviewing before applying">${helpReview()}</oscd-stencil-help>`
+      );
+      el.open = true;
+      await el.updateComplete;
+      await settle();
+      await visualDiff(document.body, 'oscd-editor-stencil/help 1 dialog');
     });
   });
 

@@ -6,6 +6,7 @@ import type { OscdSwitch } from '@omicronenergy/oscd-ui/switch/OscdSwitch.js';
 import { OscdStencilManage, nodeId } from './manage-view.js';
 import type { LibraryEntry } from '../foundation/library.js';
 import type { StencilData } from '../foundation/types.js';
+import { fixtureXml } from '../testing/fixture-scd.js';
 import { makeApplication, makeStencil, makeVersion } from '../testing/stencils.js';
 
 customElements.define('oscd-stencil-manage', OscdStencilManage);
@@ -341,6 +342,99 @@ describe('oscd-stencil-manage', () => {
       expect(q<OscdOutlinedTextField>('#fn-Fn-id').value).to.equal('');
       await type('fn-Fn-id', 'Tagged');
       expect(versions()[0].IEDS.Fn.privates[0]['OpenSCD-Stencil-Id']).to.equal('Tagged');
+    });
+  });
+
+  describe('capturing and editing JSON from here', () => {
+    const wizard = () => q('oscd-stencil-capture');
+    const hidden = (selector: string) => q(selector).hasAttribute('hidden');
+
+    it('cannot capture without a document, and shows the wizard in place of the stencils with one', async () => {
+      expect(q<HTMLButtonElement>('#capture').disabled).to.be.true;
+
+      el.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+      await el.updateComplete;
+      q<HTMLElement>('#capture').click();
+      await el.updateComplete;
+
+      expect(el.view).to.equal('capture');
+      expect(wizard()).to.exist;
+      expect(hidden('.browse')).to.be.true;
+      expect(hidden('#capture-view')).to.be.false;
+    });
+
+    it('keeps the wizard when going back, and returns when the wizard says it is done', async () => {
+      el.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+      el.openCapture();
+      await el.updateComplete;
+
+      q<HTMLElement>('#back').click();
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
+      expect(hidden('.browse')).to.be.false;
+      expect(wizard()).to.exist;
+
+      el.openCapture();
+      await el.updateComplete;
+      let escaped = 0;
+      document.addEventListener('stencil-goto', () => (escaped += 1));
+      wizard().dispatchEvent(
+        new CustomEvent('stencil-goto', { detail: 'manage', bubbles: true, composed: true })
+      );
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
+      expect(escaped).to.equal(0);
+    });
+
+    it('edits the whole stencil, an application or a version as JSON', async () => {
+      q<HTMLElement>('#edit-json-stencil').click();
+      await el.updateComplete;
+      expect(el.view).to.equal('json');
+      expect(el.jsonScope).to.deep.equal({ kind: 'stencil' });
+      expect(q('oscd-stencil-json')).to.exist;
+      q<HTMLElement>('#back').click();
+      await el.updateComplete;
+      expect(q('oscd-stencil-json')).to.not.exist;
+
+      await select(nodeId(key));
+      q<HTMLElement>('#edit-json-application').click();
+      await el.updateComplete;
+      expect(el.jsonScope).to.deep.equal({ kind: 'application', key });
+      q<HTMLElement>('#back').click();
+
+      await select(nodeId({ ...key, version: '1.0.0' }));
+      q<HTMLElement>('#edit-json-version').click();
+      await el.updateComplete;
+      expect(el.jsonScope).to.deep.equal({ kind: 'version', key, version: '1.0.0' });
+    });
+
+    it('leaves the JSON editor when what it was editing is gone, and when another stencil is chosen', async () => {
+      follow();
+      await select(nodeId({ ...key, version: '1.0.0' }));
+      q<HTMLElement>('#edit-json-version').click();
+      await el.updateComplete;
+
+      el.stencil = {
+        ...el.stencil,
+        applications: el.stencil.applications.map(app =>
+          app.name === 'BZ' ? { ...app, versions: app.versions.filter(v => v.version !== '1.0.0') } : app
+        )
+      };
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
+
+      q<HTMLElement>('#edit-json-stencil').click();
+      await el.updateComplete;
+      el.currentId = 'b';
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
+
+      await select(nodeId(key));
+      q<HTMLElement>('#edit-json-application').click();
+      await el.updateComplete;
+      el.stencil = makeStencil();
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
     });
   });
 });

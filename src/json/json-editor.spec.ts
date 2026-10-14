@@ -100,4 +100,28 @@ describe('oscd-stencil-json', () => {
     q<HTMLElement>('#apply').click();
     expect(changes).to.be.empty;
   });
+
+  it('edits one version, and starts again from the text of another scope', async () => {
+    const key = { category: 'Bus', name: 'BZ' };
+    el.scope = { kind: 'version', key, version: '1.0.0' };
+    await el.updateComplete;
+    expect(JSON.parse(el.draft).version).to.equal('1.0.0');
+
+    await edit(JSON.stringify({ ...JSON.parse(el.draft), description: 'only this' }));
+    q<HTMLElement>('#apply').click();
+    expect(changes[0].applications[0].versions[0].description).to.equal('only this');
+    expect(changes[0].name).to.equal(stencil.name);
+
+    el.scope = { kind: 'application', key };
+    await el.updateComplete;
+    expect(JSON.parse(el.draft).name).to.equal('BZ');
+  });
+
+  it('explains what is wrong with an edited application', async () => {
+    el.scope = { kind: 'application', key: { category: 'Bus', name: 'BZ' } };
+    await el.updateComplete;
+    await edit('{"category": 1}');
+    expect(q('#problems').textContent).to.contain('category');
+    expect(q<HTMLButtonElement>('#apply').disabled).to.be.true;
+  });
 });

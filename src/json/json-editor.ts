@@ -8,8 +8,11 @@ import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
 import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
 
-import { parseStencil, serializeStencil } from '../foundation/stencil-io.js';
+import { applyScopeText, scopeText } from '../foundation/json-scope.js';
+import type { JsonScope } from '../foundation/json-scope.js';
 import type { StencilData } from '../foundation/types.js';
+import { OscdStencilHelp } from '../shared/help.js';
+import { helpJson } from '../shared/help-content.js';
 import { themeStyles } from '../theme.js';
 
 type AceEditorElement = HTMLElement & {
@@ -24,15 +27,17 @@ const loadAceEditor = async () =>
     .OscdAceEditor;
 
 /**
- * Edits the stencil as JSON, for the changes the forms do not cover.
+ * Edits the stencil, or one application or version of it, as JSON, for the
+ * changes the forms do not cover.
  *
- * The text is checked as it is typed. Only valid text can be applied, and
- * applying raises `stencil-change` with the parsed stencil.
+ * The text is checked as it is typed. Only valid text can be saved, and
+ * saving raises `stencil-change` with the whole new stencil.
  */
 export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-text-button': OscdTextButton
   };
 
@@ -42,6 +47,9 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
   }
 
   @property({ attribute: false }) stencil!: StencilData;
+
+  /** What is edited. The whole stencil unless told otherwise. */
+  @property({ attribute: false }) scope: JsonScope = { kind: 'stencil' };
 
   /** What is in the editor, which may not be valid yet. */
   @state() draft = '';
@@ -88,18 +96,18 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has('stencil')) {
-      const text = serializeStencil(this.stencil);
-      // do not lose edits when the stencil is replaced by the same content
-      if (this.draft === '' || this.draft === this.saved) {
+    if (changed.has('stencil') || changed.has('scope')) {
+      const text = scopeText(this.stencil, this.scope);
+      // edits are kept when the stencil is replaced, but not for another scope
+      if (this.draft === '' || this.draft === this.saved || changed.has('scope')) {
         this.draft = text;
       }
       this.saved = text;
     }
   }
 
-  private get result(): ReturnType<typeof parseStencil> {
-    return parseStencil(this.draft);
+  private get result(): ReturnType<typeof applyScopeText> {
+    return applyScopeText(this.stencil, this.scope, this.draft);
   }
 
   private get changed(): boolean {
@@ -138,7 +146,11 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
     const errors = this.result.errors ?? [];
     const valid = errors.length === 0;
 
-    return html`<div class="editor">${this.renderEditor()}</div>
+    return html`<h2 class="with-help">
+        ${msg('Edit as JSON')}
+        <oscd-stencil-help heading=${msg('About the JSON')}>${helpJson()}</oscd-stencil-help>
+      </h2>
+      <div class="editor">${this.renderEditor()}</div>
       ${valid
         ? nothing
         : html`<div class="problems" role="alert" id="problems">
@@ -193,6 +205,17 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
         gap: 8px;
         justify-content: flex-end;
         margin-top: 12px;
+      }
+
+      .with-help {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+      }
+
+      h2 {
+        font-weight: 400;
+        margin: 0 0 8px;
       }
     `
   ];

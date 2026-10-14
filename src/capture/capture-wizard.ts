@@ -37,6 +37,13 @@ import {
 import type { Application, StencilData } from '../foundation/types.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
 import { problemText } from '../shared/problem-text.js';
+import { OscdStencilHelp } from '../shared/help.js';
+import {
+  helpCapture,
+  helpCaptureBlocks,
+  helpCaptureNames,
+  helpTags
+} from '../shared/help-content.js';
 import { themeStyles } from '../theme.js';
 
 type Step = 'ieds' | 'blocks' | 'details' | 'review' | 'done';
@@ -85,6 +92,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     'oscd-checkbox': OscdCheckbox,
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-outlined-text-field': OscdOutlinedTextField,
     'oscd-selection-list': OscdSelectionList,
     'oscd-stencil-mapping-table': OscdStencilMappingTable,
@@ -260,7 +268,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
   private renderIeds(): TemplateResult {
     return html`<div class="card">
-      <h2>${msg('Which IEDs make up the application?')}</h2>
+      <h2 class="with-help">
+        ${msg('Which IEDs make up the application?')}
+        <oscd-stencil-help heading=${msg('Capturing an application')}>${helpCapture()}</oscd-stencil-help>
+      </h2>
       <p class="muted">
         ${msg('Choose at least two. The control blocks one of them sends to another are the application.')}
       </p>
@@ -316,7 +327,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     }
 
     return html`<div class="card wide">
-      <h2>${msg('Which control blocks belong to the application?')}</h2>
+      <h2 class="with-help">
+        ${msg('Which control blocks belong to the application?')}
+        <oscd-stencil-help heading=${msg('Choosing control blocks')}>${helpCaptureBlocks()}</oscd-stencil-help>
+      </h2>
       <p class="muted">
         ${msg('Untick what should not be part of it. Ticking a row, a column or an IED ticks all of its cells.')}
       </p>
@@ -438,7 +452,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     const problems = this.nameProblems;
 
     return html`<div class="card">
-      <h2>${msg('Name the application')}</h2>
+      <h2 class="with-help">
+        ${msg('Name the application')}
+        <oscd-stencil-help heading=${msg('Naming the application and its functions')}>${helpCaptureNames()}</oscd-stencil-help>
+      </h2>
       <div class="fields">
         ${this.detailField('category', msg('Category'), false, true)}
         ${this.detailField('name', msg('Name'), false, true)}
@@ -512,6 +529,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
             <oscd-icon aria-hidden="true">info</oscd-icon>
             <span
               >${msg(str`These IEDs have no stencil tag, so any IED of the same manufacturer and type will match their function: ${untagged.join(', ')}.`)}
+              <oscd-stencil-help heading=${msg('Stencil tags')}>${helpTags()}</oscd-stencil-help>
               <oscd-text-button id="tag" @click=${() => this.dispatchEvent(new CustomEvent('stencil-tag', { bubbles: true, composed: true }))}
                 >${msg('Tag IEDs…')}</oscd-text-button
               ></span
@@ -565,7 +583,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
         >
         <span class="spacer"></span>
         <oscd-filled-button id="manage" @click=${() => this.go('manage')}
-          >${msg('Open in Manage')}<oscd-icon slot="icon" aria-hidden="true">folder_managed</oscd-icon></oscd-filled-button
+          >${msg('Show in stencils')}<oscd-icon slot="icon" aria-hidden="true">folder_managed</oscd-icon></oscd-filled-button
         >
       </div>
     </div>`;
@@ -777,6 +795,12 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
       .count {
         margin-left: 4px;
+      }
+
+      .with-help {
+        align-items: center;
+        display: flex;
+        gap: 4px;
       }
     `
   ];

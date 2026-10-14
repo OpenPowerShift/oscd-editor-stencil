@@ -36,7 +36,7 @@ describe('localization', () => {
     await plugin.updateComplete;
     expect(getLocale()).to.equal('de');
     expect(plugin.shadowRoot!.textContent).to.contain('Verwalten');
-    expect(plugin.shadowRoot!.textContent).to.contain('Erstellen');
+    expect(plugin.shadowRoot!.textContent).to.contain('Anwenden');
 
     plugin.locale = 'pt';
     await new Promise(resolve => setTimeout(resolve, 100));

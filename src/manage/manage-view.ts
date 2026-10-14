@@ -38,8 +38,13 @@ import type {
   StencilData,
   VersionedApplications
 } from '../foundation/types.js';
+import { OscdStencilCapture } from '../capture/capture-wizard.js';
+import { OscdStencilJson } from '../json/json-editor.js';
+import type { JsonScope } from '../foundation/json-scope.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
 import { problemText } from '../shared/problem-text.js';
+import { OscdStencilHelp } from '../shared/help.js';
+import { helpManage, helpTags } from '../shared/help-content.js';
 import { themeStyles } from '../theme.js';
 
 /** What is selected in the tree. A version is selected with its application. */
@@ -71,10 +76,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     'oscd-dialog': OscdDialog,
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-outlined-button': OscdOutlinedButton,
     'oscd-outlined-select': OscdOutlinedSelect,
     'oscd-outlined-text-field': OscdOutlinedTextField,
     'oscd-select-option': OscdSelectOption,
+    'oscd-stencil-capture': OscdStencilCapture,
+    'oscd-stencil-json': OscdStencilJson,
     'oscd-stencil-mapping-table': OscdStencilMappingTable,
     'oscd-switch': OscdSwitch,
     'oscd-text-button': OscdTextButton,
@@ -89,10 +97,21 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
   @property({ attribute: false }) stencil!: StencilData;
 
+  /** The open document, which stencil applications are captured from. */
+  @property({ attribute: false }) doc?: XMLDocument;
+
   /** The stencils that have been imported, the most recently used first. */
   @property({ attribute: false }) library: readonly LibraryEntry[] = [];
 
   @property() currentId = '';
+
+  /** What is shown: the stencils, the capture wizard, or the JSON editor. */
+  @state() view: 'browse' | 'capture' | 'json' = 'browse';
+
+  @state() jsonScope: JsonScope = { kind: 'stencil' };
+
+  /** The wizard is kept once opened, so leaving it does not lose its progress. */
+  @state() captureOpened = false;
 
   @state() selection: Selection | null = null;
 
@@ -114,7 +133,37 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     if (changed.has('currentId')) {
       this.selection = null;
       this.problems = {};
+      this.view = 'browse';
     }
+    // an edited name or version can take the JSON being edited out of the stencil
+    if (changed.has('stencil') && this.view === 'json') {
+      const scope = this.jsonScope;
+      const app =
+        scope.kind === 'stencil'
+          ? undefined
+          : this.stencil.applications.find(
+            a => a.category === scope.key.category && a.name === scope.key.name
+          );
+      if (
+        scope.kind !== 'stencil' &&
+        (!app ||
+          (scope.kind === 'version' &&
+            !app.versions.some(v => v.version === scope.version)))
+      ) {
+        this.view = 'browse';
+      }
+    }
+  }
+
+  /** Shows the capture wizard, which makes an application from the open document. */
+  openCapture(): void {
+    this.captureOpened = true;
+    this.view = 'capture';
+  }
+
+  private editJson(scope: JsonScope): void {
+    this.jsonScope = scope;
+    this.view = 'json';
   }
 
   private get application(): VersionedApplications | undefined {
@@ -171,7 +220,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               label: v.deprecated
                 ? `${v.version} (${msg('deprecated')})`
                 : v.version,
-              icon: '',
+              icon: 'tag',
               children: []
             }))
         }))
@@ -186,6 +235,10 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
   private renderLibrary(): TemplateResult {
     return html`<div class="card" id="library">
+      <h2 class="with-help">
+        ${msg('Stencil library')}
+        <oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help>
+      </h2>
       <div class="row">
         <oscd-outlined-select
           id="stencils"
@@ -217,6 +270,19 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           ?disabled=${!this.currentId}
           @click=${() => (this.confirming = 'stencil')}
           >${msg('Remove from library')}</oscd-text-button
+        >
+      </div>
+      <div class="row">
+        <oscd-outlined-button
+          id="capture"
+          ?disabled=${!this.doc}
+          @click=${() => this.openCapture()}
+          >${msg('Capture from this document…')}<oscd-icon slot="icon" aria-hidden="true">construction</oscd-icon></oscd-outlined-button
+        >
+        <oscd-outlined-button
+          id="edit-json-stencil"
+          @click=${() => this.editJson({ kind: 'stencil' })}
+          >${msg('Edit as JSON')}<oscd-icon slot="icon" aria-hidden="true">data_object</oscd-icon></oscd-outlined-button
         >
       </div>
       <div class="row">
@@ -303,6 +369,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               @click=${() => (this.confirming = 'application')}
               >${msg('Delete application')}</oscd-text-button
             >
+            <span class="spacer"></span>
+            <oscd-outlined-button
+              id="edit-json-application"
+              @click=${() => this.editJson({ kind: 'application', key })}
+              >${msg('Edit as JSON')}<oscd-icon slot="icon" aria-hidden="true">data_object</oscd-icon></oscd-outlined-button
+            >
           </div>`}
     </div>`;
   }
@@ -387,6 +459,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           >${msg('Delete version')}</oscd-text-button
         >
         <span class="spacer"></span>
+        <oscd-outlined-button
+          id="edit-json-version"
+          @click=${() => this.editJson({ kind: 'version', key, version: version.version })}
+          >${msg('Edit as JSON')}<oscd-icon slot="icon" aria-hidden="true">data_object</oscd-icon></oscd-outlined-button
+        >
+        <oscd-stencil-help heading=${msg('Stencil tags')}>${helpTags()}</oscd-stencil-help>
         <oscd-outlined-button id="tag" @click=${() => this.emit('stencil-tag', version)}
           >${msg('Tag IEDs in this document…')}<oscd-icon slot="icon" aria-hidden="true">sell</oscd-icon></oscd-outlined-button
         >
@@ -432,6 +510,36 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  private backButton(): TemplateResult {
+    return html`<oscd-text-button id="back" @click=${() => (this.view = 'browse')}
+      ><oscd-icon slot="icon" aria-hidden="true">arrow_back</oscd-icon>${msg('Back to stencils')}</oscd-text-button
+    >`;
+  }
+
+  private renderCapture(): TemplateResult {
+    return html`<div class="subview" id="capture-view" ?hidden=${this.view !== 'capture'}>
+      ${this.backButton()}
+      <oscd-stencil-capture
+        .doc=${this.doc}
+        .stencil=${this.stencil}
+        @stencil-goto=${(e: CustomEvent<string>) => {
+          e.stopPropagation();
+          this.view = 'browse';
+        }}
+      ></oscd-stencil-capture>
+    </div>`;
+  }
+
+  private renderJson(): TemplateResult {
+    return html`<div class="subview" id="json-view">
+      ${this.backButton()}
+      <oscd-stencil-json
+        .stencil=${this.stencil}
+        .scope=${this.jsonScope}
+      ></oscd-stencil-json>
+    </div>`;
+  }
+
   private renderConfirmation(): TemplateResult {
     const confirmation = this.confirmation();
     return html`<oscd-dialog
@@ -467,8 +575,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     const version = this.version;
     const selectedId = this.selection ? nodeId(this.selection) : '';
 
-    return html`${this.renderLibrary()}
-      <div class="manage">
+    return html`<div class="browse" ?hidden=${this.view !== 'browse'}>
+        ${this.renderLibrary()}
+        <div class="manage">
         <div class="card" id="tree-card">
           <h2>${msg('Applications')}</h2>
           ${this.stencil.applications.length === 0
@@ -501,7 +610,10 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           ${app ? this.renderApplication(app) : html`<p class="hint" id="pick">${msg('Choose an application or version to see and change it.')}</p>`}
           ${app && version ? this.renderVersion(app, version) : nothing}
         </div>
+        </div>
       </div>
+      ${this.captureOpened ? this.renderCapture() : nothing}
+      ${this.view === 'json' ? this.renderJson() : nothing}
       ${this.renderConfirmation()}`;
   }
 
@@ -530,6 +642,14 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       h3 {
         font-weight: 400;
         margin: 0 0 16px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .subview {
+        display: block;
       }
 
       .card {
@@ -647,6 +767,11 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         overflow-x: auto;
       }
 
+      .with-help {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+      }
     `
   ];
 }

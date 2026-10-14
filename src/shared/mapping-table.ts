@@ -13,6 +13,8 @@ import {
   refLabel,
   supervisionLabel
 } from '../foundation/mapping-matrix.js';
+import { OscdStencilHelp } from './help.js';
+import { helpMappingTable } from './help-content.js';
 import { themeStyles } from '../theme.js';
 
 /** What applying a stencil did to one control block, shown on its cell. */
@@ -32,6 +34,7 @@ export type CellMarker = {
 export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
     'oscd-icon': OscdIcon,
+    'oscd-stencil-help': OscdStencilHelp,
     'oscd-switch': OscdSwitch
   };
 
@@ -99,14 +102,17 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
 
     const { columns, rows } = buildMatrix(this.controlBlocks);
 
-    return html`<label class="switch"
-        ><oscd-switch
-          touch-target="wrapper"
-          ?selected=${this.showSupervisions}
-          @change=${() => (this.showSupervisions = !this.showSupervisions)}
-        ></oscd-switch
-        >${msg('Show supervisions')}</label
-      >
+    return html`<div class="tools">
+        <label class="switch"
+          ><oscd-switch
+            touch-target="wrapper"
+            ?selected=${this.showSupervisions}
+            @change=${() => (this.showSupervisions = !this.showSupervisions)}
+          ></oscd-switch
+          >${msg('Show supervisions')}</label
+        >
+        <oscd-stencil-help heading=${msg('Reading this table')}>${helpMappingTable()}</oscd-stencil-help>
+      </div>
       <div class="scroll">
         <table>
           <caption>
@@ -151,6 +157,18 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
 
       .empty {
         color: var(--stencil-text);
+      }
+
+      .tools {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-bottom: 8px;
+      }
+
+      .tools .switch {
+        margin-bottom: 0;
       }
 
       .switch {
