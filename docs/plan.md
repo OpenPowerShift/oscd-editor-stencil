@@ -130,7 +130,7 @@ Apply puts the new IED name in front and resolves the element.
 - **ExtRefs with `intAddr` are later binding.** Table 51 makes `intAddr` mandatory in an ICD/IID input template, and the ExtRef has no iedName/ldInst. The IED tool supplies it, the system tool may bind it but not create or remove it, and the identity `<LN>>intAddr[n]` finds it whatever it is bound to.
 - **ExtRefs without `intAddr` are not placeholders.** In an SCD they are complete external references (Table 51: iedName, ldInst, lnClass, doName and serviceType mandatory), and Part 6 says the system tool *creates and removes* them. A clean IED therefore has no ExtRef to fill. Applying a stencil must create it. (An earlier version of this plan stored such ExtRefs by position and filled whatever ExtRef was at that position. That was wrong: no such slot exists, and it could overwrite an unrelated ExtRef.)
 - **Whether creating them is useful is a property of the IED.** An IED declares `ClientServices@noIctBinding` (default false). If true, its IED tool cannot bind an incoming signal to an internal address; it supplies ExtRef templates with `intAddr` and the system tool does the binding (later binding). If false, the IED tool also accepts unbound external signals, which the system tool supplies as ExtRefs without `intAddr`, and binds them itself. Apply therefore creates ExtRefs without `intAddr` only on IEDs where `noIctBinding` is not true. (Part 6, the ClientServices definition and the engineering process text; Part 7-1 Annex H calls the two cases "SCT supplied" and "ICT supplied" binding.)
-- **Not handled yet:** Annex H also says subscriptions are configured through the publisher's `GSEControl.IEDName` / `SampledValueControl.IEDName`, in addition to `Inputs`. Neither scl-lib's `subscribe` nor the other OpenPowerShift subscriber plugins write it, so the stencil does not either. See the open questions.
+- **Not handled, by decision:** Annex H also says subscriptions are configured through the publisher's `GSEControl.IEDName` / `SampledValueControl.IEDName`, in addition to `Inputs`. Neither scl-lib's `subscribe` nor the other OpenPowerShift subscriber plugins write it, and the stencil will not either.
 
 ### Design
 
@@ -304,10 +304,12 @@ Each phase ends with `npm i → tsc --noEmit → build → lint → test` passin
    - *Note:* oscd-ui 0.1.1 also ships `oscd-ace-editor`, which the phase 7 JSON editor should use instead of adding `ace-builds` directly.
 5. **Bug fixes (done).** Defects 1-11 are fixed, each with specs at the pure and component level. New pure modules: `match`, `stencil-model` (immutable library operations), `stencil-io` (validation, `schemaVersion`, file name) and `storage`. `getMappingInfo` is rewritten: IEDs are found without selectors, a missing DataSet no longer throws, and a subscription whose data is not in the control block is skipped. The version picker for deprecated versions is deferred to phase 7, where the Use view is rebuilt; until then the newest current version is used.
 6. **Schema v2 (done).** `stencil-io` reads files without `schemaVersion` as v1, stamps v2, rejects newer versions, and writes v2. References keep the v1 string form. An ExtRef without `intAddr` is created in the `Inputs` it was captured from, found again for "already present", and refused on an IED with `noIctBinding="true"` (see §4). Specs: every captured reference resolves for every IED pair, a clean IED with no ExtRef or no `Inputs` gets the ExtRefs created, unrelated ExtRefs are left alone, and a second apply changes nothing.
-7. **Redesign.**
-   - Apply stepper (choose, assign with auto-assign, review with dry run).
-   - Manage mode (library tree, version detail, capture wizard, tag IEDs).
-   - Ace JSON editor, stencil library with recents.
+7. **Redesign.** Delivered in slices, each with specs, screenshots and its own commit.
+   - *Slice 1 (done): Apply mode replaces the Use tab.* A three-step flow (choose application and version, assign IEDs, review) with a result panel, in `src/apply/apply-view.ts`. The review is a dry run from `planApply`: per control block what is new and what is already present, and what could not be found. Apply is one edit and one undo step. Assignment offers only valid candidates, explains when there are none, and can assign automatically. The old Use code and the IED function dialog (which could not be cancelled) are gone. Deleting a version is a temporary button on the details card until slice 2.
+   - *Slice 2: Manage mode* (stencil library with import and recents, tree and version forms, IED tagging, confirmation before deleting).
+   - *Slice 3: capture wizard* (the Create flow as validated steps).
+   - *Slice 4: JSON editor and translations* (`oscd-ace-editor`, `msg()` throughout, German and Portuguese).
+   The view is built with `msg()` from the start; the locale files come with slice 4.
 8. **Tests to target, translations, docs.**
    - Coverage ≥ 90 % overall and ≥ 95 % in `foundation/`. Unit suite under about 15 s.
    - Screenshot tests (Chromium, fixed viewport, animations off), in the default theme plus a themed variant, covering:

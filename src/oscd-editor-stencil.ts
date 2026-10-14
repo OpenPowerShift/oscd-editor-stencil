@@ -38,13 +38,10 @@ import {
   getMappingInfo
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
-import { planApply } from './foundation/plan-apply.js';
 import {
-  defaultVersion,
   removeApplicationVersion,
   renameStencil,
-  upsertApplicationVersion,
-  visibleApplications
+  upsertApplicationVersion
 } from './foundation/stencil-model.js';
 import {
   parseStencil,
@@ -58,13 +55,15 @@ import {
 } from './foundation/storage.js';
 import { tagIedEdits } from './foundation/ied-tags.js';
 import type {
-  Application,
   IedRequirement as IED,
-  StencilData,
-  VersionedApplications
+  StencilData
 } from './foundation/types.js';
-import { getIedDescription } from './foundation/ied-description.js';
 import { iedSelectItems } from './foundation/ied-items.js';
+import { OscdStencilApply } from './apply/apply-view.js';
+import type {
+  StencilApplyDetail,
+  StencilDeleteDetail
+} from './apply/apply-view.js';
 import { themeStyles } from './theme.js';
 
  
@@ -89,6 +88,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   LitElement
 ) {
   static scopedElements = {
+    'oscd-stencil-apply': OscdStencilApply,
     'oscd-action-list': OscdActionList,
     'oscd-checkbox': OscdCheckbox,
     'oscd-dialog': OscdDialog,
@@ -124,25 +124,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   @property() stencilData: StencilData = newStencil();
 
-  @property() selectedApplication: VersionedApplications | null = null;
-
-  @property() selectedAppVersion: Application | undefined = undefined;
-
-  @property() applicationSelectedIed: Element | null = null;
-
-  @property() applicationSelectedFunction: string | null = null;
-
-  @property() applicationSelectedFunctionReqs: IED | null = null;
-
-  @property() functionToIed: Map<string, string> = new Map();
-
-  @property() showDeprecated: boolean = false;
-
   @property() templateCreationStage: number = 0;
 
   @property() createCBsToRemove: ControlBlockTableMapping[] = [];
-
-  @property() errorMessages: string[] = [];
 
   @property() showSupervisions: boolean = true;
 
@@ -179,8 +163,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   @query('#selection-dialog') iedTemplateSelectorUI!: OscdDialog;
 
-  @query('#ied-function-selector-dialog') iedSelectorUI!: OscdDialog;
-
   @query('#ied-stencil-metadata') iedStencilMetadataUI!: OscdDialog;
 
   @query('#stencil-metadata-ieds') iedsStencilMetadataUI!: OscdSelectionList;
@@ -192,10 +174,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   @query('#selection-list') selectionListUI!: OscdSelectionList;
 
   @query('#changeStencil') changeStencilUI!: HTMLInputElement;
-
-  @query('#menuApplicationsButton') menuAppButtonUI!: OscdIconButton;
-
-  @query('#menuApplications') menuAppUI!: OscdMenu;
 
   @query('#cbMappings') cbMappingsTableUI: HTMLTableElement | undefined;
 
@@ -223,8 +201,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   functionIedNamesUI!: OscdOutlinedTextField[];
 
   @query('#snackBarMessage') snackBarMessageUI!: OscdSnackbar;
-
-  @query('#error-dialog') errorDialogUI!: OscdDialog;
 
   /** Shows a message in the snackbar. */
   notify(message: string, variant: SnackbarVariant = 'info'): void {
@@ -332,9 +308,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     this.stencilData = stencil;
     this.storeSettings();
-    this.selectedApplication = null;
-    this.selectedAppVersion = undefined;
-    this.resetApplyStencil();
     return true;
   }
 
@@ -347,49 +320,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     this.useStencil(await file.text());
   }
 
-  applyStencil(): void {
-    if (!this.selectedAppVersion) {
-      return;
-    }
-
-    const plan = planApply(
-      this.doc,
-      this.selectedAppVersion,
-      this.functionToIed
-    );
-
-    if (plan.edits.length > 0) {
-      this.dispatchEvent(
-        newEditEventV2(plan.edits, {
-          title: `Apply stencil ${this.selectedApplication?.name ?? ''} ${
-            this.selectedAppVersion.version
-          }`.trim()
-        })
-      );
-    }
-
-    this.errorMessages = plan.errors;
-    if (this.errorMessages.length > 0) {
-      this.errorDialogUI.show();
-    }
-
-    this.notify(
-      `${plan.subscriptions} subscriptions and ${plan.supervisions} supervisions done`,
-      plan.errors.length > 0 ? 'warning' : 'success'
-    );
-    this.resetApplyStencil();
-  }
-
   resetCreateApplication(): void {
     this.templateCreationStage = 0;
     this.iedMappingStencilData = [];
     this.uniqueIeds = [];
     this.createCBsToRemove = [];
     this.allowAppCreationToggles = true;
-  }
-
-  resetApplyStencil(): void {
-    this.functionToIed = new Map<string, string>();
   }
 
   connectedCallback(): void {
@@ -502,370 +438,27 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     >`;
   }
 
-  renderFunctionIedSelector(): TemplateResult {
-    const func = this.applicationSelectedFunction
-      ? this.selectedAppVersion?.IEDS[this.applicationSelectedFunction]
-      : null;
-
-    const items = Array.from(this.doc?.querySelectorAll(':root > IED') ?? []).filter(
-      ied =>
-        ied.getAttribute('type') === (func ? func.type : '') &&
-        ied.getAttribute('manufacturer') === (func ? func.manufacturer : '')
-    );
-    return html`<oscd-dialog
-      id="ied-function-selector-dialog"
-      @close=${() => {
-        const fn = this.applicationSelectedFunction;
-        if (fn && this.applicationSelectedIed) {
-          this.functionToIed = new Map(this.functionToIed).set(
-            fn,
-            this.applicationSelectedIed.getAttribute('name')!
-          );
-        }
-        if (fn && this.iedSelectorUI.returnValue === 'reset') {
-          const next = new Map(this.functionToIed);
-          next.delete(fn);
-          this.functionToIed = next;
-        }
-        this.applicationSelectedFunction = null;
-        this.applicationSelectedIed = null;
-        this.applicationSelectedFunctionReqs = null;
-      }}
-      @cancel=${(event: Event) => {
-        event.preventDefault();
-      }}
-    >
-      <div slot="headline">
-        Select IED for function - ${this.applicationSelectedFunction ?? ''}
-      </div>
-      <form slot="content" id="ied-selection" method="dialog">
-        <oscd-action-list
-          id="action-list"
-          filterable
-          .items=${items              .filter((ied) => {
-            const id = ied.querySelector(
-              ':scope > Private[type="OpenSCD-Stencil-Id"]'
-            )?.textContent;
-            const version = ied.querySelector(
-              ':scope > Private[type="OpenSCD-Stencil-Version"]'
-            )?.textContent;
-            return (
-              !func ||
-                    func.privates.some(
-                      priv =>
-                        priv['OpenSCD-Stencil-Id'] === id &&
-                        priv['OpenSCD-Stencil-Version'] === version
-                    )
-            );
-          })
-            .filter(
-              ied =>
-                !Array.from(this.functionToIed.values()).includes(
-                  ied.getAttribute('name')!
-                )
-            )
-            .map((ied) => {
-              const { firstLine, secondLine } = getIedDescription(ied);
-
-              return {
-                headline: `${ied.getAttribute('name')!} — ${firstLine}`,
-                supportingText: secondLine,
-                attachedElement: ied,
-                primaryAction: () => {
-                  this.applicationSelectedIed = ied;
-                  this.iedSelectorUI.returnValue = 'ok';
-                  this.iedSelectorUI.close();
-                }
-              };
-            })}
-        ></oscd-action-list>
-      </form>
-      <div slot="actions">
-        <oscd-text-button
-          form="ied-selection"
-          value="reset"
-          @click="${() => {
-            this.iedSelectorUI.returnValue = 'reset';
-            this.iedSelectorUI.close();
-          }}"
-          >Reset</oscd-text-button
-        >
-      </div></oscd-dialog
-    >`;
+  private onApply(event: CustomEvent<StencilApplyDetail>): void {
+    event.stopPropagation();
+    const { edits, title } = event.detail;
+    this.dispatchEvent(newEditEventV2(edits, { title }));
   }
 
-  renderIedsForUse(): TemplateResult {
-    return html`${
-      this.selectedApplication && this.selectedAppVersion
-        ? html`<div id="appContainer">
-            <h2>Select IEDs for Function</h2>
-            <oscd-list id="iedsAndFunctions" class="scrollable">
-              ${Object.keys(this.selectedAppVersion.IEDS)
-                .sort((iedA, iedB) =>
-                  iedA.toLowerCase().localeCompare(iedB.toLowerCase())
-                )
-                .map((iedFunction) => {
-                  const ied = this.selectedAppVersion!.IEDS[iedFunction];
-
-                  return html`
-                    <oscd-list-item
-                      type="button"
-                      title="${ied.privates
-                        .map(
-                          priv =>
-                            `${priv['OpenSCD-Stencil-Id']} - ${priv['OpenSCD-Stencil-Version']}`
-                        )
-                        .join(`, `)}"
-                      @click=${() => {
-                        this.applicationSelectedFunction = iedFunction;
-                        this.applicationSelectedFunctionReqs = ied;
-                        // = (<HTMLElement>event.target).closest('oscd-list-item')
-
-                        this.iedSelectorUI.show();
-                      }}
-                    >
-                      <div slot="headline">
-                        ${iedFunction}${this.functionToIed.get(iedFunction)
-                          ? `  ⮕  ${this.functionToIed.get(iedFunction)}`
-                          : nothing}
-                      </div>
-                      <div slot="supporting-text">
-                        ${ied.manufacturer} - ${ied.type}
-                      </div>
-                      <oscd-icon slot="start">developer_board</oscd-icon>
-                      <oscd-icon slot="end"
-                        >${this.functionToIed.get(iedFunction) !== undefined
-                          ? 'check_box'
-                          : 'check_box_outline_blank'}</oscd-icon
-                      >
-                    </oscd-list-item>
-                  `;
-                })}
-            </oscd-list>
-            <oscd-outlined-button
-              class="button"
-              ?disabled=${this.functionToIed.size === 0}
-              @click=${() => {
-                this.resetApplyStencil();
-              }}
-              >Clear IEDs
-              <oscd-icon slot="icon">cancel</oscd-icon>
-            </oscd-outlined-button>
-            <oscd-filled-button
-              class="button"
-              ?disabled=${this.functionToIed.size === 0}
-              @click=${() => this.applyStencil()}
-              >Apply Stencil
-              <oscd-icon slot="icon">draw_collage</oscd-icon>
-            </oscd-filled-button>
-          </div> `
-        : nothing
-    }
-  </div>`;
-  }
-
-  renderApplicationDetails(): TemplateResult {
-    if (!this.selectedAppVersion) {
-      return html``;
-    }
-
-    const toIedNames = this.selectedAppVersion!.ControlBlocks.map(cb => cb.to)
-      .filter((item, i, ar) => ar.indexOf(item) === i)
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-
-    const rowIedNames = this.selectedAppVersion!.ControlBlocks.map(
-      cb => cb.from
-    )
-      .filter((item, i, ar) => ar.indexOf(item) === i)
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-
-    const iedFromWithCBs = new Map<string, string[]>();
-    rowIedNames.forEach((ied) => {
-      iedFromWithCBs.set(ied, [
-        ...new Set(
-          this.selectedAppVersion!.ControlBlocks.filter(
-            cb => cb.from === ied
-          ).map(cb => cb.id)
-        )
-      ]);
-    });
-
-    const rowInfo = rowIedNames.flatMap(iedName => ({
-      fromIed: iedName,
-      cbs: iedFromWithCBs.get(iedName)
-    }));
-
-    return html`<div id="controlBlockMappings" class="columngroup">
-      <h2>Application Details</h2>
-      <label
-        ><oscd-switch
-          touch-target="wrapper"
-          ?selected=${true}
-          ?disabled=${!this.allowAppCreationToggles}
-          @change=${() => {
-            this.showSupervisions = !this.showSupervisions;
-          }}
-        ></oscd-switch
-        >Show Supervisions</label
-      >
-      ${this.renderCbSelectionTable(
-        toIedNames,
-        rowInfo,
-        this.selectedAppVersion!.ControlBlocks,
-        true
-      )}
-    </div>`;
-  }
-
-  private isSelected(app: VersionedApplications): boolean {
-    return (
-      this.selectedApplication?.category === app.category &&
-      this.selectedApplication?.name === app.name
-    );
-  }
-
-  selectApplication(app: VersionedApplications): void {
-    this.selectedApplication = app;
-    this.selectedAppVersion = defaultVersion(app, this.showDeprecated);
-    this.resetApplyStencil();
-  }
-
-  toggleDeprecated(): void {
-    this.showDeprecated = !this.showDeprecated;
-
-    const stillVisible = visibleApplications(
-      this.stencilData,
-      this.showDeprecated
-    ).some(app => this.selectedApplication && this.isSelected(app));
-    if (!stillVisible) {
-      this.selectedApplication = null;
-      this.selectedAppVersion = undefined;
-      this.resetApplyStencil();
-    }
-  }
-
-  /** Removes the selected version, and its application if it was the last. */
-  deleteSelectedVersion(): void {
-    if (!this.selectedApplication || !this.selectedAppVersion) {
-      return;
-    }
-
+  private onDeleteVersion(event: CustomEvent<StencilDeleteDetail>): void {
+    event.stopPropagation();
     this.stencilData = removeApplicationVersion(
       this.stencilData,
-      this.selectedApplication,
-      this.selectedAppVersion.version
+      event.detail,
+      event.detail.version
     );
     this.storeSettings();
-    this.selectedApplication = null;
-    this.selectedAppVersion = undefined;
-    this.resetApplyStencil();
-  }
-
-  renderApplicationList(): TemplateResult[] {
-    const applications = visibleApplications(
-      this.stencilData,
-      this.showDeprecated
+    this.notify(
+      `Deleted ${event.detail.name} ${event.detail.version}`,
+      'success'
     );
-    const lower = (text: string): string => text.toLowerCase();
-
-    return applications
-      .map(app => app.category)
-      .filter((category, i, all) => all.indexOf(category) === i)
-      .sort((a, b) => lower(a).localeCompare(lower(b)))
-      .map(
-        category => html`<oscd-list-item data-cat="${category}">
-            <div slot="headline">${category}</div>
-            <oscd-icon slot="start">ad_group</oscd-icon>
-          </oscd-list-item>
-          ${applications
-            .filter(app => app.category === category)
-            .sort((a, b) => lower(a.name).localeCompare(lower(b.name)))
-            .map((app) => {
-              const version = defaultVersion(app, this.showDeprecated);
-
-              return html`<oscd-list-item
-                class="${this.isSelected(app) ? 'selected' : ''}"
-                @click=${() => this.selectApplication(app)}
-                type="button"
-                data-cat="${category}"
-                data-name="${app.name}"
-              >
-                <div slot="headline">${app.name}</div>
-                <div slot="supporting-text">
-                  ${app.description}${version?.description
-                    ? ` - ${version.description}`
-                    : ''}
-                </div>
-                <div slot="trailing-supporting-text">
-                  ${version
-                    ? `${version.version}${version.deprecated ? ' (deprecated)' : ''}`
-                    : 'No available version'}
-                </div>
-                <oscd-icon slot="start">draw_collage</oscd-icon>
-              </oscd-list-item>`;
-            })}`
-      );
-  }
-
-  renderStencilSelectionAndUse(): TemplateResult {
-    if (this.stencilData.applications.length === 0) {
-      return html`<p>No applications exist in the current stencil.</p>`;
-    }
-
-    return html`<section id="appSelection">
-        <div id="appMaker">
-          <div>
-            <h2 id="appMenuHeader">
-              Select Application
-              <oscd-icon-button
-                id="menuApplicationsButton"
-                @click=${() => {
-                  this.menuAppUI.open = !this.menuAppUI.open;
-                }}
-                ><oscd-icon>more_vert</oscd-icon></oscd-icon-button
-              >
-              <oscd-menu
-                positioning="popover"
-                id="menuApplications"
-                anchor="menuApplicationsButton"
-              >
-                <oscd-menu-item
-                  @click=${() => this.toggleDeprecated()}
-                >
-                  <div slot="headline">
-                    <label class="menu-item">
-                      <oscd-checkbox
-                        touch-target="wrapper"
-                        ?checked=${this.showDeprecated}
-                      ></oscd-checkbox>
-                      Show Deprecated
-                    </label>
-                  </div>
-                </oscd-menu-item>
-              </oscd-menu>
-            </h2>
-            <oscd-list id="applications" class="scrollable"
-              >${this.renderApplicationList()}</oscd-list
-            >
-            <oscd-outlined-button
-              class="button"
-              ?disabled=${!this.selectedAppVersion}
-              @click=${() => this.deleteSelectedVersion()}
-              >Delete Application
-              <oscd-icon slot="icon">delete</oscd-icon>
-            </oscd-outlined-button>
-          </div>
-          ${this.renderIedsForUse()}
-        </div>
-      </section>
-      <section>${this.renderApplicationDetails()}</section>`;
   }
 
   renderUse(): TemplateResult {
-    if (!this.doc) {
-      return html`<h1>Please open a file to use this functionality</h1>`;
-    }
-
     return html`
       <div id="headline">
         <h1 id="stencilName">
@@ -894,11 +487,15 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           </oscd-outlined-button>
         </div>
       </div>
-      ${this.renderStencilSelectionAndUse()}
+      <oscd-stencil-apply
+        .doc=${this.doc}
+        .stencil=${this.stencilData}
+        @stencil-apply=${this.onApply}
+        @stencil-delete-version=${this.onDeleteVersion}
+      ></oscd-stencil-apply>
       <input
         id="changeStencil"
         @click=${({ target }: MouseEvent) => {
-           
           (<HTMLInputElement>target).value = '';
         }}
         @change=${this.loadStencil}
@@ -1579,37 +1176,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     return this.renderOutputJSON();
   }
 
-  renderErrorMessages(): TemplateResult {
-    return html`<oscd-dialog
-      id="error-dialog"
-      type="alert"
-      @cancel=${(event: Event) => {
-        event.preventDefault();
-        // this.clearSelection();
-      }}
-    >
-      <div slot="headline">Errors occurred during template processing</div>
-      <div slot="content">
-        <p>
-          The template was <em>not applied fully and correctly</em>. Either make
-          changes manually or revert to a previous scd file.
-        </p>
-        <ul>
-          ${this.errorMessages.map(message => html`<li>${message}</li>`)}
-        </ul>
-      </div>
-      <div slot="actions">
-        <oscd-text-button
-          @click="${() => {
-            this.errorMessages = [];
-            this.errorDialogUI.close();
-          }}"
-          >Close</oscd-text-button
-        >
-      </div></oscd-dialog
-    >`;
-  }
-
   render(): TemplateResult {
     return html`<oscd-tabs
         .activeTabIndex=${this.tabIndex}
@@ -1625,7 +1191,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         }}
       >
         <oscd-primary-tab inline-icon>
-          <oscd-icon slot="icon">play_circle</oscd-icon>Use
+          <oscd-icon slot="icon">play_circle</oscd-icon>Apply
         </oscd-primary-tab>
         <oscd-primary-tab inline-icon>
           <oscd-icon slot="icon">construction</oscd-icon>Create
@@ -1639,9 +1205,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         ${this.tabIndex === 1 ? this.renderCreate() : nothing}
         ${this.tabIndex === 2 ? this.renderView() : nothing}
       </section>
-      ${this.renderTemplateIedsSelector()}${this.renderFunctionIedSelector()}
+      ${this.renderTemplateIedsSelector()}
       <oscd-snackbar id="snackBarMessage"></oscd-snackbar>
-      ${this.renderAddStencilMetadata()}${this.renderErrorMessages()}`;
+      ${this.renderAddStencilMetadata()}`;
   }
 
   static styles = [
@@ -1708,10 +1274,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       width: 400px;
     }
 
-    #applications,
-    #iedsAndFunctions {
-      width: 500px;
-    }
 
     #stencilVersion {
       padding: 10px;
@@ -1726,15 +1288,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       min-width: 250px;
     }
 
-    #appMaker {
-      display: flex;
-      flex-direction: row;
-    }
 
-    #appSelection {
-      height: calc(100vh - 280px);
-      overflow-y: clip;
-    }
 
     #headline,
     #deprecated {
@@ -1768,23 +1322,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       max-width: max-content;
     }
 
-    .appIed {
-      margin: 15px;
-    }
 
-    #appMenuHeader {
-      display: flex;
-      justify-content: space-between;
-    }
 
-    oscd-list-item.selected {
-      background-color: color-mix(in srgb, var(--oscd-primary) 20%, transparent);
-    }
 
-    .menu-item {
-      display: inline-flex;
-      align-items: center;
-    }
 
     section {
       position: relative;
@@ -1911,18 +1451,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       display: inline-flex;
     }
 
-    #appUseInfo {
-      width: 470px;
-      padding-left: 30px;
-      text-overflow: clip;
-      overflow: auto;
-      line-height: 1.4;
-    }
 
-    #appContainer {
-      padding-left: 20px;
-      overflow: clip;
-    }
 
     #controlBlockMappings {
       display: block;
@@ -1934,29 +1463,10 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       font-size: 10px;
     }
 
-    #applications,
-    #iedsAndFunctions {
-      height: calc(100vh - 410px);
-      overflow-y: scroll;
-    }
 
-    .scrollable {
-      scrollbar-width: auto;
-      scrollbar-color: var(--thumbBG) var(--scrollbarBG);
-    }
 
-    .scrollable::-webkit-scrollbar {
-      width: 6px;
-    }
 
-    .scrollable::-webkit-scrollbar-track {
-      background: var(--scrollbarBG);
-    }
 
-    .scrollable::-webkit-scrollbar-thumb {
-      background: var(--thumbBG);
-      border-radius: 6px;
-    }
   `
   ];
 }

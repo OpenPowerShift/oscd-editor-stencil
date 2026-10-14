@@ -8,7 +8,6 @@ import type { EditV2 } from '@openscd/oscd-api';
 import OscdEditorStencil from './oscd-editor-stencil.js';
 import { getMappingInfo } from './foundation/mapping-info.js';
 import { fixtureXml } from './testing/fixture-scd.js';
-import { applicationFrom, cloneAsClean } from './testing/scl.js';
 import { makeApplication, makeStencil, makeVersion } from './testing/stencils.js';
 
 customElements.define('oscd-editor-stencil', OscdEditorStencil);
@@ -23,10 +22,6 @@ describe('oscd-editor-stencil', () => {
 
   afterEach(() => {
     plugin.remove();
-  });
-
-  it('asks for a document when none is loaded', () => {
-    expect(plugin.shadowRoot?.textContent).to.contain('Please open a file');
   });
 
   it('renders the stencil header once a document is loaded', async () => {
@@ -80,13 +75,13 @@ describe('oscd-editor-stencil UI', () => {
     plugin.remove();
   });
 
-  it('has Use, Create and View tabs built from oscd-ui components', () => {
+  it('has Apply, Create and View tabs built from oscd-ui components', () => {
     const tabs = plugin.shadowRoot!.querySelector('oscd-tabs') as OscdTabs;
     expect(tabs.activeTabIndex).to.equal(0);
     const labels = Array.from(
       plugin.shadowRoot!.querySelectorAll('oscd-primary-tab')
     ).map(tab => tab.textContent?.replace(/\s+/g, '').replace('play_circle', '').replace('construction', '').replace('frame_source', ''));
-    expect(labels).to.deep.equal(['Use', 'Create', 'View']);
+    expect(labels).to.deep.equal(['Apply', 'Create', 'View']);
   });
 
   it('shows the matching view when a tab is selected', async () => {
@@ -153,154 +148,65 @@ describe('oscd-editor-stencil UI', () => {
     });
   });
 
-  describe('applying a stencil', () => {
-    beforeEach(async () => {
-      cloneAsClean(doc, 'PUB1', 'PUB2');
-      cloneAsClean(doc, 'SUB1', 'SUB2');
-      const version = applicationFrom(
-        getMappingInfo(doc, 'PUB1', 'SUB1'),
-        'PUBF',
-        'SUBF'
-      );
-      version.IEDS = {
-        PUBF: { originalName: 'PUB1', type: '7SS85', manufacturer: 'SIEMENS', privates: [] },
-        SUBF: { originalName: 'SUB1', type: '6MU85', manufacturer: 'SIEMENS', privates: [] }
+  describe('the apply view', () => {
+    const applyView = () =>
+      plugin.shadowRoot!.querySelector('oscd-stencil-apply') as HTMLElement & {
+        stencil: unknown;
+        doc: unknown;
       };
-      const application = { category: 'Bus', name: 'BZ', description: '', versions: [version] };
-      plugin.stencilData = { name: 'Test', version: '1', applications: [application] };
-      plugin.selectedApplication = application;
-      plugin.selectedAppVersion = version;
-      plugin.functionToIed = new Map([
-        ['PUBF', 'PUB2'],
-        ['SUBF', 'SUB2']
-      ]);
+
+    const raise = <T>(name: string, detail: T) =>
+      applyView().dispatchEvent(
+        new CustomEvent(name, { detail, bubbles: true, composed: true })
+      );
+
+    it('is given the document and the stencil', async () => {
+      plugin.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
       await plugin.updateComplete;
+      expect(applyView().doc).to.equal(doc);
+      expect(applyView().stencil).to.equal(plugin.stencilData);
     });
 
-    it('commits a single titled edit event and reports the counts', async () => {
-      await click('oscd-filled-button', 'Apply Stencil');
+    it('asks for a document when none is loaded', async () => {
+      const bare = await fixture<OscdEditorStencil>(
+        html`<oscd-editor-stencil></oscd-editor-stencil>`
+      );
+      const view = bare.shadowRoot!.querySelector('oscd-stencil-apply')!;
+      expect(view.shadowRoot!.textContent).to.contain('Please open a file');
+      bare.remove();
+    });
+
+    it('commits what it applies as one edit with its title, and keeps the event inside the plugin', async () => {
+      let escaped = 0;
+      document.addEventListener('stencil-apply', () => (escaped += 1));
+      const batch = [{ element: doc.documentElement, attributes: { foo: 'bar' } }];
+      raise('stencil-apply', { edits: batch, title: 'Apply stencil X 1', plan: {} });
 
       expect(edits).to.have.lengthOf(1);
-      expect(edits[0].detail.title).to.equal('Apply stencil BZ 1.0.0');
-      expect(plugin.errorMessages).to.be.empty;
-      (edits[0].detail.edit as EditV2[]).forEach(edit => handleEdit(edit));
-      expect(
-        doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')?.getAttribute('iedName')
-      ).to.equal('PUB2');
-      expect(plugin.functionToIed.size).to.equal(0);
+      expect(edits[0].type).to.equal('oscd-edit-v2');
+      expect(edits[0].detail.title).to.equal('Apply stencil X 1');
+      expect(edits[0].detail.edit).to.deep.equal(batch);
+      expect(escaped).to.equal(0);
     });
 
-    it('lists what could not be found in the error dialog', async () => {
-      plugin.functionToIed = new Map([
-        ['PUBF', 'NOPE'],
-        ['SUBF', 'SUB2']
-      ]);
-      await plugin.updateComplete;
-      await click('oscd-filled-button', 'Apply Stencil');
-
-      expect(edits).to.be.empty;
-      expect(plugin.errorMessages).to.include('Could not find CB: NOPE>>LD0>GC1');
-      await plugin.updateComplete;
-      expect(plugin.shadowRoot!.querySelector('#error-dialog')!.textContent).to.contain(
-        'Could not find CB: NOPE>>LD0>GC1'
-      );
-    });
-  });
-
-  describe('managing the stencil library', () => {
-    const versions = (app: string) =>
-      plugin.stencilData.applications
-        .find(a => a.name === app)
-        ?.versions.map(v => v.version);
-
-    beforeEach(async () => {
+    it('deletes a version from the stencil, keeps the rest and stores the result', async () => {
       plugin.stencilData = makeStencil([
-        makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')]),
-        makeApplication('Bus', 'Old', [makeVersion('1.0.0', true)]),
-        makeApplication('Line', 'Single', [makeVersion('1.0.0')])
+        makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')])
       ]);
       await plugin.updateComplete;
-    });
 
-    const names = () =>
-      Array.from(
-        plugin.shadowRoot!.querySelectorAll('#applications oscd-list-item[data-name]')
-      ).map(item => item.getAttribute('data-name'));
-
-    const chooseApplication = async (name: string) => {
-      (
-        plugin.shadowRoot!.querySelector(
-          `#applications oscd-list-item[data-name="${name}"]`
-        ) as HTMLElement
-      ).click();
+      raise('stencil-delete-version', { category: 'Bus', name: 'BZ', version: '2.0.0' });
       await plugin.updateComplete;
-    };
 
-    it('selects the newest version and highlights the application', async () => {
-      await chooseApplication('BZ');
-      expect(plugin.selectedAppVersion?.version).to.equal('2.0.0');
-      expect(
-        plugin.shadowRoot!.querySelector('#applications oscd-list-item.selected')
-          ?.getAttribute('data-name')
-      ).to.equal('BZ');
+      expect(plugin.stencilData.applications[0].versions.map(v => v.version)).to.deep.equal(['1.0.0']);
+      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).applications[0].versions).to.have.lengthOf(1);
     });
 
-    it('hides applications with only deprecated versions until they are shown', async () => {
-      expect(names()).to.deep.equal(['BZ', 'Single']);
-
-      plugin.toggleDeprecated();
+    it('removes the application with its last version', async () => {
+      plugin.stencilData = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])]);
       await plugin.updateComplete;
-      expect(names()).to.deep.equal(['BZ', 'Old', 'Single']);
-    });
-
-    it('can use an application that only has a deprecated version once shown', async () => {
-      plugin.toggleDeprecated();
-      await plugin.updateComplete;
-      await chooseApplication('Old');
-
-      expect(plugin.selectedAppVersion?.version).to.equal('1.0.0');
-      expect(plugin.selectedAppVersion?.deprecated).to.be.true;
-    });
-
-    it('clears the selection when hiding deprecated versions hides the application', async () => {
-      plugin.toggleDeprecated();
-      await plugin.updateComplete;
-      await chooseApplication('Old');
-
-      plugin.toggleDeprecated();
-      await plugin.updateComplete;
-      expect(plugin.selectedApplication).to.be.null;
-      expect(plugin.selectedAppVersion).to.be.undefined;
-    });
-
-    it('forgets the chosen IEDs when another application is chosen', async () => {
-      await chooseApplication('BZ');
-      plugin.functionToIed = new Map([['Fn', 'IED1']]);
-      await chooseApplication('Single');
-      expect(plugin.functionToIed.size).to.equal(0);
-    });
-
-    it('deletes only the selected version when others exist, without throwing', async () => {
-      await chooseApplication('BZ');
-      await click('oscd-outlined-button', 'Delete Application');
-
-      expect(versions('BZ')).to.deep.equal(['1.0.0']);
-      expect(plugin.stencilData.applications).to.have.lengthOf(3);
-      expect(plugin.selectedApplication).to.be.null;
-      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).applications).to.have.lengthOf(3);
-    });
-
-    it('deletes the application together with its last version', async () => {
-      await chooseApplication('Single');
-      await click('oscd-outlined-button', 'Delete Application');
-      expect(plugin.stencilData.applications.map(a => a.name)).to.deep.equal(['BZ', 'Old']);
-    });
-
-    it('does not offer to delete before an application is chosen', () => {
-      const button = Array.from(
-        plugin.shadowRoot!.querySelectorAll('oscd-outlined-button')
-      ).find(b => b.textContent?.includes('Delete Application')) as HTMLElement & { disabled: boolean };
-      expect(button.disabled).to.be.true;
+      raise('stencil-delete-version', { category: 'Bus', name: 'BZ', version: '1.0.0' });
+      expect(plugin.stencilData.applications).to.be.empty;
     });
   });
 
