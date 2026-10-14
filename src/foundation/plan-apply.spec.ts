@@ -82,7 +82,7 @@ describe('planApply', () => {
       expect(new XMLSerializer().serializeToString(doc)).to.equal(before);
     });
 
-    it('counts subscriptions and supervisions', () => {
+    it('counts what it will do and describes each control block', () => {
       const plan = planApply(
         doc,
         application,
@@ -91,9 +91,71 @@ describe('planApply', () => {
           ['SUBF', 'SUB2']
         ])
       );
-      // 2 + 1 subscriptions; per control block one count plus one per LGOS/LSVS
-      expect(plan.subscriptions).to.equal(3);
-      expect(plan.supervisions).to.equal(4);
+      expect(plan).to.include({
+        subscriptions: 3,
+        supervisions: 2,
+        qualityLinks: 0,
+        present: 0
+      });
+      expect(plan.items).to.deep.equal([
+        {
+          controlBlock: 'GC1',
+          type: 'GSEControl',
+          from: 'PUB2',
+          to: 'SUB2',
+          subscriptions: 2,
+          present: 0,
+          supervision: 'new',
+          quality: 'none'
+        },
+        {
+          controlBlock: 'SV1',
+          type: 'SampledValueControl',
+          from: 'PUB2',
+          to: 'SUB2',
+          subscriptions: 1,
+          present: 0,
+          supervision: 'new',
+          quality: 'none'
+        }
+      ]);
+    });
+
+    it('changes nothing when applied a second time', () => {
+      const functions = new Map([
+        ['PUBF', 'PUB2'],
+        ['SUBF', 'SUB2']
+      ]);
+      planApply(doc, application, functions).edits.forEach(edit =>
+        handleEdit(edit)
+      );
+
+      const again = planApply(doc, application, functions);
+      expect(again.edits).to.be.empty;
+      expect(again.errors).to.be.empty;
+      expect(again).to.include({
+        subscriptions: 0,
+        supervisions: 0,
+        present: 3 + 2
+      });
+      expect(again.items.map(i => i.supervision)).to.deep.equal([
+        'present',
+        'present'
+      ]);
+    });
+
+    it('only plans what is missing when some of it is already there', () => {
+      const functions = new Map([
+        ['PUBF', 'PUB2'],
+        ['SUBF', 'SUB2']
+      ]);
+      const first = planApply(doc, application, functions);
+      // apply only the first subscription of the first control block
+      handleEdit(first.edits[0]);
+
+      const next = planApply(doc, application, functions);
+      expect(next.present).to.equal(1);
+      expect(next.subscriptions).to.equal(2);
     });
 
     it('plans nothing until both functions have an IED', () => {
@@ -192,8 +254,10 @@ describe('planApply', () => {
         'Could not find FCDA: PUB1>>LD0>DS_G>nothing',
         'Could not find ExtRef: SUB1>>LD0>nothing[0]'
       ]);
-      // both GC1 mappings are skipped, the SV1 mapping remains
-      expect(plan.subscriptions).to.equal(1);
+      // both GC1 mappings are skipped; the SV1 mapping remains and, as this
+      // is the original subscriber, it already exists
+      expect(plan.subscriptions).to.equal(0);
+      expect(plan.present).to.equal(1 + 2);
     });
 
     it('names a missing supervision and one that cannot be instantiated', () => {
@@ -225,11 +289,13 @@ describe('planApply', () => {
       ]);
     });
 
-    it('cannot instantiate a supervision that already references the control block', () => {
+    it('leaves a supervision that already references the control block alone', () => {
       const plan = planApply(doc, application, functions);
-      expect(plan.errors).to.include(
-        'Could not instantiate supervision: SUB1>>LD0> LGOS 1'
-      );
+      expect(plan.errors).to.be.empty;
+      expect(plan.items.map(i => i.supervision)).to.deep.equal([
+        'present',
+        'present'
+      ]);
     });
 
     it('names the quality ExtRef id when it is missing', () => {
@@ -259,7 +325,8 @@ describe('planApply', () => {
       });
       const plan = planApply(doc, application, functions);
       expect(plan.errors).to.be.empty;
-      expect(plan.supervisions).to.equal(2);
+      expect(plan.supervisions).to.equal(0);
+      expect(plan.items.every(item => item.supervision === 'none')).to.be.true;
     });
   });
 

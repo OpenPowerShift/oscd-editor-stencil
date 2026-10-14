@@ -1,22 +1,47 @@
 import {
+  controlBlockObjRef,
   find,
   instantiateSubscriptionSupervision,
+  matchDataAttributes,
   subscribe
 } from '@openscd/scl-lib';
 import type { Connection } from '@openscd/scl-lib';
 import type { EditV2, SetAttributes } from '@openscd/oscd-api';
 
 import { combinations } from './combinations.js';
+import { matchSrcAttributes } from './match.js';
 import { resolveRef } from './stencil-ref.js';
 import type { Application } from './types.js';
+
+/** What applying a stencil does for one part of a control block. */
+export type PartStatus = 'new' | 'present' | 'none' | 'error';
+
+/** What applying a stencil does for one control block on the chosen IEDs. */
+export type PlanItem = {
+  controlBlock: string;
+  type: 'GSEControl' | 'SampledValueControl';
+  from: string;
+  to: string;
+  /** Subscriptions that will be made. */
+  subscriptions: number;
+  /** Subscriptions that already exist and are left alone. */
+  present: number;
+  supervision: PartStatus;
+  /** The SEL message-quality ExtRef. */
+  quality: PartStatus;
+};
 
 export type ApplyPlan = {
   /** All edits, computed against the document as it is now. */
   edits: EditV2[];
   /** Everything in the stencil that could not be resolved. */
   errors: string[];
+  items: PlanItem[];
   subscriptions: number;
   supervisions: number;
+  qualityLinks: number;
+  /** Subscriptions, supervisions and quality links that already exist. */
+  present: number;
 };
 
 /** The id of an element on a function's IED, as used in error messages. */
@@ -24,9 +49,20 @@ function newIedIdentity(iedName: string | undefined, id: string): string {
   return `${iedName}${id}`;
 }
 
+/** Whether an ExtRef is already subscribed to the FCDA of a control block. */
+function isBound(sink: Element, fcda: Element, control: Element): boolean {
+  return (
+    sink.getAttribute('iedName') ===
+      control.closest('IED')?.getAttribute('name') &&
+    matchDataAttributes(sink, fcda) &&
+    matchSrcAttributes(sink, control)
+  );
+}
+
 /**
  * Computes the edits that apply an application version to the IEDs chosen
- * for its functions, without changing the document.
+ * for its functions, without changing the document. Parts that already
+ * exist are reported and left alone, so applying twice changes nothing.
  *
  * Every edit is computed against the current document, so the edits can be
  * committed together as one transaction. The subscription edits only touch
@@ -42,8 +78,11 @@ export function planApply(
   const plan: ApplyPlan = {
     edits: [],
     errors: [],
+    items: [],
     subscriptions: 0,
-    supervisions: 0
+    supervisions: 0,
+    qualityLinks: 0,
+    present: 0
   };
   const usedSupervisionLns = new Set<Element>();
 
@@ -67,6 +106,18 @@ export function planApply(
           return;
         }
 
+        const item: PlanItem = {
+          controlBlock: newCb.getAttribute('name') ?? cb.name,
+          type: cb.type as PlanItem['type'],
+          from: newFromIed,
+          to: newToIed,
+          subscriptions: 0,
+          present: 0,
+          supervision: 'none',
+          quality: 'none'
+        };
+        plan.items.push(item);
+
         const connections: Connection[] = [];
         cb.mappings.forEach((mapping) => {
           const newSource = resolveRef(doc, 'FCDA', newFromIed, mapping.FCDA);
@@ -85,11 +136,17 @@ export function planApply(
             return;
           }
 
+          if (isBound(newSink, newSource, newCb)) {
+            item.present += 1;
+            return;
+          }
+
           connections.push({
             sink: newSink,
             source: { fcda: newSource, controlBlock: newCb }
           });
         });
+        item.subscriptions = connections.length;
 
         let selSupervision: SetAttributes | null = null;
         if (cb.selSupervision) {
@@ -105,10 +162,17 @@ export function planApply(
           );
 
           if (!qualExtRef) {
+            item.quality = 'error';
             plan.errors.push(
               `Could not find ExtRef for quality mapping: ${qualExtRefId}`
             );
+          } else if (
+            qualExtRef.getAttribute('iedName') === newFromIed &&
+            matchSrcAttributes(qualExtRef, newCb)
+          ) {
+            item.quality = 'present';
           } else {
+            item.quality = 'new';
             const logicalNode = newCb.closest('LN0, LN');
             const srcPrefix = logicalNode?.getAttribute('prefix') ?? '';
             const srcLNInst = logicalNode?.getAttribute('inst');
@@ -127,9 +191,14 @@ export function planApply(
           }
         }
 
-        plan.subscriptions += connections.length;
-        // Counted once per control block, whether or not an LGOS/LSVS follows.
-        plan.supervisions += 1;
+        plan.subscriptions += item.subscriptions;
+        plan.present += item.present;
+        if (item.quality === 'new') {
+          plan.qualityLinks += 1;
+        }
+        if (item.quality === 'present') {
+          plan.present += 1;
+        }
 
         plan.edits.push(
           ...(selSupervision ? [selSupervision] : []),
@@ -147,13 +216,25 @@ export function planApply(
         const newSupervisionId = newIedIdentity(newToIed, cb.supervision);
         const newSupervision = resolveRef(doc, 'LN', newToIed, cb.supervision);
         if (!newSupervision) {
+          item.supervision = 'error';
           plan.errors.push(`Could not find Supervision: ${newSupervisionId}`);
           return;
         }
         if (usedSupervisionLns.has(newSupervision)) {
+          item.supervision = 'error';
           plan.errors.push(
             `Supervision used by more than one control block: ${newSupervisionId}`
           );
+          return;
+        }
+        usedSupervisionLns.add(newSupervision);
+
+        const cbRef = newSupervision.querySelector(
+          ':scope > DOI > DAI[name="setSrcRef"] > Val'
+        )?.textContent;
+        if (cbRef && cbRef === controlBlockObjRef(newCb)) {
+          item.supervision = 'present';
+          plan.present += 1;
           return;
         }
 
@@ -168,13 +249,14 @@ export function planApply(
           }
         );
         if (!supervision) {
+          item.supervision = 'error';
           plan.errors.push(
             `Could not instantiate supervision: ${newSupervisionId}`
           );
           return;
         }
 
-        usedSupervisionLns.add(newSupervision);
+        item.supervision = 'new';
         plan.supervisions += 1;
         plan.edits.push(supervision);
       });

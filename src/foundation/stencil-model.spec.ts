@@ -7,6 +7,7 @@ import {
   removeApplicationVersion,
   renameStencil,
   selectableVersions,
+  summarizeVersion,
   upsertApplicationVersion,
   visibleApplications
 } from './stencil-model.js';
@@ -209,4 +210,21 @@ describe('stencil-model', () => {
     expect(renamed).to.include({ name: 'New', version: '2.0' });
     expect(stencil.name).to.equal('My Stencil');
   });
+
+  it('summarizes what a version configures', () => {
+    const version = makeVersion('1.0.0');
+    version.IEDS.Other = version.IEDS.Fn;
+    version.ControlBlocks = [
+      { id: 'a', name: 'a', from: 'Fn', to: 'Other', type: 'GSEControl', mappings: [{ FCDA: 'f', ExtRef: 'e' }, { FCDA: 'g', ExtRef: 'h' }], supervision: '>x' },
+      { id: 'b', name: 'b', from: 'Fn', to: 'Other', type: 'SampledValueControl', mappings: [{ FCDA: 'f', ExtRef: 'e' }], supervision: 'None' }
+    ];
+    expect(summarizeVersion(version)).to.deep.equal({
+      functions: 2,
+      goose: 1,
+      smv: 1,
+      subscriptions: 3,
+      supervisions: 1
+    });
+  });
 });
+

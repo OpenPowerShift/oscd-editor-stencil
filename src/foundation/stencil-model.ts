@@ -138,3 +138,24 @@ export function renameStencil(
 ): StencilData {
   return { ...stencil, name, version };
 }
+
+/** A count of what an application version contains. */
+export type VersionSummary = {
+  functions: number;
+  goose: number;
+  smv: number;
+  subscriptions: number;
+  supervisions: number;
+};
+
+/** What applying a version will configure, before any IEDs are chosen. */
+export function summarizeVersion(version: Application): VersionSummary {
+  const blocks = version.ControlBlocks;
+  return {
+    functions: Object.keys(version.IEDS).length,
+    goose: blocks.filter(cb => cb.type === 'GSEControl').length,
+    smv: blocks.filter(cb => cb.type === 'SampledValueControl').length,
+    subscriptions: blocks.reduce((sum, cb) => sum + cb.mappings.length, 0),
+    supervisions: blocks.filter(cb => cb.supervision !== 'None').length
+  };
+}
