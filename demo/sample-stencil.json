@@ -10,7 +10,7 @@
       "versions": [
         {
           "version": "1.0.0",
-          "description": "GOOSE and SV from one publisher",
+          "description": "GOOSE and SV from one publisher to a merging unit and a SEL relay",
           "deprecated": false,
           "IEDS": {
             "Publisher": {
@@ -34,6 +34,12 @@
                   "OpenSCD-Stencil-Version": "1.0.0"
                 }
               ]
+            },
+            "Relay": {
+              "originalName": "SELR",
+              "type": "SEL-421",
+              "manufacturer": "SEL",
+              "privates": []
             }
           },
           "ControlBlocks": [
@@ -68,6 +74,24 @@
                 }
               ],
               "supervision": ">>LD0> LSVS 1"
+            },
+            {
+              "id": ">>LD0>GC1",
+              "name": "GC1",
+              "from": "Publisher",
+              "to": "Relay",
+              "type": "GSEControl",
+              "mappings": [
+                {
+                  "FCDA": ">>LD0>DS_G>LD0/ GGIO 1.Ind1 stVal (ST)",
+                  "ExtRef": ">>LD0>S1[0]"
+                }
+              ],
+              "supervision": "None",
+              "selSupervision": {
+                "name": "Q_GC1",
+                "ExtRef": ">>LD0>Q_GC1[0]"
+              }
             }
           ]
         }

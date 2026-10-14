@@ -36,6 +36,9 @@ import type {
   StencilData,
   VersionedApplications
 } from '../foundation/types.js';
+import { cellKey } from '../foundation/mapping-matrix.js';
+import { OscdStencilMappingTable } from '../shared/mapping-table.js';
+import type { CellMarker } from '../shared/mapping-table.js';
 import { themeStyles } from '../theme.js';
 
 export type Step = 'choose' | 'assign' | 'review' | 'done';
@@ -81,6 +84,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     'oscd-outlined-button': OscdOutlinedButton,
     'oscd-outlined-select': OscdOutlinedSelect,
     'oscd-select-option': OscdSelectOption,
+    'oscd-stencil-mapping-table': OscdStencilMappingTable,
     'oscd-selection-list': OscdSelectionList,
     'oscd-switch': OscdSwitch,
     'oscd-text-button': OscdTextButton
@@ -216,6 +220,63 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         composed: true
       })
     );
+  }
+
+  /** What applying did to each cell of the mapping table. */
+  private appliedMarkers(): Map<string, CellMarker> {
+    const functionOf = new Map(
+      [...this.assignment].map(([fn, ied]) => [ied, fn])
+    );
+    const markers = new Map<string, CellMarker>();
+
+    this.applied?.items.forEach((item) => {
+      const from = functionOf.get(item.from);
+      const to = functionOf.get(item.to);
+      if (!from || !to) {
+        return;
+      }
+
+      const failed = item.supervision === 'error' || item.quality === 'error';
+      const added =
+        item.subscriptions > 0 ||
+        item.supervision === 'new' ||
+        item.quality === 'new';
+      markers.set(
+        cellKey(from, to, item.controlBlock),
+        failed
+          ? { kind: 'error', label: msg('Not fully applied') }
+          : added
+            ? { kind: 'new', label: msg('Added') }
+            : { kind: 'present', label: msg('Already present') }
+      );
+    });
+    // control blocks of a function that was not given an IED were not applied
+    this.version?.ControlBlocks.forEach((cb) => {
+      if (!this.assignment.has(cb.from) || !this.assignment.has(cb.to)) {
+        markers.set(cellKey(cb.from, cb.to, cb.name), {
+          kind: 'skipped',
+          label: msg('Not applied')
+        });
+      }
+    });
+    return markers;
+  }
+
+  private renderMappings(
+    version: Application,
+    extra: Partial<{
+      assignment: ReadonlyMap<string, string>;
+      markers: ReadonlyMap<string, CellMarker>;
+    }> = {}
+  ): TemplateResult {
+    return html`<section class="card wide mappings" aria-labelledby="mappings-heading">
+      <h2 id="mappings-heading">${msg('Mappings')}</h2>
+      <oscd-stencil-mapping-table
+        .controlBlocks=${version.ControlBlocks}
+        .assignment=${extra.assignment ?? new Map()}
+        .markers=${extra.markers ?? new Map()}
+      ></oscd-stencil-mapping-table>
+    </section>`;
   }
 
   private renderSteps(): TemplateResult {
@@ -373,7 +434,8 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         ${this.renderApplicationList()}
       </section>
       <section aria-label="${msg('Details')}">${this.renderVersionDetails()}</section>
-    </div>`;
+    </div>
+    ${this.version ? this.renderMappings(this.version) : nothing}`;
   }
 
   private renderFunction(version: Application, name: string): TemplateResult {
@@ -560,7 +622,13 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           >${msg('Apply another')}</oscd-filled-button
         >
       </div>
-    </div>`;
+    </div>
+    ${this.version
+      ? this.renderMappings(this.version, {
+        assignment: this.assignment,
+        markers: this.appliedMarkers()
+      })
+      : nothing}`;
   }
 
   render(): TemplateResult {
@@ -666,6 +734,11 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
       .card.wide {
         max-width: 960px;
+      }
+
+      .mappings {
+        margin-top: 16px;
+        max-width: none;
       }
 
       .needs,

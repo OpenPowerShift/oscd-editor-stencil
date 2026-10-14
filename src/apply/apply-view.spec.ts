@@ -170,6 +170,18 @@ describe('oscd-stencil-apply', () => {
       expect(needs.join('|')).to.contain('Relay SEL SEL-421');
     });
 
+    it('shows the mappings of the application before it is applied', () => {
+      const table = q<HTMLElement & { controlBlocks: unknown[]; markers: Map<string, unknown> }>(
+        'oscd-stencil-mapping-table'
+      );
+      expect(table.controlBlocks).to.have.lengthOf(2);
+      expect(table.markers.size).to.equal(0);
+      const cells = Array.from(
+        table.shadowRoot!.querySelectorAll('td.mapped')
+      );
+      expect(cells).to.have.lengthOf(2);
+    });
+
     it('offers a version choice only when there is a choice, and uses the newest', async () => {
       expect(q('#version')).to.be.null;
 
@@ -309,6 +321,46 @@ describe('oscd-stencil-apply', () => {
       expect(el.step).to.equal('done');
       expect(q('#done').textContent).to.contain('3 subscriptions, 2 supervisions');
       expect(q('#done').textContent).to.contain('undo');
+    });
+
+    it('shows the mappings after applying, with the IEDs and what was added', async () => {
+      await click('#apply');
+
+      const table = q<HTMLElement & { assignment: Map<string, string>; markers: Map<string, { label: string }> }>(
+        'oscd-stencil-mapping-table'
+      );
+      expect(Object.fromEntries(table.assignment)).to.deep.equal({
+        Publisher: 'PUB2',
+        Subscriber: 'SUB2'
+      });
+      expect([...table.markers.values()].map(m => m.label)).to.deep.equal([
+        'Added',
+        'Added'
+      ]);
+      const ieds = Array.from(table.shadowRoot!.querySelectorAll('thead .ied')).map(
+        e => e.textContent
+      );
+      expect(ieds).to.deep.equal(['SUB2']);
+    });
+
+    it('marks control blocks of a function that was not given an IED as not applied', async () => {
+      const version = stencil.applications[0].versions[0];
+      version.ControlBlocks.push(
+        ...applicationFrom(getMappingInfo(doc, 'PUB1', 'SELR'), 'Publisher', 'Relay')
+          .ControlBlocks
+      );
+      el.stencil = { ...stencil };
+      await el.updateComplete;
+      el.reset();
+      await el.updateComplete;
+      await toReview();
+      await click('#apply');
+
+      const table = q<HTMLElement & { markers: Map<string, { label: string }> }>(
+        'oscd-stencil-mapping-table'
+      );
+      expect(table.markers.get('Publisher|Relay|GC1')?.label).to.equal('Not applied');
+      expect(table.markers.get('Publisher|Subscriber|GC1')?.label).to.equal('Added');
     });
 
     it('can start again after applying', async () => {
