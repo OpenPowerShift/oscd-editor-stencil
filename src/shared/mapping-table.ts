@@ -130,7 +130,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
             ${rows.map(
               row => html`<tr class="publisher">
                   <th scope="rowgroup" colspan="${columns.length + 1}">
-                    ${this.functionHeader(row.from)}
+                    <span class="group">${this.functionHeader(row.from)}</span>
                   </th>
                 </tr>
                 ${row.blocks.map(
@@ -228,6 +228,13 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       tr.publisher th {
         background: var(--oscd-base2);
         left: 0;
+        position: sticky;
+      }
+
+      /* the row spans the whole table, so its text sticks, not the cell */
+      .group {
+        display: inline-block;
+        left: 8px;
         position: sticky;
       }
 

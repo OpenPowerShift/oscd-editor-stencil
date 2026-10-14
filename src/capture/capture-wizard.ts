@@ -338,7 +338,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
         <table id="blocks">
           <thead>
             <tr>
-              <th scope="col">${msg('From')} \\ ${msg('To')}</th>
+              <th scope="col" class="corner">${msg('From')} \\ ${msg('To')}</th>
               ${columns.map(
                 to => html`<th scope="col">
                   ${this.checkbox(
@@ -362,6 +362,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
               );
               return html`<tr class="publisher">
                   <th scope="rowgroup" colspan="${columns.length + 1}">
+                    <span class="group">
                     ${this.checkbox(
                       `ied-${row.from}`,
                       `${msg('All sent by')} ${row.from}`,
@@ -369,6 +370,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
                       fromBlocks
                     )}
                     ${row.from}
+                    </span>
                   </th>
                 </tr>
                 ${row.blocks.map((block) => {
@@ -746,26 +748,55 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       }
 
       .scroll {
-        overflow-x: auto;
+        max-height: 60vh;
+        overflow: auto;
       }
 
       table {
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         width: 100%;
       }
 
       th,
       td {
-        border: 1px solid var(--stencil-border);
+        border-bottom: 1px solid var(--stencil-border);
+        border-right: 1px solid var(--stencil-border);
         padding: 4px 8px;
         text-align: left;
+      }
+
+      thead th {
+        background: var(--oscd-base2);
+        position: sticky;
+        top: 0;
+        z-index: 2;
       }
 
       tr.publisher th {
         background: var(--oscd-base3);
       }
 
+      /* the row spans the whole table, so its text sticks, not the cell */
+      .group {
+        display: inline-block;
+        left: 8px;
+        position: sticky;
+      }
+
+      th.corner,
       th.block {
+        left: 0;
+        position: sticky;
+        z-index: 1;
+      }
+
+      th.corner {
+        z-index: 3;
+      }
+
+      th.block {
+        background: var(--oscd-base2);
         font-weight: 400;
         padding-left: 24px;
         white-space: nowrap;

@@ -122,7 +122,7 @@ describe('oscd-stencil-mapping-table', () => {
     await el.updateComplete;
 
     const named = (th: Element) => [
-      Array.from(th.childNodes)
+      Array.from((th.querySelector('.group') ?? th).childNodes)
         .filter(node => node.nodeType === Node.TEXT_NODE)
         .map(node => node.textContent!.trim())
         .join(''),
@@ -159,5 +159,21 @@ describe('oscd-stencil-mapping-table', () => {
 
   it('has an accessible caption', () => {
     expect(text(q('caption'))).to.equal('Control blocks from 2 functions to 2 functions');
+  });
+
+  it('keeps the function names and control block names in view when the table is scrolled across', async () => {
+    const scroller = el.shadowRoot!.querySelector('.scroll') as HTMLElement;
+    scroller.style.width = '120px';
+    scroller.scrollLeft = 150;
+    await el.updateComplete;
+
+    const group = el.shadowRoot!.querySelector('tr.publisher .group') as HTMLElement;
+    expect(getComputedStyle(group).position).to.equal('sticky');
+    const left = scroller.getBoundingClientRect().left;
+    expect(group.getBoundingClientRect().left).to.be.closeTo(left + 8, 2);
+
+    const block = el.shadowRoot!.querySelector('th.block') as HTMLElement;
+    expect(getComputedStyle(block).position).to.equal('sticky');
+    expect(block.getBoundingClientRect().left).to.be.closeTo(left, 2);
   });
 });
