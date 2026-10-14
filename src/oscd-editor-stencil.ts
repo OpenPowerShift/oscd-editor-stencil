@@ -43,6 +43,7 @@ import { OscdStencilApply } from './apply/apply-view.js';
 import type { StencilApplyDetail } from './apply/apply-view.js';
 import { OscdStencilCapture } from './capture/capture-wizard.js';
 import type { StencilCaptureDetail } from './capture/capture-wizard.js';
+import { OscdStencilJson } from './json/json-editor.js';
 import { OscdStencilManage } from './manage/manage-view.js';
 import { themeStyles } from './theme.js';
 
@@ -57,6 +58,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   static scopedElements = {
     'oscd-stencil-apply': OscdStencilApply,
     'oscd-stencil-capture': OscdStencilCapture,
+    'oscd-stencil-json': OscdStencilJson,
     'oscd-stencil-manage': OscdStencilManage,
     'oscd-dialog': OscdDialog,
     'oscd-icon': OscdIcon,
@@ -89,8 +91,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   @state() currentId = '';
 
   @state() metadataIedItems: SelectItem[] = [];
-
-  @query('#outputView') outputStencilUI!: OscdOutlinedTextField;
 
   @query('#ied-stencil-metadata') iedStencilMetadataUI!: OscdDialog;
 
@@ -415,29 +415,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     ></oscd-stencil-capture>`;
   }
 
-  renderOutputJSON(): TemplateResult {
-    return html`<div class="output">
-      <oscd-outlined-text-field
-        id="outputView"
-        type="textarea"
-        label="Stencil Settings File"
-        @change=${(event: Event) => {
-          const target = event.target as OscdOutlinedTextField;
-          if (target && this.useStencil(target.value, true)) {
-            this.notify('Stencil settings updated', 'success');
-          }
-        }}
-        value="${serializeStencil(this.stencilData)}"
-        rows="20"
-      >
-      </oscd-outlined-text-field>
-      <oscd-outlined-button
-        class="button"
-        @click=${() => this.saveStencilAsFile()}
-        >Download
-        <oscd-icon slot="icon">download</oscd-icon>
-      </oscd-outlined-button>
-    </div>`;
+  private renderJson(): TemplateResult {
+    return html`<oscd-stencil-json
+      .stencil=${this.stencilData}
+      @stencil-change=${this.onStencilChange}
+    ></oscd-stencil-json>`;
   }
 
   render(): TemplateResult {
@@ -464,7 +446,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         ${this.tabIndex === 0 ? this.renderUse() : nothing}
         ${this.tabIndex === 1 ? this.renderManage() : nothing}
         ${this.tabIndex === 2 ? this.renderCapture() : nothing}
-        ${this.tabIndex === 3 ? this.renderOutputJSON() : nothing}
+        ${this.tabIndex === 3 ? this.renderJson() : nothing}
       </section>
       <input
         id="changeStencil"
@@ -534,13 +516,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         display: none;
       }
 
-      #outputView {
-        display: block;
-        margin-top: 20px;
-        max-height: 80vh;
-        width: 100%;
-        --md-outlined-text-field-input-text-font: var(--oscd-text-font-mono);
-      }
 
       .button {
         margin: 10px;

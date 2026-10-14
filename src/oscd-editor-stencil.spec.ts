@@ -98,7 +98,7 @@ describe('oscd-editor-stencil UI', () => {
     expect(plugin.shadowRoot!.querySelector('oscd-stencil-capture')).to.exist;
 
     await showTab(3);
-    expect(plugin.shadowRoot!.querySelector('#outputView')).to.exist;
+    expect(plugin.shadowRoot!.querySelector('oscd-stencil-json')).to.exist;
   });
 
   describe('adding stencil metadata to IEDs', () => {
@@ -333,23 +333,14 @@ describe('oscd-editor-stencil UI', () => {
       expect(plugin.stencilData).to.equal(before);
     });
 
-    it('does not take invalid text typed into the JSON tab', async () => {
+    it('takes a stencil applied from the JSON tab', async () => {
       await showTab(3);
-      const before = plugin.stencilData;
-      const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
-      field.value = '{ broken';
-      field.dispatchEvent(new Event('change'));
+      const next = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('3.0.0')])]);
+      plugin.shadowRoot!.querySelector('oscd-stencil-json')!.dispatchEvent(
+        new CustomEvent('stencil-change', { detail: next, bubbles: true, composed: true })
+      );
       await plugin.updateComplete;
-      expect(plugin.stencilData).to.equal(before);
-    });
-
-    it('takes valid text typed into the JSON tab', async () => {
-      await showTab(3);
-      const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
-      field.value = JSON.stringify(makeStencil([makeApplication('Bus', 'BZ', [makeVersion('3.0.0')])]));
-      field.dispatchEvent(new Event('change'));
-      await plugin.updateComplete;
-      expect(plugin.stencilData.applications[0].versions[0].version).to.equal('3.0.0');
+      expect(plugin.stencilData).to.equal(next);
     });
 
     it('starts with an empty stencil when the stored one is damaged', async () => {
