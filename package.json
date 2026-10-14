@@ -51,6 +51,7 @@
     "test:update": "oscd test --update",
     "updates": "oscd updates",
     "deploy": "oscd deploy",
+    "localize": "lit-localize extract && lit-localize build",
     "prepare": "oscd install-hooks"
   },
   "dependencies": {

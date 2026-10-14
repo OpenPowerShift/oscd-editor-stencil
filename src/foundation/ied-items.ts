@@ -15,7 +15,7 @@ export type IedSelectItem = {
  * The list keeps the selection in these objects, so build them once per
  * dialog opening and not on every render.
  *
- * @param withTags - Append the stencil Id and version recorded on the IED.
+ * With `withTags` the stencil Id and version recorded on the IED are appended.
  */
 export function iedSelectItems(
   doc: XMLDocument | undefined,

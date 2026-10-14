@@ -1,3 +1,5 @@
+import { msg, str } from '@lit/localize';
+
 import { readIedTag } from './ied-tags.js';
 import type { Application, IedRequirement } from './types.js';
 
@@ -20,11 +22,12 @@ export function requiredTags(requirement: IedRequirement): Tag[] {
 /** A readable form of what a function needs, such as `SIEMENS 7SS85, tagged BZ 1.0.0`. */
 export function describeRequirement(requirement: IedRequirement): string {
   const tags = requiredTags(requirement);
-  return `${requirement.manufacturer} ${requirement.type}${
-    tags.length > 0
-      ? `, tagged ${tags.map(tag => `${tag.id} ${tag.version}`).join(' or ')}`
-      : ''
-  }`;
+  const kind = `${requirement.manufacturer} ${requirement.type}`;
+  if (tags.length === 0) {
+    return kind;
+  }
+  const tagged = tags.map(tag => `${tag.id} ${tag.version}`).join(msg(' or '));
+  return msg(str`${kind}, tagged ${tagged}`);
 }
 
 function sameKind(ied: Element, requirement: IedRequirement): boolean {
@@ -80,17 +83,19 @@ export function noCandidateReason(
   const ofKind = iedsOf(doc).filter(ied => sameKind(ied, requirement));
   const kind = `${requirement.manufacturer} ${requirement.type}`;
   if (ofKind.length === 0) {
-    return `No ${kind} IED in this file`;
+    return msg(str`No ${kind} IED in this file`);
   }
 
   if (!ofKind.some(ied => hasRequiredTag(ied, requirement))) {
-    return `${ofKind.length} ${kind} IED${ofKind.length === 1 ? '' : 's'} found, but none is tagged ${requiredTags(
-      requirement
-    )
+    const count = ofKind.length;
+    const tagged = requiredTags(requirement)
       .map(tag => `${tag.id} ${tag.version}`)
-      .join(' or ')}`;
+      .join(msg(' or '));
+    return count === 1
+      ? msg(str`1 ${kind} IED found, but none is tagged ${tagged}`)
+      : msg(str`${count} ${kind} IEDs found, but none is tagged ${tagged}`);
   }
-  return 'Every matching IED is used by another function';
+  return msg('Every matching IED is used by another function');
 }
 
 /** The functions of a version, in the order they are listed. */

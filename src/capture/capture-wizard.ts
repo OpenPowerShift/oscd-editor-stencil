@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { msg, str } from '@lit/localize';
+import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdCheckbox } from '@omicronenergy/oscd-ui/checkbox/OscdCheckbox.js';
@@ -35,6 +35,7 @@ import {
 } from '../foundation/stencil-model.js';
 import type { Application, StencilData } from '../foundation/types.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
+import { problemText } from '../shared/problem-text.js';
 import { themeStyles } from '../theme.js';
 
 type Step = 'ieds' | 'blocks' | 'details' | 'review' | 'done';
@@ -89,6 +90,11 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     'oscd-switch': OscdSwitch,
     'oscd-text-button': OscdTextButton
   };
+
+  constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+  }
 
   @property({ attribute: false }) doc?: XMLDocument;
 
@@ -439,7 +445,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
             label=${str`${msg('Function for')} ${ied}`}
             .value=${this.names[ied] ?? ''}
             .error=${!!problems[ied]}
-            .errorText=${problems[ied] ? msg(problems[ied]) : ''}
+            .errorText=${problems[ied] ? problemText(problems[ied]) : ''}
             @input=${(e: Event) => {
               this.names = {
                 ...this.names,

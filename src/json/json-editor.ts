@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { msg } from '@lit/localize';
+import { msg, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
@@ -29,6 +29,11 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
     'oscd-icon': OscdIcon,
     'oscd-text-button': OscdTextButton
   };
+
+  constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+  }
 
   @property({ attribute: false }) stencil!: StencilData;
 

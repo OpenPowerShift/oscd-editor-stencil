@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<file target-language="de" source-language="en" original="lit-localize-inputs" datatype="plaintext">
+<body>
+<trans-unit id="sad9022260550a18e">
+  <source>Choose application</source>
+  <target>Anwendung wählen</target>
+</trans-unit>
+<trans-unit id="s6f65969f988ee1df">
+  <source>Assign IEDs</source>
+  <target>IEDs zuweisen</target>
+</trans-unit>
+<trans-unit id="s2d72b94a3e5dcc40">
+  <source>Review and apply</source>
+  <target>Prüfen und anwenden</target>
+</trans-unit>
+<trans-unit id="s3741f519c32ac391">
+  <source>New</source>
+  <target>Neu</target>
+</trans-unit>
+<trans-unit id="s5ff6bb134516687c">
+  <source>Already present</source>
+  <target>Bereits vorhanden</target>
+</trans-unit>
+<trans-unit id="s669b18c6d2d9c95b">
+  <source>None</source>
+  <target>Keine</target>
+</trans-unit>
+<trans-unit id="s0a11c2ffb8309d1a">
+  <source>Not found</source>
+  <target>Nicht gefunden</target>
+</trans-unit>
+<trans-unit id="sdf6e536822b263c7">
+  <source>Not fully applied</source>
+  <target>Nicht vollständig angewendet</target>
+</trans-unit>
+<trans-unit id="se871c20e39ace2a5">
+  <source>Added</source>
+  <target>Hinzugefügt</target>
+</trans-unit>
+<trans-unit id="s06735a3710230bd7">
+  <source>Not applied</source>
+  <target>Nicht angewendet</target>
+</trans-unit>
+<trans-unit id="s18aab33fa5111902">
+  <source>Mappings</source>
+  <target>Zuordnungen</target>
+</trans-unit>
+<trans-unit id="sa557ae6bee9148a6">
+  <source>Progress</source>
+  <target>Fortschritt</target>
+</trans-unit>
+<trans-unit id="sbebf9a3e4bdbd477">
+  <source>This application has no version that can be used.</source>
+  <target>Diese Anwendung hat keine verwendbare Version.</target>
+</trans-unit>
+<trans-unit id="s50fbb31372646adf">
+  <source>Choose an application to see what it needs.</source>
+  <target>Wählen Sie eine Anwendung, um zu sehen, was sie benötigt.</target>
+</trans-unit>
+<trans-unit id="sf4122b220926be97">
+  <source>Version</source>
+  <target>Version</target>
+</trans-unit>
+<trans-unit id="see162ee5cde2f2c4">
+  <source>deprecated</source>
+  <target>veraltet</target>
+</trans-unit>
+<trans-unit id="s92fbe04b0dae3b40">
+  <source><x id="0" equiv-text="${summary.functions}"/> functions</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> Funktionen</target>
+</trans-unit>
+<trans-unit id="s513894813b749d82">
+  <source><x id="0" equiv-text="${summary.goose}"/> GOOSE</source>
+  <target><x id="0" equiv-text="${summary.goose}"/> GOOSE</target>
+</trans-unit>
+<trans-unit id="s20c5e337a27d09a2">
+  <source><x id="0" equiv-text="${summary.smv}"/> SV</source>
+  <target><x id="0" equiv-text="${summary.smv}"/> SV</target>
+</trans-unit>
+<trans-unit id="sb6cc394b6c066c1f">
+  <source><x id="0" equiv-text="${summary.subscriptions}"/> subscriptions</source>
+  <target><x id="0" equiv-text="${summary.subscriptions}"/> Abonnements</target>
+</trans-unit>
+<trans-unit id="sdeef978f7a4cd49f">
+  <source><x id="0" equiv-text="${summary.supervisions}"/> supervisions</source>
+  <target><x id="0" equiv-text="${summary.supervisions}"/> Überwachungen</target>
+</trans-unit>
+<trans-unit id="s0d9e6884f8c4ba1a">
+  <source>Needs</source>
+  <target>Benötigt</target>
+</trans-unit>
+<trans-unit id="s0fbf6dc6a1966408">
+  <source>Next</source>
+  <target>Weiter</target>
+</trans-unit>
+<trans-unit id="sfa17651cc21019bc">
+  <source>This stencil has no applications yet. Open a stencil file, or create an application from this document on the Create tab.</source>
+  <target>Dieses Stencil enthält noch keine Anwendungen. Öffnen Sie eine Stencil-Datei oder erstellen Sie auf dem Reiter „Erstellen“ eine Anwendung aus diesem Dokument.</target>
+</trans-unit>
+<trans-unit id="s6ba50bb0842ba1e2">
+  <source>Applications</source>
+  <target>Anwendungen</target>
+</trans-unit>
+<trans-unit id="s0e4b3ddb36d2e0ed">
+  <source>Show deprecated</source>
+  <target>Veraltete anzeigen</target>
+</trans-unit>
+<trans-unit id="s355b21b89ce5d9c5">
+  <source>Details</source>
+  <target>Details</target>
+</trans-unit>
+<trans-unit id="s411d4119c9168bf5">
+  <source>IED</source>
+  <target>IED</target>
+</trans-unit>
+<trans-unit id="sbf4e5f7cb18b3fa6">
+  <source>Not assigned</source>
+  <target>Nicht zugewiesen</target>
+</trans-unit>
+<trans-unit id="s1ac83414fc11ea89">
+  <source>Assign an IED to each function</source>
+  <target>Weisen Sie jeder Funktion ein IED zu</target>
+</trans-unit>
+<trans-unit id="s37b1b47a848d4147">
+  <source><x id="0" equiv-text="${assigned}"/> of <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> functions assigned</source>
+  <target><x id="0" equiv-text="${assigned}"/> von <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> Funktionen zugewiesen</target>
+</trans-unit>
+<trans-unit id="sc16e00a7a8b2fde2">
+  <source>Back</source>
+  <target>Zurück</target>
+</trans-unit>
+<trans-unit id="sb4f1dffbb6be6302">
+  <source>Clear</source>
+  <target>Zurücksetzen</target>
+</trans-unit>
+<trans-unit id="s1035f81bb15a248d">
+  <source>Assign automatically</source>
+  <target>Automatisch zuweisen</target>
+</trans-unit>
+<trans-unit id="sfc53e352afbca881">
+  <source>Review</source>
+  <target>Prüfen</target>
+</trans-unit>
+<trans-unit id="s0986becbd33f3d21">
+  <source><x id="0" equiv-text="${plan.subscriptions}"/> new subscriptions</source>
+  <target><x id="0" equiv-text="${plan.subscriptions}"/> neue Abonnements</target>
+</trans-unit>
+<trans-unit id="se368edd7067b84d1">
+  <source><x id="0" equiv-text="${plan.supervisions}"/> new supervisions</source>
+  <target><x id="0" equiv-text="${plan.supervisions}"/> neue Überwachungen</target>
+</trans-unit>
+<trans-unit id="sb353cf3b779a22b9">
+  <source><x id="0" equiv-text="${plan.qualityLinks}"/> SEL quality links</source>
+  <target><x id="0" equiv-text="${plan.qualityLinks}"/> SEL-Qualitätsverknüpfungen</target>
+</trans-unit>
+<trans-unit id="s33566b94bb4e378e">
+  <source><x id="0" equiv-text="${plan.present}"/> already present</source>
+  <target><x id="0" equiv-text="${plan.present}"/> bereits vorhanden</target>
+</trans-unit>
+<trans-unit id="s5488354bf78205ab">
+  <source>What will change</source>
+  <target>Was sich ändert</target>
+</trans-unit>
+<trans-unit id="s30779f9fe95803ff">
+  <source>Control block</source>
+  <target>Steuerblock</target>
+</trans-unit>
+<trans-unit id="s19f8e21fef08fb25">
+  <source>Subscriptions</source>
+  <target>Abonnements</target>
+</trans-unit>
+<trans-unit id="sc22d5bb13dc1fd22">
+  <source>SEL quality</source>
+  <target>SEL-Qualität</target>
+</trans-unit>
+<trans-unit id="s2907597183cde505">
+  <source>These could not be found and will be skipped:</source>
+  <target>Diese wurden nicht gefunden und werden übersprungen:</target>
+</trans-unit>
+<trans-unit id="s2ec4f91e0cacf550">
+  <source>Everything is already in place. There is nothing to apply.</source>
+  <target>Alles ist bereits vorhanden. Es gibt nichts anzuwenden.</target>
+</trans-unit>
+<trans-unit id="sb8f855b49234b81b">
+  <source>Apply</source>
+  <target>Anwenden</target>
+</trans-unit>
+<trans-unit id="s1d05e3f94a5acd2a">
+  <source>Applied</source>
+  <target>Angewendet</target>
+</trans-unit>
+<trans-unit id="sc514945c52ca0e35">
+  <source><x id="0" equiv-text="${plan.subscriptions}"/> subscriptions, <x id="1" equiv-text="${plan.supervisions}"/> supervisions and <x id="2" equiv-text="${plan.qualityLinks}"/> SEL quality links were added.</source>
+  <target><x id="0" equiv-text="${plan.subscriptions}"/> Abonnements, <x id="1" equiv-text="${plan.supervisions}"/> Überwachungen und <x id="2" equiv-text="${plan.qualityLinks}"/> SEL-Qualitätsverknüpfungen wurden hinzugefügt.</target>
+</trans-unit>
+<trans-unit id="s234fc50a26407f12">
+  <source>This is one change. Use undo in the menu bar to revert it.</source>
+  <target>Das ist eine einzelne Änderung. Mit „Rückgängig“ in der Menüleiste können Sie sie zurücknehmen.</target>
+</trans-unit>
+<trans-unit id="s40e29c4b0f40d616">
+  <source><x id="0" equiv-text="${plan.errors.length}"/> items could not be found and were skipped.</source>
+  <target><x id="0" equiv-text="${plan.errors.length}"/> Elemente wurden nicht gefunden und übersprungen.</target>
+</trans-unit>
+<trans-unit id="sbeed100eff5b4638">
+  <source>Apply another</source>
+  <target>Weitere anwenden</target>
+</trans-unit>
+<trans-unit id="s290abd8f29c17984">
+  <source>Please open a file to apply a stencil.</source>
+  <target>Bitte öffnen Sie eine Datei, um ein Stencil anzuwenden.</target>
+</trans-unit>
+<trans-unit id="s6cbd935e304fbc68">
+  <source>Select IEDs</source>
+  <target>IEDs auswählen</target>
+</trans-unit>
+<trans-unit id="s5139df466fc8c19e">
+  <source>Select control blocks</source>
+  <target>Steuerblöcke auswählen</target>
+</trans-unit>
+<trans-unit id="s5c8cd5c7a43818a3">
+  <source>Name the application</source>
+  <target>Anwendung benennen</target>
+</trans-unit>
+<trans-unit id="saf74fe0fb31364e9">
+  <source>Review and save</source>
+  <target>Prüfen und speichern</target>
+</trans-unit>
+<trans-unit id="s8cd3cd7ed1042300">
+  <source>Which IEDs make up the application?</source>
+  <target>Aus welchen IEDs besteht die Anwendung?</target>
+</trans-unit>
+<trans-unit id="se8b09e6d29a862ab">
+  <source>Choose at least two. The control blocks one of them sends to another are the application.</source>
+  <target>Wählen Sie mindestens zwei. Die Steuerblöcke, die eines davon an ein anderes sendet, bilden die Anwendung.</target>
+</trans-unit>
+<trans-unit id="sa83e3c9391fd999e">
+  <source>None of the chosen IEDs is subscribed to another one, so there is nothing to capture. Go back and choose other IEDs.</source>
+  <target>Keines der gewählten IEDs abonniert ein anderes, daher gibt es nichts zu erfassen. Gehen Sie zurück und wählen Sie andere IEDs.</target>
+</trans-unit>
+<trans-unit id="s0ae5774401ea555f">
+  <source>Which control blocks belong to the application?</source>
+  <target>Welche Steuerblöcke gehören zur Anwendung?</target>
+</trans-unit>
+<trans-unit id="s9ee29a3dcfc0815b">
+  <source>Untick what should not be part of it. Ticking a row, a column or an IED ticks all of its cells.</source>
+  <target>Entfernen Sie das Häkchen bei allem, was nicht dazugehören soll. Das Markieren einer Zeile, einer Spalte oder eines IEDs markiert alle zugehörigen Zellen.</target>
+</trans-unit>
+<trans-unit id="sf3815ce4f391b1fb">
+  <source>All sent to</source>
+  <target>Alles gesendet an</target>
+</trans-unit>
+<trans-unit id="sf3524ee4f36a296f">
+  <source>All sent by</source>
+  <target>Alles gesendet von</target>
+</trans-unit>
+<trans-unit id="s5a5dd31ad689f68d">
+  <source>All of</source>
+  <target>Alle von</target>
+</trans-unit>
+<trans-unit id="s079a052719914d71">
+  <source>Category</source>
+  <target>Kategorie</target>
+</trans-unit>
+<trans-unit id="sef49aec68fd1dc66">
+  <source>Name</source>
+  <target>Name</target>
+</trans-unit>
+<trans-unit id="s63d894b1ddb06289">
+  <source>Description</source>
+  <target>Beschreibung</target>
+</trans-unit>
+<trans-unit id="s9e28b6c198b9db99">
+  <source>Version description</source>
+  <target>Versionsbeschreibung</target>
+</trans-unit>
+<trans-unit id="s656dfdc68a98502e">
+  <source>Functions</source>
+  <target>Funktionen</target>
+</trans-unit>
+<trans-unit id="s4043366468f4035a">
+  <source>Each IED becomes a function with a name of its own. Applying the stencil assigns an IED to each function.</source>
+  <target>Jedes IED wird zu einer Funktion mit eigenem Namen. Beim Anwenden des Stencils wird jeder Funktion ein IED zugewiesen.</target>
+</trans-unit>
+<trans-unit id="s37d04f5c79da58ce">
+  <source>Function for</source>
+  <target>Funktion für</target>
+</trans-unit>
+<trans-unit id="sb89bf27ea2b8f41c">
+  <source><x id="0" equiv-text="${summary.functions}"/> functions, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> subscriptions, <x id="4" equiv-text="${summary.supervisions}"/> supervisions</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> Funktionen, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> Abonnements, <x id="4" equiv-text="${summary.supervisions}"/> Überwachungen</target>
+</trans-unit>
+<trans-unit id="sb0ddaa009fc11de9">
+  <source>These IEDs have no stencil tag, so any IED of the same manufacturer and type will match their function: <x id="0" equiv-text="${untagged.join(', ')}"/>.</source>
+  <target>Diese IEDs haben kein Stencil-Tag, daher passt jedes IED desselben Herstellers und Typs zu ihrer Funktion: <x id="0" equiv-text="${untagged.join(', ')}"/>.</target>
+</trans-unit>
+<trans-unit id="s14eeaddb3d20b610">
+  <source>Tag IEDs…</source>
+  <target>IEDs markieren …</target>
+</trans-unit>
+<trans-unit id="s0a96069a6c36b823">
+  <source>Version <x id="0" equiv-text="${version.version}"/> of this application exists. Replace it.</source>
+  <target>Version <x id="0" equiv-text="${version.version}"/> dieser Anwendung existiert bereits. Ersetzen.</target>
+</trans-unit>
+<trans-unit id="s0acbe97a2a921131">
+  <source>Save to stencil</source>
+  <target>Im Stencil speichern</target>
+</trans-unit>
+<trans-unit id="s44fa1773e1e78784">
+  <source>Saved</source>
+  <target>Gespeichert</target>
+</trans-unit>
+<trans-unit id="s8a2388189a587f3b">
+  <source><x id="0" equiv-text="${this.details.category.trim()}"/> › <x id="1" equiv-text="${this.details.name.trim()} ${this.saved?.version ?? ''}"/> is in the stencil.</source>
+  <target><x id="0" equiv-text="${this.details.category.trim()}"/> › <x id="1" equiv-text="${this.details.name.trim()} ${this.saved?.version ?? ''}"/> ist im Stencil.</target>
+</trans-unit>
+<trans-unit id="sc639505cae7f66ea">
+  <source>Capture another</source>
+  <target>Weitere erfassen</target>
+</trans-unit>
+<trans-unit id="sd62334035e4fc59c">
+  <source>Please open a file to capture a stencil application.</source>
+  <target>Bitte öffnen Sie eine Datei, um eine Stencil-Anwendung zu erfassen.</target>
+</trans-unit>
+<trans-unit id="sd9258c2c9a038301">
+  <source>Loading the editor…</source>
+  <target>Editor wird geladen …</target>
+</trans-unit>
+<trans-unit id="sddba4311e0750514">
+  <source>This cannot be applied yet:</source>
+  <target>Dies kann noch nicht angewendet werden:</target>
+</trans-unit>
+<trans-unit id="sd89a2e529b31ef43">
+  <source>Revert</source>
+  <target>Zurücksetzen</target>
+</trans-unit>
+<trans-unit id="s7181a5504472e856">
+  <source>Apply changes</source>
+  <target>Änderungen anwenden</target>
+</trans-unit>
+<trans-unit id="s8bfc48019cc626f3">
+  <source>Stencil</source>
+  <target>Stencil</target>
+</trans-unit>
+<trans-unit id="s3914cb410fca44d4">
+  <source>Import</source>
+  <target>Importieren</target>
+</trans-unit>
+<trans-unit id="s293aa6a6446fb153">
+  <source>Export</source>
+  <target>Exportieren</target>
+</trans-unit>
+<trans-unit id="sc16f79fac7b7fcec">
+  <source>Remove from library</source>
+  <target>Aus Bibliothek entfernen</target>
+</trans-unit>
+<trans-unit id="sbe208cfed1405a6a">
+  <source>A name is needed</source>
+  <target>Ein Name ist erforderlich</target>
+</trans-unit>
+<trans-unit id="sf1e9d421f35b51e5">
+  <source>Application</source>
+  <target>Anwendung</target>
+</trans-unit>
+<trans-unit id="sf56f6457dbf48674">
+  <source>Delete application</source>
+  <target>Anwendung löschen</target>
+</trans-unit>
+<trans-unit id="s358e08de4fbebf51">
+  <source>Version <x id="0" equiv-text="${version.version}"/></source>
+  <target>Version <x id="0" equiv-text="${version.version}"/></target>
+</trans-unit>
+<trans-unit id="sdb361549fb6c1b58">
+  <source>Deprecated, hidden when applying</source>
+  <target>Veraltet, beim Anwenden ausgeblendet</target>
+</trans-unit>
+<trans-unit id="s8db7bdca5ae2bc60">
+  <source><x id="0" equiv-text="${summary.functions}"/> functions, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> supervisions</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> Funktionen, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> Überwachungen</target>
+</trans-unit>
+<trans-unit id="sa3b01d505e7a6440">
+  <source>Functions and what they require</source>
+  <target>Funktionen und was sie benötigen</target>
+</trans-unit>
+<trans-unit id="s07da69ddbc0d4c69">
+  <source>Function</source>
+  <target>Funktion</target>
+</trans-unit>
+<trans-unit id="scb320e45978d3390">
+  <source>Manufacturer</source>
+  <target>Hersteller</target>
+</trans-unit>
+<trans-unit id="sd2223afb7d6b100d">
+  <source>Type</source>
+  <target>Typ</target>
+</trans-unit>
+<trans-unit id="s3f8a7108a7e4e72c">
+  <source>Stencil Id</source>
+  <target>Stencil-ID</target>
+</trans-unit>
+<trans-unit id="sf00cb7eb61f87f93">
+  <source>Stencil version</source>
+  <target>Stencil-Version</target>
+</trans-unit>
+<trans-unit id="s29031638bc320f02">
+  <source>Delete version</source>
+  <target>Version löschen</target>
+</trans-unit>
+<trans-unit id="sb178f0ccd7d93346">
+  <source>Tag IEDs in this document…</source>
+  <target>IEDs in diesem Dokument markieren …</target>
+</trans-unit>
+<trans-unit id="sb347c8b9808e06e4">
+  <source>Control blocks</source>
+  <target>Steuerblöcke</target>
+</trans-unit>
+<trans-unit id="s1df5caff6b6ce253">
+  <source>Delete this version?</source>
+  <target>Diese Version löschen?</target>
+</trans-unit>
+<trans-unit id="s28277a700edb9b66">
+  <source><x id="0" equiv-text="${app.name} ${this.version.version}"/> is removed from this stencil. Documents are not changed.</source>
+  <target><x id="0" equiv-text="${app.name} ${this.version.version}"/> wird aus diesem Stencil entfernt. Dokumente werden nicht geändert.</target>
+</trans-unit>
+<trans-unit id="s8c72d77437ae912d">
+  <source>Delete this application?</source>
+  <target>Diese Anwendung löschen?</target>
+</trans-unit>
+<trans-unit id="s1ef77ece470a57b4">
+  <source><x id="0" equiv-text="${app.name}"/> and its <x id="1" equiv-text="${app.versions.length}"/> versions are removed from this stencil. Documents are not changed.</source>
+  <target><x id="0" equiv-text="${app.name}"/> und ihre <x id="1" equiv-text="${app.versions.length}"/> Versionen werden aus diesem Stencil entfernt. Dokumente werden nicht geändert.</target>
+</trans-unit>
+<trans-unit id="sa8d2db460600da0e">
+  <source>Remove this stencil from the library?</source>
+  <target>Dieses Stencil aus der Bibliothek entfernen?</target>
+</trans-unit>
+<trans-unit id="s31aa627cdc99bb50">
+  <source><x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/> is removed. Export it first to keep a copy.</source>
+  <target><x id="0" equiv-text="${this.stencil.name} ${this.stencil.version}"/> wird entfernt. Exportieren Sie es zuerst, um eine Kopie zu behalten.</target>
+</trans-unit>
+<trans-unit id="s2ceb11be2290bb1b">
+  <source>Cancel</source>
+  <target>Abbrechen</target>
+</trans-unit>
+<trans-unit id="sdc673e73b5c13aea">
+  <source>Delete</source>
+  <target>Löschen</target>
+</trans-unit>
+<trans-unit id="sf2e6f9caacbc4618">
+  <source>This stencil has no applications yet. Import a stencil, or capture one from a document.</source>
+  <target>Dieses Stencil enthält noch keine Anwendungen. Importieren Sie ein Stencil oder erfassen Sie eine aus einem Dokument.</target>
+</trans-unit>
+<trans-unit id="s949f1fc431d7ff4a">
+  <source>Choose an application or version to see and change it.</source>
+  <target>Wählen Sie eine Anwendung oder Version, um sie anzusehen und zu ändern.</target>
+</trans-unit>
+<trans-unit id="sa885fa2c58bcbbbd">
+  <source>Removed from the library</source>
+  <target>Aus der Bibliothek entfernt</target>
+</trans-unit>
+<trans-unit id="s1f7698c061c208c9">
+  <source>Open</source>
+  <target>Öffnen</target>
+</trans-unit>
+<trans-unit id="s4ffd52dde21767ae">
+  <source>Saved <x id="0" equiv-text="${category}"/> › <x id="1" equiv-text="${name} ${version}"/> to the stencil</source>
+  <target><x id="0" equiv-text="${category}"/> › <x id="1" equiv-text="${name} ${version}"/> im Stencil gespeichert</target>
+</trans-unit>
+<trans-unit id="s2ca7699f7c5a4996">
+  <source>Manage</source>
+  <target>Verwalten</target>
+</trans-unit>
+<trans-unit id="s382a2aa3984474dd">
+  <source>Create</source>
+  <target>Erstellen</target>
+</trans-unit>
+<trans-unit id="sb7d9a728a9bf81f8">
+  <source>GOOSE</source>
+  <target>GOOSE</target>
+</trans-unit>
+<trans-unit id="s152a7028ce33bbb1">
+  <source>Sampled values</source>
+  <target>Abtastwerte</target>
+</trans-unit>
+<trans-unit id="s3d3b4f88fa2273ee">
+  <source>Signals</source>
+  <target>Signale</target>
+</trans-unit>
+<trans-unit id="s4a3cc20bf49dbb04">
+  <source>Supervision</source>
+  <target>Überwachung</target>
+</trans-unit>
+<trans-unit id="s0ad6e780f99f4dc9">
+  <source>SEL message quality</source>
+  <target>SEL-Meldungsqualität</target>
+</trans-unit>
+<trans-unit id="sf675f879b1c892c6">
+  <source>Quality</source>
+  <target>Qualität</target>
+</trans-unit>
+<trans-unit id="s43b3fbe708d2e259">
+  <source>This version has no control blocks.</source>
+  <target>Diese Version hat keine Steuerblöcke.</target>
+</trans-unit>
+<trans-unit id="s39eb433b61ce7ef0">
+  <source>Show supervisions</source>
+  <target>Überwachungen anzeigen</target>
+</trans-unit>
+<trans-unit id="sa3387d2afcfce197">
+  <source>Control blocks from <x id="0" equiv-text="${rows.length}"/> functions to <x id="1" equiv-text="${columns.length}"/> functions</source>
+  <target>Steuerblöcke von <x id="0" equiv-text="${rows.length}"/> Funktionen an <x id="1" equiv-text="${columns.length}"/> Funktionen</target>
+</trans-unit>
+<trans-unit id="sa6ab5184d6315895">
+  <source>From</source>
+  <target>Von</target>
+</trans-unit>
+<trans-unit id="s09353907b5c79284">
+  <source>To</source>
+  <target>An</target>
+</trans-unit>
+<trans-unit id="s86568cdb5076879a">
+  <source>Category and name are needed</source>
+  <target>Kategorie und Name sind erforderlich</target>
+</trans-unit>
+<trans-unit id="sb0c87daee454ab44">
+  <source>An application with this category and name exists</source>
+  <target>Eine Anwendung mit dieser Kategorie und diesem Namen existiert bereits</target>
+</trans-unit>
+<trans-unit id="s10b8dabb2f37c3b5">
+  <source>A version is needed</source>
+  <target>Eine Version ist erforderlich</target>
+</trans-unit>
+<trans-unit id="s43fee92f6fb5d1b7">
+  <source>This version exists</source>
+  <target>Diese Version existiert bereits</target>
+</trans-unit>
+<trans-unit id="sff7424dbd84948ca">
+  <source>A function name is needed</source>
+  <target>Ein Funktionsname ist erforderlich</target>
+</trans-unit>
+<trans-unit id="s038e49e41809cab1">
+  <source>A function with this name exists</source>
+  <target>Eine Funktion mit diesem Namen existiert bereits</target>
+</trans-unit>
+<trans-unit id="s4e0f369375b7375e">
+  <source>Function names must be different</source>
+  <target>Funktionsnamen müssen verschieden sein</target>
+</trans-unit>
+<trans-unit id="s8c90ac72b6b2d832">
+  <source> or </source>
+  <target> oder </target>
+</trans-unit>
+<trans-unit id="s2643a6f2146cc1bb">
+  <source><x id="0" equiv-text="${kind}"/>, tagged <x id="1" equiv-text="${tagged}"/></source>
+  <target><x id="0" equiv-text="${kind}"/>, markiert mit <x id="1" equiv-text="${tagged}"/></target>
+</trans-unit>
+<trans-unit id="sb6ddbb6dba945467">
+  <source>No <x id="0" equiv-text="${kind}"/> IED in this file</source>
+  <target>Kein <x id="0" equiv-text="${kind}"/>-IED in dieser Datei</target>
+</trans-unit>
+<trans-unit id="s105169497b8d4e5d">
+  <source>1 <x id="0" equiv-text="${kind}"/> IED found, but none is tagged <x id="1" equiv-text="${tagged}"/></source>
+  <target>1 <x id="0" equiv-text="${kind}"/>-IED gefunden, aber keines ist mit <x id="1" equiv-text="${tagged}"/> markiert</target>
+</trans-unit>
+<trans-unit id="sa55f927bee55b85b">
+  <source><x id="0" equiv-text="${count} ${kind}"/> IEDs found, but none is tagged <x id="1" equiv-text="${tagged}"/></source>
+  <target><x id="0" equiv-text="${count} ${kind}"/> IEDs gefunden, aber keines ist mit <x id="1" equiv-text="${tagged}"/> markiert</target>
+</trans-unit>
+<trans-unit id="sd56957bead204a8e">
+  <source>Every matching IED is used by another function</source>
+  <target>Jedes passende IED wird von einer anderen Funktion verwendet</target>
+</trans-unit>
+<trans-unit id="scb150b48092e6b1c">
+  <source>Select IEDs to add stencil metadata to</source>
+  <target>IEDs auswählen, denen Stencil-Metadaten hinzugefügt werden</target>
+</trans-unit>
+<trans-unit id="s29ec0f125c502eb5">
+  <source>Add stencil metadata</source>
+  <target>Stencil-Metadaten hinzufügen</target>
+</trans-unit>
+<trans-unit id="s1ece8821c26bc69a">
+  <source>Metadata added to 1 IED</source>
+  <target>Metadaten zu 1 IED hinzugefügt</target>
+</trans-unit>
+<trans-unit id="sef3bb2182ecfb4c8">
+  <source>Metadata added to <x id="0" equiv-text="${ieds.length}"/> IEDs</source>
+  <target>Metadaten zu <x id="0" equiv-text="${ieds.length}"/> IEDs hinzugefügt</target>
+</trans-unit>
+<trans-unit id="sa66a897b245e91f9">
+  <source>Add Metadata</source>
+  <target>Metadaten hinzufügen</target>
+</trans-unit>
+</body>
+</file>
+</xliff>

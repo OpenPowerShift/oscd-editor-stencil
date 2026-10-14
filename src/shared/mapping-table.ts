@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { msg, str } from '@lit/localize';
+import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
@@ -34,6 +34,11 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
     'oscd-icon': OscdIcon,
     'oscd-switch': OscdSwitch
   };
+
+  constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+  }
 
   @property({ attribute: false }) controlBlocks: ControlBlockInfo[] = [];
 

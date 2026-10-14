@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
 
 import { property, query, state } from 'lit/decorators.js';
-import { msg, str } from '@lit/localize';
+import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
@@ -45,6 +45,7 @@ import { OscdStencilCapture } from './capture/capture-wizard.js';
 import type { StencilCaptureDetail } from './capture/capture-wizard.js';
 import { OscdStencilJson } from './json/json-editor.js';
 import { OscdStencilManage } from './manage/manage-view.js';
+import { useLocale } from './localization.js';
 import { themeStyles } from './theme.js';
 
 /**
@@ -73,12 +74,20 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     'oscd-text-button': OscdTextButton
   };
 
+  constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+  }
+
   @property({ attribute: false })
   doc!: XMLDocument;
 
   @property() docName!: string;
 
   @property({ attribute: false }) docVersion?: unknown;
+
+  /** The language of the interface, such as `de` or `pt`. */
+  @property() locale = 'en';
 
   @property() tabIndex: number = 0;
 
@@ -223,6 +232,10 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   protected willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
 
+    if (changedProperties.has('locale')) {
+      useLocale(this.locale);
+    }
+
     // keep the stencil in local storage
     if (changedProperties.has('stencilData')) {
       this.storeSettings();
@@ -242,16 +255,16 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         event.preventDefault();
       }}
     >
-      <div slot="headline">Select IEDs to add Stencil metadata to</div>
+      <div slot="headline">${msg('Select IEDs to add stencil metadata to')}</div>
       <form slot="content" id="stencil-metadata" method="dialog">
         <oscd-outlined-text-field
           id="stencil-id"
-          label="Stencil Id"
+          label=${msg('Stencil Id')}
           value="My Stencil"
         ></oscd-outlined-text-field>
         <oscd-outlined-text-field
           id="stencil-ver"
-          label="Stencil Version"
+          label=${msg('Stencil version')}
           value="1.0.0"
         ></oscd-outlined-text-field>
         <oscd-selection-list
@@ -263,7 +276,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       </form>
       <div slot="actions">
         <oscd-text-button form="stencil-metadata" value="reset"
-          >Cancel</oscd-text-button
+          >${msg('Cancel')}</oscd-text-button
         >
         <oscd-text-button
           form="stencil-metadata"
@@ -279,18 +292,20 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             );
             if (tagEdits.length > 0) {
               this.dispatchEvent(
-                newEditEventV2(tagEdits, { title: 'Add stencil metadata' })
+                newEditEventV2(tagEdits, { title: msg('Add stencil metadata') })
               );
             }
 
             const ieds = this.iedsStencilMetadataUI?.selectedElements;
 
-            this.notify(`Metadata added to ${ieds.length} IED${
-              ieds.length > 1 || ieds.length === 0 ? 's' : ''
-            }`);
+            this.notify(
+              ieds.length === 1
+                ? msg('Metadata added to 1 IED')
+                : msg(str`Metadata added to ${ieds.length} IEDs`)
+            );
             this.requestUpdate();
           }}"
-          >Add Metadata</oscd-text-button
+          >${msg('Add Metadata')}</oscd-text-button
         >
       </div></oscd-dialog
     >`;

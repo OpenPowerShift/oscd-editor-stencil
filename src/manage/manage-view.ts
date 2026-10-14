@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { msg, str } from '@lit/localize';
+import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
@@ -39,6 +39,7 @@ import type {
   VersionedApplications
 } from '../foundation/types.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
+import { problemText } from '../shared/problem-text.js';
 import { themeStyles } from '../theme.js';
 
 /** What is selected in the tree. A version is selected with its application. */
@@ -80,6 +81,11 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     'oscd-tree': OscdTree,
     'oscd-tree-item': OscdTreeItem
   };
+
+  constructor() {
+    super();
+    updateWhenLocaleChanges(this);
+  }
 
   @property({ attribute: false }) stencil!: StencilData;
 
@@ -260,7 +266,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       .errorText=${this.problems[id] ?? ''}
       @change=${(e: Event) => {
         const problem = commit((e.target as OscdOutlinedTextField).value);
-        this.setProblem(id, problem ? msg(problem) : null);
+        this.setProblem(id, problem ? problemText(problem) : null);
       }}
     ></oscd-outlined-text-field>`;
   }
