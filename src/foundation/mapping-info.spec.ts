@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { identity, controlBlockObjRef } from '@openenergytools/scl-lib';
+import { identity, controlBlockObjRef } from '@openscd/scl-lib';
 
 import { getMappingInfo } from './mapping-info.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
@@ -9,14 +9,14 @@ import { sclLib013Identities } from '../testing/golden/scl-lib-0.13.3-identities
 const doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
 
 describe('golden: behaviour recorded before the upgrade', () => {
-  it('identity() still matches scl-lib 0.13.3 for every stencil element type', () => {
+  it('scl-lib 2 identity() matches the 0.13.3 identities for every stencil element type', () => {
     Object.entries(sclLib013Identities.identities).forEach(([selector, expected]) => {
       const actual = Array.from(doc.querySelectorAll(selector)).map(e => String(identity(e)));
       expect(actual, selector).to.deep.equal(expected);
     });
   });
 
-  it('controlBlockObjRef() is unchanged', () => {
+  it('controlBlockObjRef() matches 0.13.3', () => {
     const actual = Array.from(doc.querySelectorAll('GSEControl, SampledValueControl')).map(
       e => controlBlockObjRef(e)
     );

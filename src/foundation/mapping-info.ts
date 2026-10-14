@@ -2,7 +2,7 @@ import {
   controlBlockObjRef,
   identity,
   matchDataAttributes
-} from '@openenergytools/scl-lib';
+} from '@openscd/scl-lib';
 
 export type Mapping = {
   ExtRef: string;

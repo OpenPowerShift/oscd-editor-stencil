@@ -38,15 +38,7 @@ import type { MdMenu } from '@material/web/menu/menu';
 import type { Snackbar } from '@material/mwc-snackbar/mwc-snackbar.js';
 import type { MdListItem } from '@material/web/list/list-item.js';
 
-import {
-  Connection,
-  find,
-  subscribe,
-  instantiateSubscriptionSupervision,
-  getReference,
-  Update
-} from '@openenergytools/scl-lib';
-import { newEditEvent } from '@openscd/open-scd-core';
+import { newEditEventV2 } from '@openscd/oscd-api/utils.js';
 
 import { Checkbox } from '@material/web/checkbox/internal/checkbox.js';
 import {
@@ -54,6 +46,14 @@ import {
   getMappingInfo
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
+import { planApply } from './foundation/plan-apply.js';
+import { readIedTag, tagIedEdits } from './foundation/ied-tags.js';
+import type {
+  Application,
+  IedRequirement as IED,
+  StencilData,
+  VersionedApplications
+} from './foundation/types.js';
 import { getIedDescription } from './foundation/ied-description.js';
 
  
@@ -67,42 +67,10 @@ const defaultStencil = {
   applications: []
 };
 
-type IED = {
-  originalName: string;
-  type: string;
-  manufacturer: string;
-  comment?: string;
-  privates: {
-    'OpenSCD-Stencil-Id': string;
-    'OpenSCD-Stencil-Version': string;
-  }[];
-};
-
-type Application = {
-  version: string;
-  description: string;
-  deprecated: boolean;
-  IEDS: Record<string, IED>;
-  ControlBlocks: ControlBlockInfo[];
-};
-
 type ControlBlockTableMapping = {
   id: string;
   from: string;
   to: string;
-};
-
-type VersionedApplications = {
-  category: string;
-  name: string;
-  description: string;
-  versions: Application[];
-};
-
-type StencilData = {
-  name: string;
-  version: string;
-  applications: VersionedApplications[];
 };
 
 type cbSelectionRowData = {
@@ -111,10 +79,6 @@ type cbSelectionRowData = {
 };
 
 type TableData = { toIedNames: string[]; rowInfo: cbSelectionRowData[] };
-
-function newIedIdentity(iedName: string | undefined, id: string): string {
-  return `${iedName}${id}`;
-}
 
 /**
  * A plugin to allow templates of GOOSE and SV using the
@@ -487,155 +451,33 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   }
 
    
-  applyStencil() {
-    let subscriptionsCount = 0;
-    let supervisionsCount = 0;
+  applyStencil(): void {
+    if (!this.selectedAppVersion) {
+      return;
+    }
 
-    const usedFunctionCombinations = [
-      ...combinations([...this.functionToIed.keys()], 2)
-    ];
-    usedFunctionCombinations.forEach((combo: string[]) => {
-      const fn1 = combo[0];
-      const fn2 = combo[1];
+    const plan = planApply(
+      this.doc,
+      this.selectedAppVersion,
+      this.functionToIed
+    );
 
-      const newIed1Name = this.functionToIed.get(fn1)!;
-      const newIed2Name = this.functionToIed.get(fn2)!;
+    if (plan.edits.length > 0) {
+      this.dispatchEvent(
+        newEditEventV2(plan.edits, {
+          title: `Apply stencil ${this.selectedApplication?.name ?? ''} ${
+            this.selectedAppVersion.version
+          }`.trim()
+        })
+      );
+    }
 
-      this.selectedAppVersion?.ControlBlocks.filter(
-        cb =>
-          (cb.from === fn1 && cb.to === fn2) ||
-          (cb.to === fn1 && cb.from === fn2)
-      ).forEach((cb) => {
-        const newFromIed = cb.from === fn1 ? newIed1Name : newIed2Name;
-        const newToIed = cb.to === fn1 ? newIed1Name : newIed2Name;
-
-        const newCbId = newIedIdentity(newFromIed, cb.id);
-
-        const newCb = find(this.doc, cb.type, newCbId);
-
-        if (!newCb) {
-          this.errorMessages.push(`Could not find CB: ${newCbId}`);
-          return;
-        }
-
-        const cbSubscriptions = cb.mappings
-          .map((mapping) => {
-            const newSourceId = newIedIdentity(newFromIed, mapping.FCDA);
-            const newSource = find(this.doc, 'FCDA', newSourceId);
-
-            if (!newSource) {
-              this.errorMessages.push(`Could not find FCDA: ${newSourceId}`);
-              return null;
-            }
-
-            const newSinkId = newIedIdentity(newToIed, mapping.ExtRef);
-            const newSink = find(this.doc, 'ExtRef', newSinkId);
-
-            if (!newSink) {
-              this.errorMessages.push(`Could not find ExtRef: ${newSinkId}`);
-              return null;
-            }
-
-            return {
-              sink: newSink,
-              source: {
-                fcda: newSource,
-                controlBlock: newCb
-              }
-            };
-          })
-          .flatMap(mapping => (mapping ? [mapping] : [])) as Connection[];
-
-        let selSupervision: Update | null = null;
-
-        if (cb.selSupervision) {
-          const qualExtRefId = newIedIdentity(
-            newToIed,
-            cb.selSupervision.ExtRef
-          );
-          const qualExtRef = find(this.doc, 'ExtRef', qualExtRefId);
-          if (!qualExtRef) {
-            this.errorMessages.push(
-              `Could not find ExtRef for quality mapping: ${qualExtRef}`
-            );
-          }
-
-          const cbName = newCb.getAttribute('name')!;
-          const srcLDInst = newCb.closest('LDevice')?.getAttribute('inst');
-          const srcPrefix =
-            newCb.closest('LN0, LN')?.getAttribute('prefix') ?? '';
-          const srcLNClass = newCb.closest('LN0, LN')?.getAttribute('lnClass');
-          const srcLNInst = newCb.closest('LN0, LN')?.getAttribute('inst');
-
-          if (qualExtRef) {
-            selSupervision = {
-              element: qualExtRef,
-              attributes: {
-                iedName: newFromIed,
-                srcCBName: cbName,
-                srcLDInst,
-                ...(srcPrefix && { srcPrefix }),
-                srcLNClass,
-                ...(srcLNInst && { srcLNInst })
-              }
-            };
-          }
-        }
-
-        subscriptionsCount += cbSubscriptions.length;
-        // it is kind of a supervision
-        supervisionsCount += 1;
-
-        this.dispatchEvent(
-          newEditEvent([
-            ...(selSupervision ? [selSupervision] : []),
-            ...subscribe(cbSubscriptions, {
-              force: true,
-              ignoreSupervision: true,
-              checkOnlyBType: true
-            })
-          ])
-        );
-
-        const newSupervisionId = newIedIdentity(newToIed, cb.supervision);
-        const newSupervision = find(this.doc, 'LN', newSupervisionId);
-
-        if (!newSupervision && cb.supervision !== 'None') {
-          this.errorMessages.push(
-            `Could not find Supervision: ${newSupervisionId}`
-          );
-        } else if (cb.supervision !== 'None') {
-          const supervision = instantiateSubscriptionSupervision(
-            {
-              subscriberIedOrLn: newSupervision!,
-              /** The control block to be supervised */
-              sourceControlBlock: newCb
-            },
-            {
-              newSupervisionLn: false,
-              fixedLnInst: -1,
-              checkEditableSrcRef: false,
-              checkDuplicateSupervisions: false,
-              checkMaxSupervisionLimits: false
-            }
-          );
-          if (supervision) {
-            supervisionsCount += 1;
-            this.dispatchEvent(newEditEvent(supervision));
-          } else {
-            this.errorMessages.push(
-              `Could not instantiate supervision: ${newSupervisionId}`
-            );
-          }
-        }
-      });
-    });
-
+    this.errorMessages = plan.errors;
     if (this.errorMessages.length > 0) {
       this.errorDialogUI.show();
     }
 
-    this.snackBarMessage = `${subscriptionsCount} subscriptions and ${supervisionsCount} supervisions done`;
+    this.snackBarMessage = `${plan.subscriptions} subscriptions and ${plan.supervisions} supervisions done`;
     this.snackBarMessageUI.show();
     this.resetApplyStencil();
   }
@@ -731,16 +573,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             (ied) => {
               const { firstLine, secondLine } = getIedDescription(ied);
 
-              const id = ied.querySelector('Private[type="OpenSCD-Stencil-Id"]')
-                ?.textContent;
-              const ver = ied.querySelector(
-                'Private[type="OpenSCD-Stencil-Version"]'
-              )?.textContent;
+              const tag = readIedTag(ied);
 
               return {
                 headline: `${ied.getAttribute('name')!} — ${firstLine}`,
                 supportingText: `${secondLine}${
-                  id && ver ? ` [${id}, ${ver}]` : ''
+                  tag ? ` [${tag.id}, ${tag.version}]` : ''
                 }`,
                 attachedElement: ied
               };
@@ -756,38 +594,19 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           form="stencil-metadata"
           value="ok"
           @click="${() => {
-            this.iedsStencilMetadataUI?.selectedElements.forEach((ied) => {
-              const id = this.doc.createElementNS(
-                this.doc.documentElement.namespaceURI,
-                'Private'
-              );
-              id.setAttribute('type', 'OpenSCD-Stencil-Id');
-              id.textContent = this.stencilMetadataIdUI.value.trim();
-
-              const ver = this.doc.createElementNS(
-                this.doc.documentElement.namespaceURI,
-                'Private'
-              );
-              ver.setAttribute('type', 'OpenSCD-Stencil-Version');
-              ver.textContent = this.stencilMetadataVerUI.value.trim();
-
-              const ref = getReference(ied, 'Private');
-
+            const selectedIeds = this.iedsStencilMetadataUI?.selectedElements;
+            const tagEdits = selectedIeds.flatMap(ied =>
+              tagIedEdits(
+                ied,
+                this.stencilMetadataIdUI.value,
+                this.stencilMetadataVerUI.value
+              )
+            );
+            if (tagEdits.length > 0) {
               this.dispatchEvent(
-                newEditEvent([
-                  {
-                    parent: ied,
-                    node: id,
-                    reference: ref
-                  },
-                  {
-                    parent: ied,
-                    node: ver,
-                    reference: ref
-                  }
-                ])
+                newEditEventV2(tagEdits, { title: 'Add stencil metadata' })
               );
-            });
+            }
 
             const ieds = this.iedsStencilMetadataUI?.selectedElements;
 

@@ -258,7 +258,7 @@ demo/      index.html  index-themed.html  plugins.js  sample.scd  sample-stencil
 - Each `*.ts` has a sibling `*.spec.ts`.
 - All logic is pure functions in `foundation/`. Components pass properties down and raise typed events up.
 - `plan-apply` is a single function used for both preview and apply, so what you preview is exactly what gets applied.
-- **One-transaction risk.** Today supervisions are computed *after* the subscription edits have been applied. I need to check whether `instantiateSubscriptionSupervision` (with its checks disabled) reads document state that the subscription edits create. If it does, `plan-apply` will build the supervision edits directly, or use two dispatches joined with `squash: true`.
+- **One transaction (resolved in phase 3).** The supervision edit for an existing LN only reads that LN's own DOI/DAI/Val, which the ExtRef edits never touch, so `plan-apply` computes every edit against the starting document and Apply is a single `newEditEventV2`. The one case where two edits would conflict, two control blocks sharing one supervision LN, is reported as an error. Applying onto an LN that already references the control block is reported as "Could not instantiate supervision" (as before); the phase 7 preview will show it as "already present" instead.
 
 ## 7. Tooling and CI (matches `oscd-editor-map-communication`)
 
