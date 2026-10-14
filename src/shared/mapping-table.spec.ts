@@ -158,7 +158,7 @@ describe('oscd-stencil-mapping-table', () => {
   });
 
   it('has an accessible caption', () => {
-    expect(text(q('caption'))).to.equal('Control blocks from 2 functions to 2 functions');
+    expect(text(q('caption'))).to.equal('Control blocks from 2 IEDs to 2 IEDs');
   });
 
   it('keeps the function names and control block names in view when the table is scrolled across', async () => {

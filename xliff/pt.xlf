@@ -66,10 +66,6 @@
   <source>deprecated</source>
   <target>obsoleto</target>
 </trans-unit>
-<trans-unit id="s92fbe04b0dae3b40">
-  <source><x id="0" equiv-text="${summary.functions}"/> functions</source>
-  <target><x id="0" equiv-text="${summary.functions}"/> funções</target>
-</trans-unit>
 <trans-unit id="s513894813b749d82">
   <source><x id="0" equiv-text="${summary.goose}"/> GOOSE</source>
   <target><x id="0" equiv-text="${summary.goose}"/> GOOSE</target>
@@ -121,10 +117,6 @@
 <trans-unit id="s1ac83414fc11ea89">
   <source>Assign an IED to each function</source>
   <target>Atribua um IED a cada função</target>
-</trans-unit>
-<trans-unit id="s37b1b47a848d4147">
-  <source><x id="0" equiv-text="${assigned}"/> of <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> functions assigned</source>
-  <target><x id="0" equiv-text="${assigned}"/> de <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> funções atribuídas</target>
 </trans-unit>
 <trans-unit id="sc16e00a7a8b2fde2">
   <source>Back</source>
@@ -286,10 +278,6 @@
   <source>Function for</source>
   <target>Função para</target>
 </trans-unit>
-<trans-unit id="sb89bf27ea2b8f41c">
-  <source><x id="0" equiv-text="${summary.functions}"/> functions, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> subscriptions, <x id="4" equiv-text="${summary.supervisions}"/> supervisions</source>
-  <target><x id="0" equiv-text="${summary.functions}"/> funções, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> subscrições, <x id="4" equiv-text="${summary.supervisions}"/> supervisões</target>
-</trans-unit>
 <trans-unit id="sb0ddaa009fc11de9">
   <source>These IEDs have no stencil tag, so any IED of the same manufacturer and type will match their function: <x id="0" equiv-text="${untagged.join(', ')}"/>.</source>
   <target>Estes IEDs não têm etiqueta de stencil, pelo que qualquer IED do mesmo fabricante e tipo corresponde à sua função: <x id="0" equiv-text="${untagged.join(', ')}"/>.</target>
@@ -365,10 +353,6 @@
 <trans-unit id="sdb361549fb6c1b58">
   <source>Deprecated, hidden when applying</source>
   <target>Obsoleta, oculta ao aplicar</target>
-</trans-unit>
-<trans-unit id="s8db7bdca5ae2bc60">
-  <source><x id="0" equiv-text="${summary.functions}"/> functions, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> supervisions</source>
-  <target><x id="0" equiv-text="${summary.functions}"/> funções, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> supervisões</target>
 </trans-unit>
 <trans-unit id="sa3b01d505e7a6440">
   <source>Functions and what they require</source>
@@ -490,10 +474,6 @@
   <source>Show supervisions</source>
   <target>Mostrar supervisões</target>
 </trans-unit>
-<trans-unit id="sa3387d2afcfce197">
-  <source>Control blocks from <x id="0" equiv-text="${rows.length}"/> functions to <x id="1" equiv-text="${columns.length}"/> functions</source>
-  <target>Blocos de controlo de <x id="0" equiv-text="${rows.length}"/> funções para <x id="1" equiv-text="${columns.length}"/> funções</target>
-</trans-unit>
 <trans-unit id="sa6ab5184d6315895">
   <source>From</source>
   <target>De</target>
@@ -577,10 +557,6 @@
 <trans-unit id="s124cf9976bd465f6">
   <source>More than one IED fits <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Choose those yourself.</source>
   <target>Mais do que um IED serve para <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Escolha-os você mesmo.</target>
-</trans-unit>
-<trans-unit id="sd5861151d2ad7981">
-  <source>Assign at least two functions to continue.</source>
-  <target>Atribua pelo menos duas funções para continuar.</target>
 </trans-unit>
 <trans-unit id="sf9a09f84e8c9b101">
   <source>These functions have no IED, so their control blocks are not applied: <x id="0" equiv-text="${this.unassigned().join(', ')}"/>.</source>
@@ -726,10 +702,6 @@
   <source>Assign automatically fills every function that has exactly one possible IED, and repeats while that makes more possible. It never overrides your choices and never guesses between several IEDs: those are left for you.</source>
   <target>«Atribuir automaticamente» preenche cada função que tem exatamente um IED possível e repete enquanto isso tornar outras possíveis. Nunca substitui as suas escolhas e nunca adivinha entre vários IEDs: esses ficam para si.</target>
 </trans-unit>
-<trans-unit id="s40a9a4616612909b">
-  <source>You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two functions are needed.</source>
-  <target>Pode aplicar parte de um stencil: as funções sem IED são ignoradas, tal como os blocos de controlo que dependem delas. São necessárias pelo menos duas funções.</target>
-</trans-unit>
 <trans-unit id="s6dc6faf2e4715542">
   <source>This is a dry run. Nothing in your document has changed yet. For each control block you see what applying will add, and what is already there.</source>
   <target>Isto é uma simulação. Nada no seu documento foi alterado ainda. Para cada bloco de controlo vê o que a aplicação vai adicionar e o que já existe.</target>
@@ -833,6 +805,34 @@
 <trans-unit id="s205c3097c1de1f41">
   <source>The file has a schema version, currently 2. Files from earlier versions of the plugin have none and are read unchanged. References to elements are written as the identity of the element without the IED name.</source>
   <target>O ficheiro tem uma versão de esquema, atualmente 2. Os ficheiros de versões anteriores do plugin não a têm e são lidos sem alterações. As referências a elementos são escritas como a identidade do elemento sem o nome do IED.</target>
+</trans-unit>
+<trans-unit id="sd37444d03ef587d4">
+  <source><x id="0" equiv-text="${summary.functions}"/> IEDs</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> IEDs</target>
+</trans-unit>
+<trans-unit id="s71e303c8cab3cd7d">
+  <source><x id="0" equiv-text="${assigned}"/> of <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> IEDs assigned</source>
+  <target><x id="0" equiv-text="${assigned}"/> de <x id="1" equiv-text="${Object.keys(version.IEDS).length}"/> IEDs atribuídos</target>
+</trans-unit>
+<trans-unit id="sc3e233e9f47f7817">
+  <source>Assign at least two IEDs to continue.</source>
+  <target>Atribua pelo menos dois IEDs para continuar.</target>
+</trans-unit>
+<trans-unit id="s9a7ee8d8513de8a0">
+  <source><x id="0" equiv-text="${summary.functions}"/> IEDs, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> subscriptions, <x id="4" equiv-text="${summary.supervisions}"/> supervisions</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> IEDs, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.subscriptions}"/> subscrições, <x id="4" equiv-text="${summary.supervisions}"/> supervisões</target>
+</trans-unit>
+<trans-unit id="s9532c5a933cf774c">
+  <source><x id="0" equiv-text="${summary.functions}"/> IEDs, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> supervisions</source>
+  <target><x id="0" equiv-text="${summary.functions}"/> IEDs, <x id="1" equiv-text="${summary.goose}"/> GOOSE, <x id="2" equiv-text="${summary.smv}"/> SV, <x id="3" equiv-text="${summary.supervisions}"/> supervisões</target>
+</trans-unit>
+<trans-unit id="sd4001b4839a4edaf">
+  <source>Control blocks from <x id="0" equiv-text="${rows.length}"/> IEDs to <x id="1" equiv-text="${columns.length}"/> IEDs</source>
+  <target>Blocos de controlo de <x id="0" equiv-text="${rows.length}"/> IEDs para <x id="1" equiv-text="${columns.length}"/> IEDs</target>
+</trans-unit>
+<trans-unit id="sa96f800e7211e20f">
+  <source>You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two IEDs are needed.</source>
+  <target>Pode aplicar parte de um stencil: as funções sem IED são ignoradas, tal como os blocos de controlo que dependem delas. São necessários pelo menos dois IEDs.</target>
 </trans-unit>
 </body>
 </file>

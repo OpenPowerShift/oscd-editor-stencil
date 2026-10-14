@@ -116,7 +116,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       <div class="scroll">
         <table>
           <caption>
-            ${msg(str`Control blocks from ${rows.length} functions to ${columns.length} functions`)}
+            ${msg(str`Control blocks from ${rows.length} IEDs to ${columns.length} IEDs`)}
           </caption>
           <thead>
             <tr>

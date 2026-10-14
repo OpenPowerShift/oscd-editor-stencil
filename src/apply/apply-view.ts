@@ -423,7 +423,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       ${version.description ? html`<p>${version.description}</p>` : nothing}
 
       <p class="summary" id="summary">
-        ${msg(str`${summary.functions} functions`)} ·
+        ${msg(str`${summary.functions} IEDs`)} ·
         ${msg(str`${summary.goose} GOOSE`)} · ${msg(str`${summary.smv} SV`)} ·
         ${msg(str`${summary.subscriptions} subscriptions`)} ·
         ${msg(str`${summary.supervisions} supervisions`)}
@@ -530,8 +530,8 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         ${functionNames(version).map(name => this.renderFunction(version, name))}
       </ul>
       <p class="muted" id="assigned">
-        ${msg(str`${assigned} of ${Object.keys(version.IEDS).length} functions assigned`)}${assigned < 2
-          ? html` · <span id="needs-two">${msg('Assign at least two functions to continue.')}</span>`
+        ${msg(str`${assigned} of ${Object.keys(version.IEDS).length} IEDs assigned`)}${assigned < 2
+          ? html` · <span id="needs-two">${msg('Assign at least two IEDs to continue.')}</span>`
           : nothing}
       </p>
       ${this.autoNote

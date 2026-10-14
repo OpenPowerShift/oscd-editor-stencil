@@ -114,7 +114,7 @@ describe('oscd-stencil-apply', () => {
 
     it('shows what it contains and what it needs', () => {
       expect(q('#summary').textContent!.replace(/\s+/g, ' ')).to.contain(
-        '3 functions · 1 GOOSE · 1 SV · 3 subscriptions · 2 supervisions'
+        '3 IEDs · 1 GOOSE · 1 SV · 3 subscriptions · 2 supervisions'
       );
       const needs = qa('.needs li').map(li => li.textContent!.replace(/\s+/g, ' ').trim());
       expect(needs.join('|')).to.contain('Publisher SIEMENS 7SS85, tagged BZ-Publisher 1.0.0');

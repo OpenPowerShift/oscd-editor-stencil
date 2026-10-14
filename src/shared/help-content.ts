@@ -41,7 +41,7 @@ export const helpAssign = (): TemplateResult => html`
     ${msg('Assign automatically fills every function that has exactly one possible IED, and repeats while that makes more possible. It never overrides your choices and never guesses between several IEDs: those are left for you.')}
   </p>
   <p style="margin: 0 0 12px">
-    ${msg('You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two functions are needed.')}
+    ${msg('You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two IEDs are needed.')}
   </p>
 `;
 

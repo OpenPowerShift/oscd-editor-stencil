@@ -523,7 +523,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       </h2>
       <p>
         ${msg(
-          str`${summary.functions} functions, ${summary.goose} GOOSE, ${summary.smv} SV, ${summary.subscriptions} subscriptions, ${summary.supervisions} supervisions`
+          str`${summary.functions} IEDs, ${summary.goose} GOOSE, ${summary.smv} SV, ${summary.subscriptions} subscriptions, ${summary.supervisions} supervisions`
         )}
       </p>
       ${untagged.length > 0

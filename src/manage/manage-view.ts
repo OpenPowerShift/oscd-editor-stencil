@@ -411,7 +411,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       </div>
       <p class="muted">
         ${msg(
-          str`${summary.functions} functions, ${summary.goose} GOOSE, ${summary.smv} SV, ${summary.supervisions} supervisions`
+          str`${summary.functions} IEDs, ${summary.goose} GOOSE, ${summary.smv} SV, ${summary.supervisions} supervisions`
         )}
       </p>
 
