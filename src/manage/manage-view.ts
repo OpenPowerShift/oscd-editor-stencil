@@ -7,6 +7,7 @@ import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
+import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
 import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
 import { OscdOutlinedSelect } from '@omicronenergy/oscd-ui/select/OscdOutlinedSelect.js';
 import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
@@ -76,6 +77,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     'oscd-dialog': OscdDialog,
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
+    'oscd-icon-button': OscdIconButton,
     'oscd-stencil-help': OscdStencilHelp,
     'oscd-outlined-button': OscdOutlinedButton,
     'oscd-outlined-select': OscdOutlinedSelect,
@@ -258,32 +260,39 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               >`
           )}
         </oscd-outlined-select>
-        <oscd-outlined-button id="import" @click=${() => this.emit('stencil-import')}
-          >${msg('Import')}<oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon></oscd-outlined-button
-        >
-        <oscd-outlined-button id="export" @click=${() => this.emit('stencil-export')}
-          >${msg('Export')}<oscd-icon slot="icon" aria-hidden="true">download</oscd-icon></oscd-outlined-button
-        >
-        <oscd-text-button
-          id="remove-stencil"
-          class="danger"
-          ?disabled=${!this.currentId}
-          @click=${() => (this.confirming = 'stencil')}
-          >${msg('Remove from library')}</oscd-text-button
-        >
-      </div>
-      <div class="row">
-        <oscd-outlined-button
-          id="capture"
-          ?disabled=${!this.doc}
-          @click=${() => this.openCapture()}
-          >${msg('Capture from this document…')}<oscd-icon slot="icon" aria-hidden="true">construction</oscd-icon></oscd-outlined-button
-        >
-        <oscd-outlined-button
-          id="edit-json-stencil"
-          @click=${() => this.editJson({ kind: 'stencil' })}
-          >${msg('Edit as JSON')}<oscd-icon slot="icon" aria-hidden="true">data_object</oscd-icon></oscd-outlined-button
-        >
+        <div class="tools" role="toolbar" aria-label=${msg('Stencil actions')}>
+          <oscd-icon-button
+            id="import"
+            aria-label=${msg('Import stencil file')}
+            title=${msg('Import stencil file')}
+            @click=${() => this.emit('stencil-import')}
+            ><oscd-icon aria-hidden="true">file_open</oscd-icon></oscd-icon-button
+          >
+          <oscd-icon-button
+            id="export"
+            aria-label=${msg('Export stencil file')}
+            title=${msg('Export stencil file')}
+            @click=${() => this.emit('stencil-export')}
+            ><oscd-icon aria-hidden="true">download</oscd-icon></oscd-icon-button
+          >
+          <oscd-icon-button
+            id="edit-json-stencil"
+            aria-label=${msg('Edit as JSON')}
+            title=${msg('Edit as JSON')}
+            @click=${() => this.editJson({ kind: 'stencil' })}
+            ><oscd-icon aria-hidden="true">data_object</oscd-icon></oscd-icon-button
+          >
+          <span class="divider" aria-hidden="true"></span>
+          <oscd-icon-button
+            id="remove-stencil"
+            class="danger-icon"
+            aria-label=${msg('Remove from library')}
+            title=${msg('Remove from library')}
+            ?disabled=${!this.currentId}
+            @click=${() => (this.confirming = 'stencil')}
+            ><oscd-icon aria-hidden="true">delete</oscd-icon></oscd-icon-button
+          >
+        </div>
       </div>
       <div class="row">
         <oscd-outlined-text-field
@@ -579,7 +588,21 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         ${this.renderLibrary()}
         <div class="manage">
         <div class="card" id="tree-card">
-          <h2>${msg('Applications')}</h2>
+          <div class="card-head">
+            <h2>${msg('Applications')}</h2>
+            <oscd-filled-button
+              id="capture"
+              ?disabled=${!this.doc}
+              aria-label=${this.doc
+                ? msg('Create an application from the open document')
+                : msg('Open a document to create an application from it')}
+              title=${this.doc
+                ? msg('Create an application from the open document')
+                : msg('Open a document to create an application from it')}
+              @click=${() => this.openCapture()}
+              >${msg('Create')}<oscd-icon slot="icon" aria-hidden="true">add</oscd-icon></oscd-filled-button
+            >
+          </div>
           ${this.stencil.applications.length === 0
             ? html`<p class="hint" id="empty">
                 ${msg('This stencil has no applications yet. Import a stencil, or capture one from a document.')}
@@ -659,6 +682,45 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         padding: 16px 20px;
       }
 
+      .card-head {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .card-head h2 {
+        margin: 0;
+      }
+
+      #stencils {
+        flex: 1;
+        min-width: 220px;
+      }
+
+      .tools {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+      }
+
+      .tools oscd-icon-button {
+        --md-icon-button-icon-color: var(--stencil-text);
+      }
+
+      .tools .danger-icon {
+        --md-icon-button-icon-color: var(--stencil-danger);
+      }
+
+      .divider {
+        align-self: stretch;
+        background: var(--stencil-border);
+        margin: 8px 4px;
+        width: 1px;
+      }
+
       .row {
         align-items: center;
         display: flex;
@@ -670,7 +732,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       .manage {
         display: grid;
         gap: 16px;
-        grid-template-columns: minmax(280px, 1fr) minmax(0, 2.5fr);
+        grid-template-columns: minmax(320px, 1fr) minmax(0, 2.5fr);
       }
 
       @container (max-width: 800px) {
@@ -757,10 +819,6 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         --md-filled-button-container-color: var(--stencil-danger);
         --md-filled-button-label-text-color: var(--oscd-base3);
         --md-filled-button-icon-color: var(--oscd-base3);
-      }
-
-      #remove-stencil {
-        margin-left: auto;
       }
 
       .mappings {

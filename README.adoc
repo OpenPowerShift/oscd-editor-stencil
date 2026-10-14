@@ -75,7 +75,7 @@ The help icons (a question mark in a circle) next to key headings open a short e
 
 The *Manage* tab holds the library of stencils you have opened, with the most recently used first.
 
-* *Import* and *Export* stencil files. Stencils are kept in the browser's local storage.
+* Import and export stencil files with the icons beside the stencil list (the trash can removes a stencil from the library). Stencils are kept in the browser's local storage.
 * Browse the tree of categories, applications and versions.
 * Rename and describe applications and versions, deprecate a version, rename functions and change what they need.
 Every change is checked, and the field says what is wrong.
@@ -87,7 +87,7 @@ image::manage.png[Managing stencils,width=900]
 
 == Creating a stencil
 
-*Capture from this document…* in the *Manage* tab makes an application from the open document, in four steps (a *Back to stencils* link returns to the library, and the wizard keeps its progress):
+*Create* above the list of applications in the *Manage* tab makes an application from the open document, in four steps (a *Back to stencils* link returns to the library, and the wizard keeps its progress):
 
 . *Select IEDs*: at least two.
 . *Select control blocks*: the control blocks sent between the chosen IEDs, in a table where you can untick single cells, rows, columns or all of an IED.

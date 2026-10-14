@@ -322,14 +322,6 @@
   <source>Stencil</source>
   <target>Stencil</target>
 </trans-unit>
-<trans-unit id="s3914cb410fca44d4">
-  <source>Import</source>
-  <target>Importar</target>
-</trans-unit>
-<trans-unit id="s293aa6a6446fb153">
-  <source>Export</source>
-  <target>Exportar</target>
-</trans-unit>
 <trans-unit id="sc16f79fac7b7fcec">
   <source>Remove from library</source>
   <target>Remover da biblioteca</target>
@@ -646,10 +638,6 @@
   <source>Managing stencils</source>
   <target>Gerir stencils</target>
 </trans-unit>
-<trans-unit id="s4437305c57d56668">
-  <source>Capture from this document…</source>
-  <target>Capturar a partir deste documento…</target>
-</trans-unit>
 <trans-unit id="s4eb396c3e90a499c">
   <source>Back to stencils</source>
   <target>Voltar aos stencils</target>
@@ -833,6 +821,30 @@
 <trans-unit id="sa96f800e7211e20f">
   <source>You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two IEDs are needed.</source>
   <target>Pode aplicar parte de um stencil: as funções sem IED são ignoradas, tal como os blocos de controlo que dependem delas. São necessários pelo menos dois IEDs.</target>
+</trans-unit>
+<trans-unit id="s3ecfbef5cb93cc48">
+  <source>Stencil actions</source>
+  <target>Ações do stencil</target>
+</trans-unit>
+<trans-unit id="s3318d81fb57eaa06">
+  <source>Import stencil file</source>
+  <target>Importar ficheiro de stencil</target>
+</trans-unit>
+<trans-unit id="s45c6f6a027c6e29b">
+  <source>Export stencil file</source>
+  <target>Exportar ficheiro de stencil</target>
+</trans-unit>
+<trans-unit id="s5054d1a9f1721938">
+  <source>Create an application from the open document</source>
+  <target>Criar uma aplicação a partir do documento aberto</target>
+</trans-unit>
+<trans-unit id="sd37146ea11812954">
+  <source>Open a document to create an application from it</source>
+  <target>Abra um documento para criar uma aplicação a partir dele</target>
+</trans-unit>
+<trans-unit id="s382a2aa3984474dd">
+  <source>Create</source>
+  <target>Criar</target>
 </trans-unit>
 </body>
 </file>

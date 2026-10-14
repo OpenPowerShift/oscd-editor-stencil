@@ -322,14 +322,6 @@
   <source>Stencil</source>
   <target>Stencil</target>
 </trans-unit>
-<trans-unit id="s3914cb410fca44d4">
-  <source>Import</source>
-  <target>Importieren</target>
-</trans-unit>
-<trans-unit id="s293aa6a6446fb153">
-  <source>Export</source>
-  <target>Exportieren</target>
-</trans-unit>
 <trans-unit id="sc16f79fac7b7fcec">
   <source>Remove from library</source>
   <target>Aus Bibliothek entfernen</target>
@@ -646,10 +638,6 @@
   <source>Managing stencils</source>
   <target>Stencils verwalten</target>
 </trans-unit>
-<trans-unit id="s4437305c57d56668">
-  <source>Capture from this document…</source>
-  <target>Aus diesem Dokument erfassen …</target>
-</trans-unit>
 <trans-unit id="s4eb396c3e90a499c">
   <source>Back to stencils</source>
   <target>Zurück zu den Stencils</target>
@@ -833,6 +821,30 @@
 <trans-unit id="sa96f800e7211e20f">
   <source>You can apply part of a stencil: functions without an IED are skipped, and so are the control blocks that need them. At least two IEDs are needed.</source>
   <target>Sie können einen Teil eines Stencils anwenden: Funktionen ohne IED und die Steuerblöcke, die sie brauchen, werden übersprungen. Mindestens zwei IEDs sind nötig.</target>
+</trans-unit>
+<trans-unit id="s3ecfbef5cb93cc48">
+  <source>Stencil actions</source>
+  <target>Stencil-Aktionen</target>
+</trans-unit>
+<trans-unit id="s3318d81fb57eaa06">
+  <source>Import stencil file</source>
+  <target>Stencil-Datei importieren</target>
+</trans-unit>
+<trans-unit id="s45c6f6a027c6e29b">
+  <source>Export stencil file</source>
+  <target>Stencil-Datei exportieren</target>
+</trans-unit>
+<trans-unit id="s5054d1a9f1721938">
+  <source>Create an application from the open document</source>
+  <target>Eine Anwendung aus dem geöffneten Dokument erstellen</target>
+</trans-unit>
+<trans-unit id="sd37146ea11812954">
+  <source>Open a document to create an application from it</source>
+  <target>Öffnen Sie ein Dokument, um daraus eine Anwendung zu erstellen</target>
+</trans-unit>
+<trans-unit id="s382a2aa3984474dd">
+  <source>Create</source>
+  <target>Erstellen</target>
 </trans-unit>
 </body>
 </file>

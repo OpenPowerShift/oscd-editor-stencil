@@ -347,6 +347,6 @@ Not done, left for a decision: merging JSON into Manage as an "Advanced" section
 
 Decided after the review round: two tabs, **Apply** and **Manage**.
 
-- The capture wizard is opened from Manage (*Capture from this document…*, also from the first-run screen). It stays mounted, so leaving it does not lose progress.
+- The capture wizard is opened from Manage (*Create*, a button at the head of the applications list, also from the first-run screen); import, export, edit as JSON and remove are icon buttons beside the stencil list. It stays mounted, so leaving it does not lose progress.
 - JSON is edited from Manage, scoped to the whole stencil, an application or a version (`foundation/json-scope.ts`: the scope's text is checked with the rules of a whole file, and a category, name or version that another one has is refused). The editor leaves when what it edits is gone.
 - Help icons (`src/shared/help.ts`, `help-content.ts`) open a dialog with a longer explanation at the key points: what a stencil is, reading the mapping table, assigning IEDs, reviewing, the library, capturing (three places), stencil tags and the JSON.
