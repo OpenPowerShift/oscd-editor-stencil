@@ -49,11 +49,13 @@ export type ApplyPlan = {
 };
 
 /**
- * Whether the IED only accepts inputs bound through its own tool, so the
- * system tool may bind the ExtRefs it supplies but not create new ones
- * (IEC 61850-7-1 Annex H, `ClientServices` attribute `noIctBinding`).
+ * Whether the IED needs the system tool to bind its predefined inputs
+ * (`ClientServices` attribute `noIctBinding="true"`, IEC 61850-6). Its IED
+ * tool cannot bind an unbound external signal to an internal address, so an
+ * ExtRef without `intAddr` created for it could not be used. Without the
+ * attribute (the default) the IED tool accepts such ExtRefs and binds them.
  */
-function requiresIctBinding(doc: XMLDocument, iedName: string): boolean {
+function onlyAcceptsPredefinedInputs(doc: XMLDocument, iedName: string): boolean {
   return (
     findIed(doc, iedName)?.querySelector(
       ':scope > Services > ClientServices[noIctBinding="true"], :scope > AccessPoint > Services > ClientServices[noIctBinding="true"]'
@@ -166,7 +168,7 @@ export function planApply(
 
           if (
             !isLaterBindingRef(mapping.ExtRef) &&
-            requiresIctBinding(doc, newToIed)
+            onlyAcceptsPredefinedInputs(doc, newToIed)
           ) {
             const message = `Cannot create ExtRef on ${newToIed}: it only accepts later binding (ClientServices noIctBinding)`;
             if (!plan.errors.includes(message)) {
