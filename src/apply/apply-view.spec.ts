@@ -262,6 +262,13 @@ describe('oscd-stencil-apply', () => {
       expect(q('#auto-note')).to.not.exist;
     });
 
+    it('offers to tag IEDs when the functions need tags', () => {
+      let tagged: unknown;
+      el.addEventListener('stencil-tag', e => (tagged = (e as CustomEvent).detail));
+      q<HTMLElement>('#tag-ieds').click();
+      expect(tagged).to.equal(el.version);
+    });
+
     it('needs two functions before it can continue', async () => {
       const next = () => q<HTMLElement & { disabled: boolean }>('#next');
       expect(next().disabled).to.be.true;

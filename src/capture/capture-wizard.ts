@@ -150,6 +150,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       .map(item => item.attachedElement.getAttribute('name')!);
   }
 
+  private chooseAll(selected: boolean): void {
+    this.items = this.items.map(item => ({ ...item, selected }));
+  }
+
   private get chosenBlocks(): ControlBlockInfo[] {
     return this.blocks.filter(block => this.chosen.has(blockKey(block)));
   }
@@ -275,6 +279,20 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       <p class="muted">
         ${msg('Choose at least two. The control blocks one of them sends to another are the application.')}
       </p>
+      <div class="list-tools">
+        <oscd-text-button
+          id="select-all"
+          ?disabled=${this.items.every(item => item.selected)}
+          @click=${() => this.chooseAll(true)}
+          >${msg('Select all')}</oscd-text-button
+        >
+        <oscd-text-button
+          id="select-none"
+          ?disabled=${!this.items.some(item => item.selected)}
+          @click=${() => this.chooseAll(false)}
+          >${msg('Select none')}</oscd-text-button
+        >
+      </div>
       <oscd-selection-list
         id="ieds"
         filterable
@@ -714,6 +732,12 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
       p + .fields {
         margin-top: 12px;
+      }
+
+      .list-tools {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
       }
 
       .fields {

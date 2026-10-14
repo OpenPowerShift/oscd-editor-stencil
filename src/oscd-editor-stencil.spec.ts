@@ -149,6 +149,18 @@ describe('oscd-editor-stencil UI', () => {
       await plugin.updateComplete;
     };
 
+    it('cannot add metadata before an IED is chosen, and starts from the stencil name', async () => {
+      await openDialog();
+      const add = () =>
+        Array.from(plugin.shadowRoot!.querySelectorAll('oscd-text-button')).find(b =>
+          b.textContent?.includes('Add Metadata')
+        ) as unknown as HTMLButtonElement;
+      expect(add().disabled).to.be.true;
+      expect((plugin.shadowRoot!.querySelector('#stencil-id') as HTMLInputElement).value).to.equal(
+        plugin.stencilData.name
+      );
+    });
+
     it('offers every IED of the document', async () => {
       await openDialog();
       const list = plugin.shadowRoot!.querySelector(
@@ -166,6 +178,8 @@ describe('oscd-editor-stencil UI', () => {
       ) as OscdSelectionList;
       list.items[1].selected = true;
       list.items[2].selected = true;
+      list.dispatchEvent(new CustomEvent('selection-list-change'));
+      await plugin.updateComplete;
 
       await click('oscd-text-button', 'Add Metadata');
 
@@ -182,6 +196,8 @@ describe('oscd-editor-stencil UI', () => {
         '#stencil-metadata-ieds'
       ) as OscdSelectionList;
       again.items[1].selected = true;
+      again.dispatchEvent(new CustomEvent('selection-list-change'));
+      await plugin.updateComplete;
       (plugin.shadowRoot!.querySelector('#stencil-ver') as HTMLInputElement).value =
         '2.0.0';
       await click('oscd-text-button', 'Add Metadata');
@@ -451,6 +467,22 @@ describe('oscd-editor-stencil UI', () => {
 
       expect(plugin.stencilData).to.equal(stencil);
       expect(plugin.library).to.have.lengthOf(1);
+    });
+
+    it('selects and clears every IED in the tagging dialog', async () => {
+      wizard().dispatchEvent(new CustomEvent('stencil-tag', { bubbles: true, composed: true }));
+      await plugin.updateComplete;
+      const list = () => plugin.shadowRoot!.querySelector('#stencil-metadata-ieds') as HTMLElement & {
+        items: { selected: boolean }[];
+      };
+      (plugin.shadowRoot!.querySelector('#tag-select-all') as HTMLElement).click();
+      await plugin.updateComplete;
+      expect(list().items.length).to.be.greaterThan(1);
+      expect(list().items.every(i => i.selected)).to.be.true;
+
+      (plugin.shadowRoot!.querySelector('#tag-select-none') as HTMLElement).click();
+      await plugin.updateComplete;
+      expect(list().items.some(i => i.selected)).to.be.false;
     });
 
     it('opens the tagging dialog when the wizard asks', async () => {

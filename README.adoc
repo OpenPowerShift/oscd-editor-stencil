@@ -73,14 +73,14 @@ The help icons (a question mark in a circle) next to key headings open a short e
 
 == Managing stencils
 
-The *Manage* tab holds the library of stencils you have opened, with the most recently used first.
+The *Manage* tab holds the library of stencils you have imported, with the most recently used first.
 
 * Import and export stencil files with the icons beside the stencil list (the trash can removes a stencil from the library). Stencils are kept in the browser's local storage.
 * Browse the tree of categories, applications and versions.
 * Rename and describe applications and versions, deprecate a version, rename functions and change what they need.
 Every change is checked, and the field says what is wrong.
 * See the table of control blocks of a version.
-* Tag the IEDs of the open document with a stencil Id and version.
+* Tag the IEDs of the open document with a stencil Id and version, with the tag icon above the stencil list or from the assign step of Apply.
 * Delete a version, an application or a stencil. This asks first, and does not change any document.
 
 image::manage.png[Managing stencils,width=900]

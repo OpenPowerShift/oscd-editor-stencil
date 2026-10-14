@@ -589,6 +589,19 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           >${msg('Back')}</oscd-text-button
         >
         <span class="spacer"></span>
+        <oscd-text-button
+          id="tag-ieds"
+          title=${msg('Add the stencil tags the functions ask for to IEDs of this document')}
+          @click=${() =>
+            this.dispatchEvent(
+              new CustomEvent('stencil-tag', {
+                detail: version,
+                bubbles: true,
+                composed: true
+              })
+            )}
+          ><oscd-icon slot="icon" aria-hidden="true">sell</oscd-icon>${msg('Tag IEDs…')}</oscd-text-button
+        >
         <oscd-outlined-button
           id="clear"
           ?disabled=${assigned === 0}

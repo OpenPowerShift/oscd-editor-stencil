@@ -292,11 +292,26 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           label=${msg('Stencil version')}
           value="1.0.0"
         ></oscd-outlined-text-field>
+        <div class="list-tools">
+          <oscd-text-button
+            id="tag-select-all"
+            type="button"
+            @click=${() => this.chooseAllForTags(true)}
+            >${msg('Select all')}</oscd-text-button
+          >
+          <oscd-text-button
+            id="tag-select-none"
+            type="button"
+            @click=${() => this.chooseAllForTags(false)}
+            >${msg('Select none')}</oscd-text-button
+          >
+        </div>
         <oscd-selection-list
           id="stencil-metadata-ieds"
           filterable
           multiselect
           .items=${this.metadataIedItems}
+          @selection-list-change=${() => this.requestUpdate()}
         ></oscd-selection-list>
       </form>
       <div slot="actions">
@@ -306,6 +321,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         <oscd-text-button
           form="stencil-metadata"
           value="ok"
+          ?disabled=${(this.iedsStencilMetadataUI?.selectedElements?.length ?? 0) === 0}
           @click="${() => {
             const selectedIeds = this.iedsStencilMetadataUI?.selectedElements;
             const tagEdits = selectedIeds.flatMap(ied =>
@@ -336,6 +352,15 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     >`;
   }
 
+  private chooseAllForTags(selected: boolean): void {
+    this.metadataIedItems = this.metadataIedItems.map(item => ({
+      ...item,
+      selected
+    }));
+    // the list reads its items on its next update, so look again after it
+    this.updateComplete.then(() => this.requestUpdate());
+  }
+
   private onApply(event: CustomEvent<StencilApplyDetail>): void {
     event.stopPropagation();
     const { edits, title } = event.detail;
@@ -360,14 +385,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   private onTag(event: CustomEvent<Application | undefined>): void {
     event.stopPropagation();
     const tag = event.detail
-      ? Object.values(event.detail.IEDS)[0]?.privates[0]
+      ? Object.values(event.detail.IEDS).find(ied => ied.privates.length > 0)
+        ?.privates[0]
       : undefined;
     this.metadataIedItems = iedSelectItems(this.doc, true);
     this.iedStencilMetadataUI.show();
-    if (tag) {
-      this.stencilMetadataIdUI.value = tag['OpenSCD-Stencil-Id'];
-      this.stencilMetadataVerUI.value = tag['OpenSCD-Stencil-Version'];
-    }
+    this.stencilMetadataIdUI.value =
+      tag?.['OpenSCD-Stencil-Id'] ?? this.stencilData.name;
+    this.stencilMetadataVerUI.value = tag?.['OpenSCD-Stencil-Version'] ?? '1.0.0';
   }
 
   private renderManage(): TemplateResult {
@@ -405,11 +430,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         <oscd-stencil-help heading=${msg('What is a stencil?')}>${helpWhatIsAStencil()}</oscd-stencil-help>
       </h1>
       <p>
-        ${msg('A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not opened one yet.')}
+        ${msg('A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not imported one yet.')}
       </p>
       <div class="first-run-actions">
         <oscd-filled-button id="first-open" @click=${() => this.changeStencilUI.click()}
-          >${msg('Open a stencil file')}<oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon></oscd-filled-button
+          >${msg('Import a stencil file')}<oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon></oscd-filled-button
         >
         <oscd-outlined-button
           id="first-create"
@@ -460,7 +485,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             @click=${() => {
               this.changeStencilUI.click();
             }}
-            >${msg('Open stencil…')}
+            >${msg('Import stencil…')}
             <oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon>
           </oscd-outlined-button>
         </div>
@@ -470,6 +495,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         .docVersion=${this.docVersion}
         .stencil=${this.stencilData}
         @stencil-apply=${this.onApply}
+        @stencil-tag=${this.onTag}
       ></oscd-stencil-apply>
     `;
   }
@@ -580,6 +606,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
       .view[hidden] {
         display: none;
+      }
+
+      .list-tools {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
       }
 
       .first-run {

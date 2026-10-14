@@ -334,10 +334,6 @@
   <source>Application</source>
   <target>Aplicação</target>
 </trans-unit>
-<trans-unit id="sf56f6457dbf48674">
-  <source>Delete application</source>
-  <target>Eliminar aplicação</target>
-</trans-unit>
 <trans-unit id="s358e08de4fbebf51">
   <source>Version <x id="0" equiv-text="${version.version}"/></source>
   <target>Versão <x id="0" equiv-text="${version.version}"/></target>
@@ -369,10 +365,6 @@
 <trans-unit id="sf00cb7eb61f87f93">
   <source>Stencil version</source>
   <target>Versão do stencil</target>
-</trans-unit>
-<trans-unit id="s29031638bc320f02">
-  <source>Delete version</source>
-  <target>Eliminar versão</target>
 </trans-unit>
 <trans-unit id="sb178f0ccd7d93346">
   <source>Tag IEDs in this document…</source>
@@ -574,21 +566,9 @@
   <source>Apply a stencil</source>
   <target>Aplicar um stencil</target>
 </trans-unit>
-<trans-unit id="s552dcb80f46b455f">
-  <source>A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not opened one yet.</source>
-  <target>Um stencil configura numa só operação as subscrições GOOSE e de valores amostrados de um grupo de IEDs. Ainda não abriu nenhum.</target>
-</trans-unit>
-<trans-unit id="s211257771a9b9674">
-  <source>Open a stencil file</source>
-  <target>Abrir um ficheiro de stencil</target>
-</trans-unit>
 <trans-unit id="sc706dc55369b5ae2">
   <source>Create one from this document</source>
   <target>Criar um a partir deste documento</target>
-</trans-unit>
-<trans-unit id="s193307634d5471ed">
-  <source>Open stencil…</source>
-  <target>Abrir stencil…</target>
 </trans-unit>
 <trans-unit id="s1f8ee2b6d6ba997f">
   <source>Assigning IEDs</source>
@@ -881,6 +861,30 @@
 <trans-unit id="s20c3be3a5ac4f180">
   <source>The dashed Quality badge is the extra message quality input that SEL relays use. It is shown even when supervisions are hidden.</source>
   <target>O distintivo tracejado Qualidade é a entrada adicional de qualidade de mensagem que os relés SEL usam. É mostrado mesmo quando as supervisões estão ocultas.</target>
+</trans-unit>
+<trans-unit id="sa00aa8fc1bcef44c">
+  <source>Add the stencil tags the functions ask for to IEDs of this document</source>
+  <target>Adicionar aos IEDs deste documento as etiquetas de stencil que as funções pedem</target>
+</trans-unit>
+<trans-unit id="sd0b6082239185272">
+  <source>Select all</source>
+  <target>Selecionar tudo</target>
+</trans-unit>
+<trans-unit id="sf80fe03fa8f2a149">
+  <source>Select none</source>
+  <target>Não selecionar nenhum</target>
+</trans-unit>
+<trans-unit id="s1e84b73397c9c5c0">
+  <source>A stencil sets up the GOOSE and sampled value subscriptions of a group of IEDs in one step. You have not imported one yet.</source>
+  <target>Um stencil configura numa só operação as subscrições GOOSE e de valores amostrados de um grupo de IEDs. Ainda não importou nenhum.</target>
+</trans-unit>
+<trans-unit id="se2635720a5453baf">
+  <source>Import a stencil file</source>
+  <target>Importar um ficheiro de stencil</target>
+</trans-unit>
+<trans-unit id="sea9ea1831b8706a2">
+  <source>Import stencil…</source>
+  <target>Importar stencil…</target>
 </trans-unit>
 </body>
 </file>

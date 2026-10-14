@@ -159,6 +159,15 @@ describe('oscd-stencil-manage', () => {
       expect(q<HTMLButtonElement>('#rename').disabled).to.be.true;
     });
 
+    it('has a button of its own to tag the IEDs of the document', async () => {
+      expect(q<HTMLButtonElement>('#tag-ieds').disabled).to.be.true;
+      el.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+      await el.updateComplete;
+      expect(q<HTMLButtonElement>('#tag-ieds').disabled).to.be.false;
+      q<HTMLElement>('#tag-ieds').click();
+      expect(events.map(event => event.type)).to.include('stencil-tag');
+    });
+
     it('asks before removing the stencil from the library', async () => {
       q<HTMLElement>('#remove-stencil').click();
       await el.updateComplete;
@@ -243,11 +252,13 @@ describe('oscd-stencil-manage', () => {
       expect(q('#application')).to.exist;
       expect(q('#version')).to.not.exist;
       expect(q('#delete-application')).to.exist;
+      expect(q('#delete-version')).to.not.exist;
 
       await select(nodeId({ ...key, version: '1.0.0' }));
       expect(q('#version')).to.exist;
       expect(q('oscd-stencil-mapping-table')).to.exist;
-      expect(q('#delete-application')).to.not.exist;
+      expect(q('#delete-application')).to.exist;
+      expect(q('#delete-version')).to.exist;
       expect(q('#fn-Fn')).to.exist;
     });
 

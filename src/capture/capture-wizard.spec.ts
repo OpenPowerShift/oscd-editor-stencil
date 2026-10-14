@@ -104,6 +104,18 @@ describe('oscd-stencil-capture', () => {
       expect(q<HTMLButtonElement>('#next').disabled).to.be.false;
     });
 
+    it('selects and clears all IEDs at once', async () => {
+      await click('#select-all');
+      expect(q<OscdSelectionList>('#ieds').items.every(i => i.selected)).to.be.true;
+      expect(q<HTMLButtonElement>('#select-all').disabled).to.be.true;
+      expect(q<HTMLButtonElement>('#next').disabled).to.be.false;
+
+      await click('#select-none');
+      expect(q<OscdSelectionList>('#ieds').items.some(i => i.selected)).to.be.false;
+      expect(q<HTMLButtonElement>('#select-none').disabled).to.be.true;
+      expect(q<HTMLButtonElement>('#next').disabled).to.be.true;
+    });
+
     it('says so when the IEDs are not subscribed to one another', async () => {
       expect(discoverControlBlocks(doc, ['SUB1', 'SELR'])).to.deep.equal([]);
       await chooseIeds('SUB1', 'SELR');
