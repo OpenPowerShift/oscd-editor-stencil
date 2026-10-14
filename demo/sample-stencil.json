@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "name": "Demo Stencil",
+  "version": "1.0.0",
+  "applications": [
+    {
+      "category": "Bus Protection",
+      "name": "Publisher to Subscriber",
+      "description": "Demonstration application",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "description": "GOOSE and SV from one publisher",
+          "deprecated": false,
+          "IEDS": {
+            "Publisher": {
+              "originalName": "PUB1",
+              "type": "7SS85",
+              "manufacturer": "SIEMENS",
+              "privates": [
+                {
+                  "OpenSCD-Stencil-Id": "BZ-Publisher",
+                  "OpenSCD-Stencil-Version": "1.0.0"
+                }
+              ]
+            },
+            "Subscriber": {
+              "originalName": "SUB1",
+              "type": "6MU85",
+              "manufacturer": "SIEMENS",
+              "privates": [
+                {
+                  "OpenSCD-Stencil-Id": "BZ-Subscriber",
+                  "OpenSCD-Stencil-Version": "1.0.0"
+                }
+              ]
+            }
+          },
+          "ControlBlocks": [
+            {
+              "id": ">>LD0>GC1",
+              "name": "GC1",
+              "from": "Publisher",
+              "to": "Subscriber",
+              "type": "GSEControl",
+              "mappings": [
+                {
+                  "FCDA": ">>LD0>DS_G>LD0/ GGIO 1.Ind1 stVal (ST)",
+                  "ExtRef": ">>LD0>I1[0]"
+                },
+                {
+                  "FCDA": ">>LD0>DS_G>LD0/ GGIO 1.Ind2 stVal (ST)",
+                  "ExtRef": ">>LD0>I2[0]"
+                }
+              ],
+              "supervision": ">>LD0> LGOS 1"
+            },
+            {
+              "id": ">>LD0>SV1",
+              "name": "SV1",
+              "from": "Publisher",
+              "to": "Subscriber",
+              "type": "SampledValueControl",
+              "mappings": [
+                {
+                  "FCDA": ">>LD0>DS_S>LD0/ TCTR 1.AmpSv instMag.i (MX)",
+                  "ExtRef": ">>LD0>I3[0]"
+                }
+              ],
+              "supervision": ">>LD0> LSVS 1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
