@@ -171,7 +171,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               label: v.deprecated
                 ? `${v.version} (${msg('deprecated')})`
                 : v.version,
-              icon: 'tag',
+              icon: '',
               children: []
             }))
         }))
@@ -344,51 +344,40 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       </p>
 
       <h3>${msg('Functions and what they require')}</h3>
-      <table id="functions">
-        <thead>
-          <tr>
-            <th scope="col">${msg('Function')}</th>
-            <th scope="col">${msg('Manufacturer')}</th>
-            <th scope="col">${msg('Type')}</th>
-            <th scope="col">${msg('Stencil Id')}</th>
-            <th scope="col">${msg('Stencil version')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Object.entries(version.IEDS).map(([fn, ied]) => {
-            const tag = ied.privates[0];
-            const requirement = (
-              field: 'manufacturer' | 'type' | 'id' | 'idVersion'
-            ) => (value: string) => {
-              editVersionBody(
-                updateRequirement(version, fn, {
-                  manufacturer: ied.manufacturer,
-                  type: ied.type,
-                  id: tag?.['OpenSCD-Stencil-Id'] ?? '',
-                  idVersion: tag?.['OpenSCD-Stencil-Version'] ?? '',
-                  [field]: value
-                })
-              );
-              return null;
-            };
-            return html`<tr>
-              <td>
-                ${this.textField(`fn-${fn}`, msg('Function'), fn, (value) => {
-                  const problem = functionProblem(version, fn, value);
-                  if (!problem) {
-                    editVersionBody(renameFunction(version, fn, value));
-                  }
-                  return problem;
-                })}
-              </td>
-              <td>${this.textField(`fn-${fn}-manufacturer`, msg('Manufacturer'), ied.manufacturer, requirement('manufacturer'))}</td>
-              <td>${this.textField(`fn-${fn}-type`, msg('Type'), ied.type, requirement('type'))}</td>
-              <td>${this.textField(`fn-${fn}-id`, msg('Stencil Id'), tag?.['OpenSCD-Stencil-Id'] ?? '', requirement('id'))}</td>
-              <td>${this.textField(`fn-${fn}-idversion`, msg('Stencil version'), tag?.['OpenSCD-Stencil-Version'] ?? '', requirement('idVersion'))}</td>
-            </tr>`;
-          })}
-        </tbody>
-      </table>
+      <div id="functions">
+        ${Object.entries(version.IEDS).map(([fn, ied]) => {
+          const tag = ied.privates[0];
+          const requirement = (
+            field: 'manufacturer' | 'type' | 'id' | 'idVersion'
+          ) => (value: string) => {
+            editVersionBody(
+              updateRequirement(version, fn, {
+                manufacturer: ied.manufacturer,
+                type: ied.type,
+                id: tag?.['OpenSCD-Stencil-Id'] ?? '',
+                idVersion: tag?.['OpenSCD-Stencil-Version'] ?? '',
+                [field]: value
+              })
+            );
+            return null;
+          };
+          return html`<div class="function">
+            ${this.textField(`fn-${fn}`, msg('Function'), fn, (value) => {
+              const problem = functionProblem(version, fn, value);
+              if (!problem) {
+                editVersionBody(renameFunction(version, fn, value));
+              }
+              return problem;
+            })}
+            <div class="requirement">
+              ${this.textField(`fn-${fn}-manufacturer`, msg('Manufacturer'), ied.manufacturer, requirement('manufacturer'))}
+              ${this.textField(`fn-${fn}-type`, msg('Type'), ied.type, requirement('type'))}
+              ${this.textField(`fn-${fn}-id`, msg('Stencil Id'), tag?.['OpenSCD-Stencil-Id'] ?? '', requirement('id'))}
+              ${this.textField(`fn-${fn}-idversion`, msg('Stencil version'), tag?.['OpenSCD-Stencil-Version'] ?? '', requirement('idVersion'))}
+            </div>
+          </div>`;
+        })}
+      </div>
 
       <div class="actions">
         <oscd-text-button
@@ -490,9 +479,17 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
                 .selectedIds=${selectedId ? [selectedId] : []}
                 .expandedIds=${this.expandedIds()}
                 selectionMode="single"
-                .renderItem=${({ node }: { node: Node }) =>
-                  html`<oscd-tree-item>
-                    <oscd-icon slot="start">${node.icon}</oscd-icon>
+                .renderItem=${({
+                  node,
+                  selected
+                }: {
+                  node: Node;
+                  selected: boolean;
+                }) =>
+                  html`<oscd-tree-item ?selected=${selected}>
+                    ${node.icon
+                      ? html`<oscd-icon slot="start">${node.icon}</oscd-icon>`
+                      : nothing}
                     <span slot="headline">${node.label}</span>
                   </oscd-tree-item>`}
                 @selected-ids-changed=${(e: CustomEvent<{ selectedIds: string[] }>) =>
@@ -523,6 +520,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     css`
       :host {
         color: var(--oscd-base00);
+        container-type: inline-size;
         display: block;
         padding: 12px;
       }
@@ -551,7 +549,42 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       .manage {
         display: grid;
         gap: 16px;
-        grid-template-columns: minmax(240px, 1fr) minmax(360px, 3fr);
+        grid-template-columns: minmax(280px, 1fr) minmax(0, 2.5fr);
+      }
+
+      @container (max-width: 800px) {
+        .manage {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        #tree-card {
+          max-height: 40vh;
+        }
+      }
+
+      #functions {
+        display: grid;
+        gap: 12px;
+      }
+
+      .function {
+        background: var(--oscd-base3);
+        border-radius: var(--md-sys-shape-corner-small);
+        display: grid;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .requirement {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      @container (max-width: 1000px) {
+        .requirement {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
 
       .fields {
@@ -569,7 +602,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       .switch {
         align-items: center;
         display: flex;
-        gap: 8px;
+        gap: 12px;
       }
 
       .muted,
@@ -592,21 +625,14 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         --md-text-button-label-text-color: var(--oscd-error);
       }
 
+      #remove-stencil {
+        margin-left: auto;
+      }
+
       .mappings {
         overflow-x: auto;
       }
 
-      table {
-        border-collapse: collapse;
-        width: 100%;
-      }
-
-      th,
-      td {
-        border-bottom: 1px solid var(--oscd-base1);
-        padding: 6px 8px;
-        text-align: left;
-      }
     `
   ];
 }

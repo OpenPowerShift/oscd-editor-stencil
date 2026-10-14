@@ -12,6 +12,12 @@ import { parseStencil, serializeStencil } from '../foundation/stencil-io.js';
 import type { StencilData } from '../foundation/types.js';
 import { themeStyles } from '../theme.js';
 
+type AceEditorElement = HTMLElement & {
+  updateComplete: Promise<boolean>;
+  editor?: { session: { setUseWorker(use: boolean): void } };
+  aceEditorBase?: { mode?: string };
+};
+
 /** The Ace editor is large, so it is only loaded when this view is opened. */
 const loadAceEditor = async () =>
   (await import('@omicronenergy/oscd-ui/ace-editor/OscdAceEditor.js'))
@@ -52,6 +58,33 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
       }
       this.editorReady = true;
     });
+  }
+
+  /** The editor is made for XML, so switch it to JSON once it is there. */
+  private async useJsonMode(): Promise<void> {
+    const ace = this.shadowRoot?.querySelector<AceEditorElement>('#editor');
+    if (!ace || this.jsonMode) {
+      return;
+    }
+    this.jsonMode = true;
+    await Promise.all([
+      import('@omicronenergy/oscd-ui/ace-editor/ace/mode-json.js'),
+      ace.updateComplete
+    ]);
+    // Ace would fetch a worker script that is not served; the text is
+    // checked here instead
+    ace.editor?.session.setUseWorker(false);
+    if (ace.aceEditorBase) {
+      ace.aceEditorBase.mode = 'ace/mode/json';
+    }
+  }
+
+  private jsonMode = false;
+
+  protected updated(): void {
+    if (this.editorReady) {
+      this.useJsonMode();
+    }
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {

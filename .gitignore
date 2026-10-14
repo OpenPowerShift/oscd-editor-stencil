@@ -11,7 +11,7 @@ coverage
 doc
 
 ## testing
-/test/screenshots/failed/
+/screenshots/**/failed/
 
 # large local vendor templates, not used by tests
 templates

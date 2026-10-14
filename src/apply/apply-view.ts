@@ -625,6 +625,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     ...themeStyles,
     css`
       :host {
+        container-type: inline-size;
         display: block;
         color: var(--oscd-base00);
         padding: 12px;
@@ -693,9 +694,16 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.4fr);
       }
 
+      @container (max-width: 760px) {
+        .choose {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
       .switch {
         align-items: center;
         display: flex;
+        gap: 12px;
         margin-bottom: 8px;
       }
 

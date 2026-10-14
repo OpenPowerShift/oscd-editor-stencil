@@ -166,6 +166,7 @@ describe('oscd-stencil-capture', () => {
 
     it('suggests the IED names as function names, and needs the application details', async () => {
       expect(q<OscdOutlinedTextField>('[data-ied="PUB1"]').value).to.equal('PUB1');
+      expect(q<OscdOutlinedTextField>('[data-ied="PUB1"]').label).to.equal('Function for PUB1');
       expect(q<HTMLButtonElement>('#next').disabled).to.be.true;
       await fillDetails();
       expect(q<HTMLButtonElement>('#next').disabled).to.be.false;

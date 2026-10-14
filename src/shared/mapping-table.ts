@@ -156,6 +156,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       .switch {
         align-items: center;
         display: flex;
+        gap: 12px;
         margin-bottom: 8px;
       }
 

@@ -442,7 +442,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
         ${involvedIeds(this.chosenBlocks).map(
           ied => html`<oscd-outlined-text-field
             data-ied=${ied}
-            label=${str`${msg('Function for')} ${ied}`}
+            label=${`${msg('Function for')} ${ied}`}
             .value=${this.names[ied] ?? ''}
             .error=${!!problems[ied]}
             .errorText=${problems[ied] ? problemText(problems[ied]) : ''}
@@ -575,6 +575,10 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
         margin: 0 0 16px;
       }
 
+      h3 {
+        margin-top: 28px;
+      }
+
       p {
         margin: 8px 0;
       }
@@ -697,15 +701,21 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       th.block {
         font-weight: 400;
         padding-left: 24px;
+        white-space: nowrap;
       }
 
       td.cell {
         white-space: nowrap;
       }
 
-      oscd-checkbox,
-      oscd-icon {
+      th oscd-checkbox,
+      td oscd-checkbox,
+      td oscd-icon {
         vertical-align: middle;
+      }
+
+      th oscd-checkbox {
+        margin-right: 8px;
       }
 
       oscd-icon.goose {

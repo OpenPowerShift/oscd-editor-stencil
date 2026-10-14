@@ -41,6 +41,12 @@ describe('oscd-stencil-json', () => {
     expect(q<HTMLButtonElement>('#revert').disabled).to.be.true;
   });
 
+  it('highlights the text as JSON', async () => {
+    const ace = q<HTMLElement & { aceEditorBase?: { mode?: string }; updateComplete: Promise<unknown> }>('#editor');
+    await ace.updateComplete;
+    await waitUntil(() => ace.aceEditorBase?.mode === 'ace/mode/json', 'JSON mode is set', { timeout: 3000 });
+  });
+
   it('lists what is wrong and cannot apply invalid text', async () => {
     await edit('{ broken');
     expect(q('#problems')).to.exist;
