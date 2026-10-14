@@ -115,6 +115,16 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   /** The wizard is kept once opened, so leaving it does not lose its progress. */
   @state() captureOpened = false;
 
+  /** The open branches of the tree. It starts closed. */
+  @state() expanded: string[] = [];
+
+  /** The stencil name and version being typed in the rename dialog. */
+  @state() renaming = false;
+
+  @state() renameName = '';
+
+  @state() renameVersion = '';
+
   @state() selection: Selection | null = null;
 
   @state() confirming: Confirming = null;
@@ -132,8 +142,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         this.selection = null;
       }
     }
+    if (changed.has('selection')) {
+      this.reveal();
+    }
     if (changed.has('currentId')) {
       this.selection = null;
+      this.expanded = [];
       this.problems = {};
       this.view = 'browse';
     }
@@ -262,6 +276,14 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         </oscd-outlined-select>
         <div class="tools" role="toolbar" aria-label=${msg('Stencil actions')}>
           <oscd-icon-button
+            id="rename"
+            aria-label=${msg('Rename stencil')}
+            title=${msg('Rename stencil')}
+            ?disabled=${!this.currentId}
+            @click=${() => this.openRename()}
+            ><oscd-icon aria-hidden="true">edit</oscd-icon></oscd-icon-button
+          >
+          <oscd-icon-button
             id="import"
             aria-label=${msg('Import stencil file')}
             title=${msg('Import stencil file')}
@@ -293,34 +315,6 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             ><oscd-icon aria-hidden="true">delete</oscd-icon></oscd-icon-button
           >
         </div>
-      </div>
-      <div class="row">
-        <oscd-outlined-text-field
-          id="stencil-name"
-          label=${msg('Name')}
-          .value=${this.stencil.name}
-          .error=${!!this.problems['stencil-name']}
-          .errorText=${this.problems['stencil-name'] ?? ''}
-          @change=${(e: Event) => {
-            const value = (e.target as OscdOutlinedTextField).value.trim();
-            if (this.setProblem('stencil-name', value ? null : msg('A name is needed'))) {
-              this.change({ ...this.stencil, name: value });
-            }
-          }}
-        ></oscd-outlined-text-field>
-        <oscd-outlined-text-field
-          id="stencil-version"
-          label=${msg('Version')}
-          .value=${this.stencil.version}
-          .error=${!!this.problems['stencil-version']}
-          .errorText=${this.problems['stencil-version'] ?? ''}
-          @change=${(e: Event) => {
-            const value = (e.target as OscdOutlinedTextField).value.trim();
-            if (this.setProblem('stencil-version', value ? null : msg('A version is needed'))) {
-              this.change({ ...this.stencil, version: value });
-            }
-          }}
-        ></oscd-outlined-text-field>
       </div>
     </div>`;
   }
@@ -590,6 +584,24 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         <div class="card" id="tree-card">
           <div class="card-head">
             <h2>${msg('Applications')}</h2>
+            <div class="tools" role="toolbar" aria-label=${msg('Tree actions')}>
+              <oscd-icon-button
+                id="expand-all"
+                aria-label=${msg('Expand all')}
+                title=${msg('Expand all')}
+                ?disabled=${this.stencil.applications.length === 0}
+                @click=${() => this.expandAll()}
+                ><oscd-icon aria-hidden="true">unfold_more</oscd-icon></oscd-icon-button
+              >
+              <oscd-icon-button
+                id="collapse-all"
+                aria-label=${msg('Collapse all')}
+                title=${msg('Collapse all')}
+                ?disabled=${this.stencil.applications.length === 0}
+                @click=${() => this.collapseAll()}
+                ><oscd-icon aria-hidden="true">unfold_less</oscd-icon></oscd-icon-button
+              >
+            </div>
             <oscd-filled-button
               id="capture"
               ?disabled=${!this.doc}
@@ -610,7 +622,8 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             : html`<oscd-tree
                 .data=${this.tree()}
                 .selectedIds=${selectedId ? [selectedId] : []}
-                .expandedIds=${this.expandedIds()}
+                .expandedIds=${this.expanded}
+                @expanded-ids-changed=${(e: CustomEvent<{ expandedIds: string[] }>) => (this.expanded = e.detail.expandedIds)}
                 selectionMode="single"
                 .renderItem=${({
                   node,
@@ -637,7 +650,111 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       </div>
       ${this.captureOpened ? this.renderCapture() : nothing}
       ${this.view === 'json' ? this.renderJson() : nothing}
+      ${this.renderRename()}
       ${this.renderConfirmation()}`;
+  }
+
+  /** Opens the branches above the selection so that it can be seen. */
+  private reveal(): void {
+    const selection = this.selection;
+    if (!selection) {
+      return;
+    }
+    const ancestors = [selection.category, nodeId(selection.version ? { ...selection, version: undefined } : selection)];
+    const missing = ancestors.filter(id => !this.expanded.includes(id));
+    if (missing.length > 0) {
+      this.expanded = [...this.expanded, ...missing];
+    }
+  }
+
+  private openRename(): void {
+    this.renameName = this.stencil.name;
+    this.renameVersion = this.stencil.version;
+    this.renaming = true;
+  }
+
+  private get renameProblems(): { name?: string; version?: string } {
+    return {
+      ...(this.renameName.trim() ? {} : { name: msg('A name is needed') }),
+      ...(this.renameVersion.trim() ? {} : { version: msg('A version is needed') })
+    };
+  }
+
+  private saveRename(): void {
+    if (Object.keys(this.renameProblems).length > 0) {
+      return;
+    }
+    this.change({
+      ...this.stencil,
+      name: this.renameName.trim(),
+      version: this.renameVersion.trim()
+    });
+    this.renaming = false;
+  }
+
+  private renderRename(): TemplateResult {
+    const problems = this.renameProblems;
+    const unchanged =
+      this.renameName.trim() === this.stencil.name &&
+      this.renameVersion.trim() === this.stencil.version;
+
+    return html`<oscd-dialog
+      id="rename-dialog"
+      ?open=${this.renaming}
+      @closed=${(e: Event) => {
+        if (e.target === e.currentTarget) {
+          this.renaming = false;
+        }
+      }}
+    >
+      <div slot="headline">${msg('Rename stencil')}</div>
+      <form
+        slot="content"
+        id="rename-form"
+        method="dialog"
+        class="rename-fields"
+        @submit=${(e: Event) => {
+          e.preventDefault();
+          this.saveRename();
+        }}
+      >
+        <oscd-outlined-text-field
+          id="rename-name"
+          label=${msg('Name')}
+          .value=${this.renameName}
+          .error=${!!problems.name}
+          .errorText=${problems.name ?? ''}
+          @input=${(e: Event) => (this.renameName = (e.target as OscdOutlinedTextField).value)}
+        ></oscd-outlined-text-field>
+        <oscd-outlined-text-field
+          id="rename-version"
+          label=${msg('Version')}
+          .value=${this.renameVersion}
+          .error=${!!problems.version}
+          .errorText=${problems.version ?? ''}
+          @input=${(e: Event) => (this.renameVersion = (e.target as OscdOutlinedTextField).value)}
+        ></oscd-outlined-text-field>
+      </form>
+      <div slot="actions">
+        <oscd-text-button id="rename-cancel" @click=${() => (this.renaming = false)}
+          >${msg('Cancel')}</oscd-text-button
+        >
+        <oscd-filled-button
+          id="rename-save"
+          ?disabled=${Object.keys(problems).length > 0 || unchanged}
+          @click=${() => this.saveRename()}
+          >${msg('Save')}</oscd-filled-button
+        >
+      </div>
+    </oscd-dialog>`;
+  }
+
+  private expandAll(): void {
+    this.expanded = this.expandedIds();
+  }
+
+  private collapseAll(): void {
+    this.expanded = [];
   }
 
   private expandedIds(): string[] {
@@ -699,11 +816,25 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         min-width: 220px;
       }
 
+      .rename-fields {
+        display: grid;
+        gap: 12px;
+        min-width: min(320px, 70vw);
+      }
+
       .tools {
         align-items: center;
         display: flex;
         gap: 4px;
         margin-left: auto;
+      }
+
+      .card-head .tools {
+        margin-left: 0;
+      }
+
+      .card-head h2 {
+        flex: 1;
       }
 
       .tools oscd-icon-button {
@@ -822,7 +953,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       }
 
       .mappings {
-        overflow-x: auto;
+        overflow: visible;
       }
 
       .with-help {

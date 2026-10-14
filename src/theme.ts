@@ -55,6 +55,14 @@ export const themeStyles = [
         --oscd-editor-stencil-sv-color,
         color-mix(in srgb, var(--oscd-secondary) 75%, var(--oscd-base03))
       );
+      --stencil-quality: var(
+        --oscd-editor-stencil-quality-color,
+        color-mix(
+          in srgb,
+          color-mix(in srgb, var(--oscd-primary) 50%, var(--oscd-secondary)) 60%,
+          var(--oscd-base03)
+        )
+      );
       --stencil-danger: color-mix(
         in srgb,
         var(--oscd-error) 55%,

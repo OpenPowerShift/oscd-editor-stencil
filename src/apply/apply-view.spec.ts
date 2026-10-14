@@ -9,6 +9,7 @@ import type { StencilApplyDetail } from './apply-view.js';
 import { getMappingInfo } from '../foundation/mapping-info.js';
 import type { StencilData } from '../foundation/types.js';
 import { buildDocument, buildVersion } from '../testing/apply-fixture.js';
+import { fixtureXml } from '../testing/fixture-scd.js';
 import { applicationFrom } from '../testing/scl.js';
 import { makeApplication, makeStencil, makeVersion } from '../testing/stencils.js';
 
@@ -113,15 +114,38 @@ describe('oscd-stencil-apply', () => {
     beforeEach(chooseFirstApplication);
 
     it('shows what it contains and what it needs', () => {
-      expect(q('#summary').textContent!.replace(/\s+/g, ' ')).to.contain(
-        '3 IEDs · 1 GOOSE · 1 SV · 3 subscriptions · 2 supervisions'
-      );
+      expect(qa('#summary li').map(li => li.textContent!.trim())).to.deep.equal([
+        '3 IEDs',
+        '1 GOOSE',
+        '1 SV',
+        '3 subscriptions',
+        '2 supervisions'
+      ]);
       const needs = qa('.needs li').map(li => li.textContent!.replace(/\s+/g, ' ').trim());
-      expect(needs.join('|')).to.contain('Publisher SIEMENS 7SS85, tagged BZ-Publisher 1.0.0');
+      expect(needs.join('|')).to.contain('Publisher SIEMENS 7SS85 sellBZ-Publisher1.0.0');
       expect(needs.join('|')).to.contain('Relay SEL SEL-421');
+      expect(qa('.needs .badge.tag').map(b => b.querySelector('.id')!.textContent!.trim())).to.deep.equal([
+        'BZ-Publisher',
+        'BZ-Subscriber'
+      ]);
+      expect(qa('.needs li')[1].querySelector('.badge')).to.be.null;
     });
 
-    it('shows the mappings of the application before it is applied', () => {
+    it('keeps the table of control blocks out of the way until asked for', async () => {
+      expect(q('oscd-stencil-mapping-table')).to.be.null;
+      expect(q('#show-mappings').getAttribute('aria-expanded')).to.equal('false');
+
+      await click('#show-mappings');
+      expect(q('oscd-stencil-mapping-table')).to.exist;
+      expect(q('#show-mappings').getAttribute('aria-expanded')).to.equal('true');
+      expect(q('#show-mappings').textContent).to.contain('Hide mappings');
+
+      await click('#show-mappings');
+      expect(q('oscd-stencil-mapping-table')).to.be.null;
+    });
+
+    it('shows the mappings of the application before it is applied', async () => {
+      await click('#show-mappings');
       const table = q<HTMLElement & { controlBlocks: unknown[]; markers: Map<string, unknown> }>(
         'oscd-stencil-mapping-table'
       );
@@ -200,13 +224,41 @@ describe('oscd-stencil-apply', () => {
       expect(q('#needs-two')).to.not.exist;
     });
 
-    it('explains what automatic assignment could not decide, until something changes', async () => {
-      await click('#auto');
+    it('says which functions more than one IED fits, which automatic assignment leaves to the user', async () => {
       expect(q('#auto-note').textContent).to.contain('Publisher').and.contain('Subscriber');
       expect(q('#auto-note').textContent).to.not.contain('Relay');
+
+      await click('#auto');
       expect(el.assignment.get('Relay')).to.equal('SELR');
 
       await assign('Publisher', 'PUB2');
+      expect(q('#auto-note').textContent).to.not.contain('Publisher');
+      expect(q('#auto-note').textContent).to.contain('Subscriber');
+
+      await assign('Subscriber', 'SUB2');
+      expect(q('#auto-note')).to.not.exist;
+    });
+
+    it('can assign automatically only while that would assign something', async () => {
+      const auto = () => q<HTMLElement & { disabled: boolean }>('#auto');
+      expect(auto().disabled).to.be.false;
+
+      await click('#auto');
+      expect(el.assignment.size).to.equal(1);
+      expect(auto().disabled).to.be.true;
+
+      await assign('Relay', '');
+      expect(auto().disabled).to.be.false;
+    });
+
+    it('cannot assign automatically when no IED fits any function', async () => {
+      const bare = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+      bare.querySelector('IED[name="SELR"]')!.remove();
+      el.doc = bare;
+      await el.updateComplete;
+      await chooseFirstApplication();
+      await click('#next');
+      expect(q<HTMLElement & { disabled: boolean }>('#auto').disabled).to.be.true;
       expect(q('#auto-note')).to.not.exist;
     });
 

@@ -20,6 +20,7 @@ import {
   autoAssign,
   candidateIeds,
   describeRequirement,
+  requiredTags,
   functionNames,
   noCandidateReason
 } from '../foundation/candidates.js';
@@ -103,8 +104,8 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   /** Changes whenever the document is edited, so a reviewed plan can be checked again. */
   @property({ attribute: false }) docVersion?: unknown;
 
-  /** Why automatic assignment left functions unassigned. */
-  @state() autoNote = '';
+  /** Whether the table of control blocks is shown under the chosen application. */
+  @state() showMappings = false;
 
   @state() step: Step = 'choose';
 
@@ -148,7 +149,6 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.assignment = new Map();
     this.plan = null;
     this.applied = null;
-    this.autoNote = '';
   }
 
   /** Follows the selected application into a new stencil, or resets. */
@@ -189,7 +189,6 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   }
 
   private assign(fn: string, iedName: string): void {
-    this.autoNote = '';
     const next = new Map(this.assignment);
     if (iedName) {
       next.set(fn, iedName);
@@ -207,23 +206,33 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.step = 'review';
   }
 
-  /** Assigns every function that has one candidate and explains the rest. */
+  /** Assigns every function that has exactly one candidate. */
   private autoAssignFunctions(): void {
-    const version = this.version!;
-    this.assignment = autoAssign(this.doc!, version, this.assignment);
+    this.assignment = autoAssign(this.doc!, this.version!, this.assignment);
+  }
 
+  /** Whether assigning automatically would assign anything more. */
+  private get canAutoAssign(): boolean {
+    return (
+      !!this.doc &&
+      !!this.version &&
+      autoAssign(this.doc, this.version, this.assignment).size >
+        this.assignment.size
+    );
+  }
+
+  /** The unassigned functions that more than one IED fits. */
+  private ambiguousFunctions(): string[] {
+    const version = this.version;
+    if (!version || !this.doc) {
+      return [];
+    }
     const taken = new Set(this.assignment.values());
-    const ambiguous = functionNames(version).filter(
+    return functionNames(version).filter(
       name =>
         !this.assignment.has(name) &&
         candidateIeds(this.doc!, version.IEDS[name], taken).length > 1
     );
-    this.autoNote =
-      ambiguous.length > 0
-        ? msg(
-          str`More than one IED fits ${ambiguous.join(', ')}. Choose those yourself.`
-        )
-        : '';
   }
 
   private apply(): void {
@@ -393,53 +402,89 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     const versions = selectableVersions(app, this.showDeprecated);
     const summary = summarizeVersion(version);
 
-    return html`<div class="card">
-      <h2>${app.name}</h2>
-      <p class="muted">${app.category}${app.description ? ` · ${app.description}` : ''}</p>
+    const deprecated = version.deprecated
+      ? html`<span class="badge deprecated">${msg('deprecated')}</span>`
+      : nothing;
 
-      ${versions.length > 1
-        ? html`<oscd-outlined-select
-            id="version"
-            label="${msg('Version')}"
-            @change=${(event: Event) => {
-              this.version = versions.find(
-                v => v.version === (event.target as OscdOutlinedSelect).value
-              );
-              this.assignment = new Map();
-            }}
-          >
-            ${versions.map(
-              v => html`<oscd-select-option
-                value="${v.version}"
-                ?selected=${v === version}
+    return html`<div class="card details">
+      <header class="title-row">
+        <div class="title">
+          <h2>${app.name}</h2>
+          <p class="category">${app.category}</p>
+          ${app.description ? html`<p class="description">${app.description}</p>` : nothing}
+        </div>
+        <div class="version-box">
+          ${versions.length > 1
+            ? html`<oscd-outlined-select
+                id="version"
+                label="${msg('Version')}"
+                @change=${(event: Event) => {
+                  this.version = versions.find(
+                    v => v.version === (event.target as OscdOutlinedSelect).value
+                  );
+                  this.assignment = new Map();
+                }}
               >
-                <div slot="headline">
-                  ${v.version}${v.deprecated ? ` (${msg('deprecated')})` : ''}
-                </div>
-              </oscd-select-option>`
-            )}
-          </oscd-outlined-select>`
-        : html`<p><strong>${msg('Version')}</strong> ${version.version}${version.deprecated ? ` (${msg('deprecated')})` : ''}</p>`}
-      ${version.description ? html`<p>${version.description}</p>` : nothing}
+                ${versions.map(
+                  v => html`<oscd-select-option
+                    value="${v.version}"
+                    ?selected=${v === version}
+                  >
+                    <div slot="headline">
+                      ${v.version}${v.deprecated ? ` (${msg('deprecated')})` : ''}
+                    </div>
+                  </oscd-select-option>`
+                )}
+              </oscd-outlined-select>`
+            : html`<p class="version-line" id="version-line">
+                <span class="badge version" title="${msg('Version')}"
+                  >${msg('Version')} <strong>${version.version}</strong></span
+                >${deprecated}
+              </p>`}
+          ${version.description
+            ? html`<p class="version-description">${version.description}</p>`
+            : nothing}
+        </div>
+      </header>
 
-      <p class="summary" id="summary">
-        ${msg(str`${summary.functions} IEDs`)} ·
-        ${msg(str`${summary.goose} GOOSE`)} · ${msg(str`${summary.smv} SV`)} ·
-        ${msg(str`${summary.subscriptions} subscriptions`)} ·
-        ${msg(str`${summary.supervisions} supervisions`)}
-      </p>
+      <ul class="stats" id="summary" aria-label="${msg('Contents')}">
+        <li>${msg(str`${summary.functions} IEDs`)}</li>
+        <li>${msg(str`${summary.goose} GOOSE`)}</li>
+        <li>${msg(str`${summary.smv} SV`)}</li>
+        <li>${msg(str`${summary.subscriptions} subscriptions`)}</li>
+        <li>${msg(str`${summary.supervisions} supervisions`)}</li>
+      </ul>
 
       <h3>${msg('Needs')}</h3>
       <ul class="needs">
-        ${functionNames(version).map(
-          name => html`<li>
+        ${functionNames(version).map((name) => {
+          const requirement = version.IEDS[name];
+          return html`<li>
             <oscd-icon aria-hidden="true">developer_board</oscd-icon>
-            <span><strong>${name}</strong> ${describeRequirement(version.IEDS[name])}</span>
-          </li>`
-        )}
+            <strong class="fn">${name}</strong>
+            <span class="kind">${requirement.manufacturer} ${requirement.type}</span>
+            <span class="tags">
+              ${requiredTags(requirement).map(
+                tag => html`<span class="badge tag" title="${msg('Stencil tag')}"
+                  ><oscd-icon aria-hidden="true">sell</oscd-icon
+                  ><span class="id">${tag.id}</span
+                  ><span class="ver">${tag.version}</span></span
+                >`
+              )}
+            </span>
+          </li>`;
+        })}
       </ul>
 
       <div class="actions">
+        <oscd-text-button
+          id="show-mappings"
+          aria-expanded=${this.showMappings ? 'true' : 'false'}
+          @click=${() => (this.showMappings = !this.showMappings)}
+          ><oscd-icon slot="icon" aria-hidden="true"
+            >${this.showMappings ? 'expand_less' : 'expand_more'}</oscd-icon
+          >${this.showMappings ? msg('Hide mappings') : msg('Show mappings')}</oscd-text-button
+        >
         <span class="spacer"></span>
         <oscd-filled-button id="next" @click=${() => (this.step = 'assign')}
           >${msg('Next')}<oscd-icon slot="icon" aria-hidden="true">arrow_forward</oscd-icon></oscd-filled-button
@@ -472,7 +517,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       </section>
       <section aria-label="${msg('Details')}">${this.renderVersionDetails()}</section>
     </div>
-    ${this.version ? this.renderMappings(this.version) : nothing}`;
+    ${this.version && this.showMappings ? this.renderMappings(this.version) : nothing}`;
   }
 
   private renderFunction(version: Application, name: string): TemplateResult {
@@ -534,8 +579,10 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           ? html` · <span id="needs-two">${msg('Assign at least two IEDs to continue.')}</span>`
           : nothing}
       </p>
-      ${this.autoNote
-        ? html`<p class="reason" id="auto-note" role="status"><oscd-icon aria-hidden="true">info</oscd-icon>${this.autoNote}</p>`
+      ${this.ambiguousFunctions().length > 0
+        ? html`<p class="reason" id="auto-note"><oscd-icon aria-hidden="true">info</oscd-icon>${msg(
+          str`More than one IED fits ${this.ambiguousFunctions().join(', ')}. Choose those yourself.`
+        )}</p>`
         : nothing}
       <div class="actions">
         <oscd-text-button id="back" @click=${() => (this.step = 'choose')}
@@ -547,12 +594,12 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           ?disabled=${assigned === 0}
           @click=${() => {
             this.assignment = new Map();
-            this.autoNote = '';
           }}
           >${msg('Clear')}</oscd-outlined-button
         >
         <oscd-outlined-button
           id="auto"
+          ?disabled=${!this.canAutoAssign}
           @click=${() => this.autoAssignFunctions()}
           ><oscd-icon slot="icon" aria-hidden="true">auto_fix_high</oscd-icon>${msg('Assign automatically')}</oscd-outlined-button
         >
@@ -828,9 +875,10 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         max-width: 960px;
       }
 
-      .mappings {
+      .card.wide.mappings {
         margin-top: 16px;
         max-width: none;
+        overflow: visible;
       }
 
       .needs,
@@ -859,6 +907,11 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         align-items: center;
         display: flex;
         gap: 12px;
+      }
+
+      .who strong,
+      .needs .fn {
+        font-weight: 500;
       }
 
       .reason {
@@ -957,6 +1010,145 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         display: flex;
         gap: 12px;
         justify-content: space-between;
+      }
+
+      .details .title-row {
+        align-items: flex-start;
+        display: grid;
+        gap: 4px 24px;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      }
+
+      .details h2 {
+        margin: 0;
+      }
+
+      .details p {
+        margin: 4px 0 0;
+      }
+
+      .category {
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .version-box {
+        align-items: flex-end;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        text-align: right;
+      }
+
+      .version-line {
+        align-items: center;
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+      }
+
+      .version-description {
+        font-style: italic;
+      }
+
+      .badge {
+        align-items: center;
+        background: var(--oscd-base3);
+        border: 1px solid var(--stencil-border);
+        border-radius: 999px;
+        display: inline-flex;
+        font-size: 0.8125rem;
+        gap: 6px;
+        line-height: 1.4;
+        padding: 1px 10px;
+        white-space: nowrap;
+      }
+
+      .badge.deprecated {
+        border-color: var(--stencil-danger);
+        color: var(--stencil-danger);
+      }
+
+      .badge.tag oscd-icon {
+        --md-icon-size: 16px;
+        margin-left: -4px;
+      }
+
+      .badge.tag .ver {
+        border-left: 1px solid var(--stencil-border);
+        padding-left: 6px;
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        list-style: none;
+        margin: 12px 0 4px;
+        padding: 0;
+      }
+
+      .stats li {
+        background: var(--oscd-base3);
+        border-radius: 999px;
+        font-size: 0.875rem;
+        padding: 2px 12px;
+      }
+
+      .details h3 {
+        margin: 16px 0 4px;
+      }
+
+      .details .needs {
+        margin: 4px 0 0;
+        padding-left: 16px;
+      }
+
+      .details .needs li {
+        align-items: center;
+        border-top: 1px solid var(--stencil-border);
+        display: grid;
+        gap: 4px 12px;
+        grid-template-columns: auto minmax(6rem, max-content) minmax(0, 1fr) auto;
+        padding: 8px 0;
+      }
+
+      .details .needs li:first-child {
+        border-top: none;
+      }
+
+      .needs .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+
+      @container (max-width: 640px) {
+        .details .title-row {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .version-box {
+          align-items: flex-start;
+          text-align: left;
+        }
+
+        .version-line {
+          justify-content: flex-start;
+        }
+
+        .details .needs li {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .needs .kind,
+        .needs .tags {
+          grid-column: 2;
+          justify-content: flex-start;
+        }
       }
     `
   ];

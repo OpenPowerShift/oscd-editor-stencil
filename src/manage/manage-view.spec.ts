@@ -46,6 +46,7 @@ describe('oscd-stencil-manage', () => {
     const field = q<OscdOutlinedTextField>(`#${id}`);
     expect(field, id).to.exist;
     field.value = value;
+    field.dispatchEvent(new Event('input'));
     field.dispatchEvent(new Event('change'));
     await el.updateComplete;
   };
@@ -107,22 +108,55 @@ describe('oscd-stencil-manage', () => {
       ]);
     });
 
-    it('renames the stencil and refuses empty names and versions', async () => {
-      await type('stencil-name', ' Renamed ');
-      expect((last('stencil-change') as StencilData).name).to.equal('Renamed');
+    it('renames the stencil in a dialog, refusing empty names and versions', async () => {
+      const dialog = () => q('#rename-dialog');
+      expect(dialog().hasAttribute('open')).to.be.false;
 
-      await type('stencil-version', '3.1.0');
-      expect((last('stencil-change') as StencilData).version).to.equal('3.1.0');
+      q<HTMLElement>('#rename').click();
+      await el.updateComplete;
+      expect(dialog().hasAttribute('open')).to.be.true;
+      expect(q<OscdOutlinedTextField>('#rename-name').value).to.equal('My Stencil');
+      expect(q<OscdOutlinedTextField>('#rename-version').value).to.equal('1.0.0');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.true;
 
-      const count = events.length;
-      await type('stencil-name', ' ');
-      await type('stencil-version', '');
-      expect(events).to.have.lengthOf(count);
-      expect(q<OscdOutlinedTextField>('#stencil-name').errorText).to.not.equal('');
-      expect(q<OscdOutlinedTextField>('#stencil-version').error).to.be.true;
+      await type('rename-name', ' ');
+      expect(q<OscdOutlinedTextField>('#rename-name').errorText).to.not.equal('');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.true;
+      await type('rename-version', '');
+      expect(q<OscdOutlinedTextField>('#rename-version').error).to.be.true;
 
-      await type('stencil-name', 'Fine');
-      expect(q<OscdOutlinedTextField>('#stencil-name').error).to.be.false;
+      await type('rename-name', ' Renamed ');
+      await type('rename-version', '3.1.0');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.false;
+      q<HTMLElement>('#rename-save').click();
+      await el.updateComplete;
+
+      const renamed = last('stencil-change') as StencilData;
+      expect([renamed.name, renamed.version]).to.deep.equal(['Renamed', '3.1.0']);
+      expect(dialog().hasAttribute('open')).to.be.false;
+    });
+
+    it('closes the rename dialog without changing anything', async () => {
+      q<HTMLElement>('#rename').click();
+      await el.updateComplete;
+      await type('rename-name', 'Other');
+      q<HTMLElement>('#rename-cancel').click();
+      await el.updateComplete;
+      expect(q('#rename-dialog').hasAttribute('open')).to.be.false;
+      expect(events.filter(event => event.type === 'stencil-change')).to.be.empty;
+
+      q<HTMLElement>('#rename').click();
+      await el.updateComplete;
+      expect(q<OscdOutlinedTextField>('#rename-name').value).to.equal('My Stencil');
+      q('#rename-dialog').dispatchEvent(new Event('closed'));
+      await el.updateComplete;
+      expect(el.renaming).to.be.false;
+    });
+
+    it('cannot rename when there is no stencil in the library', async () => {
+      el.currentId = '';
+      await el.updateComplete;
+      expect(q<HTMLButtonElement>('#rename').disabled).to.be.true;
     });
 
     it('asks before removing the stencil from the library', async () => {
@@ -145,7 +179,41 @@ describe('oscd-stencil-manage', () => {
   });
 
   describe('the tree', () => {
+    it('starts closed, and opens and closes all of it with the icons', async () => {
+      expect(el.expanded).to.deep.equal([]);
+      q<HTMLElement>('#expand-all').click();
+      await el.updateComplete;
+      expect(el.expanded).to.include('Bus').and.include('Line');
+      expect(el.expanded.length).to.equal(5);
+
+      q<HTMLElement>('#collapse-all').click();
+      await el.updateComplete;
+      expect(el.expanded).to.deep.equal([]);
+    });
+
+    it('follows the tree when it is opened or closed by hand', async () => {
+      q('oscd-tree').dispatchEvent(
+        new CustomEvent('expanded-ids-changed', { detail: { expandedIds: ['Bus'] } })
+      );
+      await el.updateComplete;
+      expect(el.expanded).to.deep.equal(['Bus']);
+    });
+
+    it('opens the branches above what is selected', async () => {
+      await select(nodeId({ ...key, version: '1.0.0' }));
+      expect(el.expanded).to.include('Bus').and.include(nodeId(key));
+    });
+
+    it('cannot open or close an empty tree', async () => {
+      el.stencil = makeStencil();
+      await el.updateComplete;
+      expect(q<HTMLButtonElement>('#expand-all').disabled).to.be.true;
+      expect(q<HTMLButtonElement>('#collapse-all').disabled).to.be.true;
+    });
+
     it('groups applications by category with their versions, marking deprecated ones', async () => {
+      el.expanded = el.stencil.applications.flatMap(app => [app.category, nodeId(app)]);
+      await el.updateComplete;
       await (q('oscd-tree') as unknown as { updateComplete: Promise<unknown> }).updateComplete;
       const labels = Array.from(
         q('oscd-tree').shadowRoot!.querySelectorAll('oscd-tree-item')

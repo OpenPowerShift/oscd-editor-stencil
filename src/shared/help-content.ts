@@ -26,7 +26,7 @@ export const helpMappingTable = (): TemplateResult => html`
   <ul style="margin: 0 0 12px; padding-left: 20px">
     <li>${msg('The round G and S icons tell GOOSE and sampled values apart. The number is how many signals the subscriber receives.')}</li>
     <li>${msg('The grey line is the supervision, the logical node (LGOS or LSVS) that watches the subscription.')}</li>
-    <li>${msg('Quality is the extra message quality input that SEL relays use.')}</li>
+    <li>${msg('The dashed Quality badge is the extra message quality input that SEL relays use. It is shown even when supervisions are hidden.')}</li>
   </ul>
 `;
 

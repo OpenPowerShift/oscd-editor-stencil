@@ -547,8 +547,8 @@
   <target>Adicionar metadados</target>
 </trans-unit>
 <trans-unit id="s124cf9976bd465f6">
-  <source>More than one IED fits <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Choose those yourself.</source>
-  <target>Mais do que um IED serve para <x id="0" equiv-text="${ambiguous.join(', ')}"/>. Escolha-os você mesmo.</target>
+  <source>More than one IED fits <x id="0" equiv-text="${this.ambiguousFunctions().join(', ')}"/>. Choose those yourself.</source>
+  <target>Mais do que um IED serve para <x id="0" equiv-text="${this.ambiguousFunctions().join(', ')}"/>. Escolha-os você mesmo.</target>
 </trans-unit>
 <trans-unit id="sf9a09f84e8c9b101">
   <source>These functions have no IED, so their control blocks are not applied: <x id="0" equiv-text="${this.unassigned().join(', ')}"/>.</source>
@@ -673,10 +673,6 @@
 <trans-unit id="s66a363233e345742">
   <source>The grey line is the supervision, the logical node (LGOS or LSVS) that watches the subscription.</source>
   <target>A linha cinzenta é a supervisão, o nó lógico (LGOS ou LSVS) que vigia a subscrição.</target>
-</trans-unit>
-<trans-unit id="scaacef509f1e0a43">
-  <source>Quality is the extra message quality input that SEL relays use.</source>
-  <target>Qualidade é a entrada adicional de qualidade de mensagem que os relés SEL usam.</target>
 </trans-unit>
 <trans-unit id="sf125819aef3b5466">
   <source>Each function lists only the IEDs that can fill it: the same manufacturer and type, carrying the stencil tag the function asks for, and not already used by another function.</source>
@@ -845,6 +841,46 @@
 <trans-unit id="s382a2aa3984474dd">
   <source>Create</source>
   <target>Criar</target>
+</trans-unit>
+<trans-unit id="sf0ca10f343249063">
+  <source>Contents</source>
+  <target>Conteúdo</target>
+</trans-unit>
+<trans-unit id="sec9d31b674757fef">
+  <source>Stencil tag</source>
+  <target>Etiqueta de stencil</target>
+</trans-unit>
+<trans-unit id="sf6df846198ee88d8">
+  <source>Hide mappings</source>
+  <target>Ocultar mapeamentos</target>
+</trans-unit>
+<trans-unit id="se34e7b8d3813c0d3">
+  <source>Show mappings</source>
+  <target>Mostrar mapeamentos</target>
+</trans-unit>
+<trans-unit id="sf344938784c2e68f">
+  <source>Rename stencil</source>
+  <target>Mudar o nome do stencil</target>
+</trans-unit>
+<trans-unit id="s8e072caab09540d2">
+  <source>Tree actions</source>
+  <target>Ações da árvore</target>
+</trans-unit>
+<trans-unit id="s0498cc358421b4a6">
+  <source>Expand all</source>
+  <target>Expandir tudo</target>
+</trans-unit>
+<trans-unit id="s78098d0d03ec7ea1">
+  <source>Collapse all</source>
+  <target>Recolher tudo</target>
+</trans-unit>
+<trans-unit id="s33f85f24c0f5f008">
+  <source>Save</source>
+  <target>Guardar</target>
+</trans-unit>
+<trans-unit id="s20c3be3a5ac4f180">
+  <source>The dashed Quality badge is the extra message quality input that SEL relays use. It is shown even when supervisions are hidden.</source>
+  <target>O distintivo tracejado Qualidade é a entrada adicional de qualidade de mensagem que os relés SEL usam. É mostrado mesmo quando as supervisões estão ocultas.</target>
 </trans-unit>
 </body>
 </file>

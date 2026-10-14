@@ -94,9 +94,10 @@ describe('oscd-stencil-mapping-table', () => {
     const [gc1, sv1] = qa('td.mapped');
     expect(text(gc1.querySelector('.count')!)).to.equal('2');
     expect(Array.from(gc1.querySelectorAll('.supervision')).map(text)).to.deep.equal([
-      'LD0 › LGOS 1',
-      'Quality Q_GC1'
+      'LD0 › LGOS 1'
     ]);
+    expect(text(gc1.querySelector('.quality')!)).to.equal('fact_checkQuality Q_GC1');
+    expect(sv1.querySelector('.quality')).to.be.null;
     expect(gc1.querySelector('.service')!.classList.contains('goose')).to.be.true;
     expect(gc1.querySelector('oscd-icon')!.getAttribute('aria-label')).to.equal('GOOSE');
     expect(sv1.querySelector('.service')!.classList.contains('smv')).to.be.true;
@@ -175,5 +176,16 @@ describe('oscd-stencil-mapping-table', () => {
     const block = el.shadowRoot!.querySelector('th.block') as HTMLElement;
     expect(getComputedStyle(block).position).to.equal('sticky');
     expect(block.getBoundingClientRect().left).to.be.closeTo(left, 2);
+  });
+
+  it('shows the SEL message quality as a badge of its own, also when supervisions are hidden', async () => {
+    el.shadowRoot!.querySelector<HTMLElement>('oscd-switch')!.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    expect(qa('.supervision')).to.be.empty;
+
+    const quality = q<HTMLElement>('.quality');
+    expect(quality).to.exist;
+    expect(getComputedStyle(quality).borderStyle).to.contain('dashed');
+    expect(quality.getAttribute('title')).to.equal('SEL message quality');
   });
 });

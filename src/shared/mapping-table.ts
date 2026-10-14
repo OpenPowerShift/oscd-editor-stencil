@@ -83,11 +83,13 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       ${this.showSupervisions
         ? html`<span class="supervision" title="${msg('Supervision')}"
             >${supervisionLabel(block.supervision)}</span
-          >${block.selSupervision
-            ? html`<span class="supervision" title="${msg('SEL message quality')}"
-                >${msg('Quality')} ${block.selSupervision.name}</span
-              >`
-            : nothing}`
+          >`
+        : nothing}
+      ${block.selSupervision
+        ? html`<span class="quality" title="${msg('SEL message quality')}"
+            ><oscd-icon aria-hidden="true">fact_check</oscd-icon>${msg('Quality')}
+            <strong>${block.selSupervision.name}</strong></span
+          >`
         : nothing}
       ${marker
         ? html`<span class="marker ${marker.kind}">${marker.label}</span>`
@@ -178,6 +180,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
         margin-bottom: 8px;
       }
 
+      /* scrollbars only appear when the table is larger than the room it has */
       .scroll {
         max-height: 60vh;
         overflow: auto;
@@ -186,6 +189,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       table {
         border-collapse: separate;
         border-spacing: 0;
+        width: 100%;
       }
 
       caption {
@@ -270,6 +274,26 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
         color: var(--stencil-text);
         display: block;
         font-size: 0.8125rem;
+      }
+
+      /* the SEL message quality input: a dashed badge, shown even when the
+         supervisions are hidden */
+      .quality {
+        align-items: center;
+        background: color-mix(in srgb, var(--stencil-quality) 12%, transparent);
+        border: 1px dashed var(--stencil-quality);
+        border-radius: 999px;
+        color: var(--stencil-text);
+        display: inline-flex;
+        font-size: 0.8125rem;
+        gap: 4px;
+        margin-top: 4px;
+        padding: 0 8px 0 4px;
+      }
+
+      .quality oscd-icon {
+        --md-icon-size: 16px;
+        color: var(--stencil-quality);
       }
 
       .marker {
