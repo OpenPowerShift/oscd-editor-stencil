@@ -298,7 +298,9 @@ Each phase ends with `npm i → tsc --noEmit → build → lint → test` passin
    - Extract `plan-apply`, `capture`, `ied-tags` and `match` into `foundation/`, with specs.
    - Identity golden test.
    - Single-transaction Apply.
-4. **oscd-ui + theming + i18n scaffolding.** Replace every `mwc-*`, `md-*` and `@openenergytools/*` component. Add `theme.ts`, `msg()` and the locale setup. Behaviour is unchanged.
+4. **oscd-ui + theming.** Replace every `mwc-*`, `md-*` and `@openenergytools/*` component with `@omicronenergy/oscd-ui` (done: 18 scoped elements, including `oscd-snackbar`, so no local toast is needed). Add `theme.ts` with the `--oscd-*` palette and the `--oscd-editor-stencil-goose-color` / `-sv-color` hooks. Behaviour is unchanged.
+   - *Deferred to phase 7:* wrapping strings in `msg()` and splitting the 2000-line component. Phase 7 rewrites these views, so doing either now would be thrown away. Phase 7 builds the new components with `msg()` from the start, and phase 8 adds the `de` and `pt` locale files.
+   - *Note:* oscd-ui 0.1.1 also ships `oscd-ace-editor`, which the phase 7 JSON editor should use instead of adding `ace-builds` directly.
 5. **Bug fixes.** Defects 1–11, each with a regression spec.
 6. **Schema v2.**
    - `stencil-ref`, `stencil-io` with v1 → v2 migration (adds `schemaVersion`).

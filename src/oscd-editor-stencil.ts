@@ -7,47 +7,39 @@ import {
   TemplateResult
 } from 'lit';
 
-import { property, query, queryAll } from 'lit/decorators.js';
+import { property, query, queryAll, state } from 'lit/decorators.js';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
-import '@material/mwc-tab-bar';
-import '@material/mwc-snackbar/mwc-snackbar.js';
-import '@material/web/button/outlined-button.js';
-import '@material/web/button/filled-button.js';
-import '@material/web/button/text-button.js';
-import '@material/web/checkbox/checkbox.js';
-import '@material/web/dialog/dialog.js';
-import '@material/web/list/list.js';
-import '@material/web/list/list-item.js';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/menu/menu.js';
-import '@material/web/icon/icon.js';
-import '@material/web/switch/switch.js';
-
-import '@openenergytools/filterable-lists/dist/selection-list.js';
-import '@openenergytools/filterable-lists/dist/action-list.js';
-
-import type { MdCheckbox } from '@material/web/checkbox/checkbox.js';
-import type { TabBar } from '@material/mwc-tab-bar';
-import type { TextField } from '@material/web/textfield/internal/text-field.js';
-import type { MdDialog } from '@material/web/dialog/dialog.js';
-import type { MdOutlinedTextField } from '@material/web/textfield/outlined-text-field.js';
-import type { SelectionList } from '@openenergytools/filterable-lists/dist/selection-list.js';
-import type { MdIconButton } from '@material/web/iconbutton/icon-button.js';
-import type { MdMenu } from '@material/web/menu/menu';
-import type { Snackbar } from '@material/mwc-snackbar/mwc-snackbar.js';
-import type { MdListItem } from '@material/web/list/list-item.js';
+import { OscdActionList } from '@omicronenergy/oscd-ui/action-list/OscdActionList.js';
+import { OscdCheckbox } from '@omicronenergy/oscd-ui/checkbox/OscdCheckbox.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
+import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
+import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
+import { OscdList } from '@omicronenergy/oscd-ui/list/OscdList.js';
+import { OscdListItem } from '@omicronenergy/oscd-ui/list/OscdListItem.js';
+import { OscdMenu } from '@omicronenergy/oscd-ui/menu/OscdMenu.js';
+import { OscdMenuItem } from '@omicronenergy/oscd-ui/menu/OscdMenuItem.js';
+import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdPrimaryTab } from '@omicronenergy/oscd-ui/tabs/OscdPrimaryTab.js';
+import { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
+import { OscdSnackbar } from '@omicronenergy/oscd-ui/snackbar/OscdSnackbar.js';
+import { OscdSwitch } from '@omicronenergy/oscd-ui/switch/OscdSwitch.js';
+import { OscdTabs } from '@omicronenergy/oscd-ui/tabs/OscdTabs.js';
+import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
+import type { SelectItem } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
+import type { SnackbarVariant } from '@omicronenergy/oscd-ui/snackbar/OscdSnackbar.js';
 
 import { newEditEventV2 } from '@openscd/oscd-api/utils.js';
 
-import { Checkbox } from '@material/web/checkbox/internal/checkbox.js';
 import {
   ControlBlockInfo,
   getMappingInfo
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
 import { planApply } from './foundation/plan-apply.js';
-import { readIedTag, tagIedEdits } from './foundation/ied-tags.js';
+import { tagIedEdits } from './foundation/ied-tags.js';
 import type {
   Application,
   IedRequirement as IED,
@@ -55,6 +47,8 @@ import type {
   VersionedApplications
 } from './foundation/types.js';
 import { getIedDescription } from './foundation/ied-description.js';
+import { iedSelectItems } from './foundation/ied-items.js';
+import { themeStyles } from './theme.js';
 
  
 // const defaultStencil = await fetch(
@@ -87,6 +81,27 @@ type TableData = { toIedNames: string[]; rowInfo: cbSelectionRowData[] };
 export default class OscdEditorStencil extends ScopedElementsMixin(
   LitElement
 ) {
+  static scopedElements = {
+    'oscd-action-list': OscdActionList,
+    'oscd-checkbox': OscdCheckbox,
+    'oscd-dialog': OscdDialog,
+    'oscd-filled-button': OscdFilledButton,
+    'oscd-icon': OscdIcon,
+    'oscd-icon-button': OscdIconButton,
+    'oscd-list': OscdList,
+    'oscd-list-item': OscdListItem,
+    'oscd-menu': OscdMenu,
+    'oscd-menu-item': OscdMenuItem,
+    'oscd-outlined-button': OscdOutlinedButton,
+    'oscd-outlined-text-field': OscdOutlinedTextField,
+    'oscd-primary-tab': OscdPrimaryTab,
+    'oscd-selection-list': OscdSelectionList,
+    'oscd-snackbar': OscdSnackbar,
+    'oscd-switch': OscdSwitch,
+    'oscd-tabs': OscdTabs,
+    'oscd-text-button': OscdTextButton
+  };
+
   @property({ attribute: false })
   doc!: XMLDocument;
 
@@ -120,57 +135,60 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   @property() createCBsToRemove: ControlBlockTableMapping[] = [];
 
-  @property() snackBarMessage: string = '';
-
   @property() errorMessages: string[] = [];
 
   @property() showSupervisions: boolean = true;
+
+  /** Entries of the IED pickers, built when a dialog opens (see iedSelectItems). */
+  @state() templateIedItems: SelectItem[] = [];
+
+  @state() metadataIedItems: SelectItem[] = [];
 
   @property() allowEditColumns: boolean = false;
 
   @property() allowAppCreationToggles: boolean = true;
 
-  @query('mwc-tab-bar') tabBarUI!: TabBar;
+  @query('oscd-tabs') tabBarUI!: OscdTabs;
 
-  @query('#output') outputStencilUI!: TextField;
+  @query('#output') outputStencilUI!: OscdOutlinedTextField;
 
-  @query('#outputView') outputStencilViewUI!: TextField;
+  @query('#outputView') outputStencilViewUI!: OscdOutlinedTextField;
 
-  @query('#stenname') stencilName!: TextField;
+  @query('#stenname') stencilName!: OscdOutlinedTextField;
 
-  @query('#stenver') stencilVersion!: TextField;
+  @query('#stenver') stencilVersion!: OscdOutlinedTextField;
 
-  @query('#appcat') appCategory!: TextField;
+  @query('#appcat') appCategory!: OscdOutlinedTextField;
 
-  @query('#appname') appName!: TextField;
+  @query('#appname') appName!: OscdOutlinedTextField;
 
-  @query('#appdesc') appDesc!: TextField;
+  @query('#appdesc') appDesc!: OscdOutlinedTextField;
 
-  @query('#appver') appVer!: TextField;
+  @query('#appver') appVer!: OscdOutlinedTextField;
 
-  @query('#appverdesc') appVerDesc!: TextField;
+  @query('#appverdesc') appVerDesc!: OscdOutlinedTextField;
 
-  @query('#appdeprecated') appDeprecated!: MdCheckbox;
+  @query('#appdeprecated') appDeprecated!: OscdCheckbox;
 
-  @query('#selection-dialog') iedTemplateSelectorUI!: MdDialog;
+  @query('#selection-dialog') iedTemplateSelectorUI!: OscdDialog;
 
-  @query('#ied-function-selector-dialog') iedSelectorUI!: MdDialog;
+  @query('#ied-function-selector-dialog') iedSelectorUI!: OscdDialog;
 
-  @query('#ied-stencil-metadata') iedStencilMetadataUI!: MdDialog;
+  @query('#ied-stencil-metadata') iedStencilMetadataUI!: OscdDialog;
 
-  @query('#stencil-metadata-ieds') iedsStencilMetadataUI!: SelectionList;
+  @query('#stencil-metadata-ieds') iedsStencilMetadataUI!: OscdSelectionList;
 
-  @query('#stencil-id') stencilMetadataIdUI!: TextField;
+  @query('#stencil-id') stencilMetadataIdUI!: OscdOutlinedTextField;
 
-  @query('#stencil-ver') stencilMetadataVerUI!: TextField;
+  @query('#stencil-ver') stencilMetadataVerUI!: OscdOutlinedTextField;
 
-  @query('#selection-list') selectionListUI!: SelectionList;
+  @query('#selection-list') selectionListUI!: OscdSelectionList;
 
   @query('#changeStencil') changeStencilUI!: HTMLInputElement;
 
-  @query('#menuApplicationsButton') menuAppButtonUI!: MdIconButton;
+  @query('#menuApplicationsButton') menuAppButtonUI!: OscdIconButton;
 
-  @query('#menuApplications') menuAppUI!: MdMenu;
+  @query('#menuApplications') menuAppUI!: OscdMenu;
 
   @query('#cbMappings') cbMappingsTableUI: HTMLTableElement | undefined;
 
@@ -178,37 +196,42 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     | HTMLElement
     | undefined;
 
-  @queryAll('#cbMappings > thead > th > md-checkbox.colselect.iedname')
+  @queryAll('#cbMappings > thead > th > oscd-checkbox.colselect.iedname')
   tableUserMappingSelectionToIedsUI: HTMLElement[] | undefined;
 
   @queryAll(
-    '#tableUserMappingSelection > tr > th.iedname > md-checkbox.rowselect.iedname'
+    '#tableUserMappingSelection > tr > th.iedname > oscd-checkbox.rowselect.iedname'
   )
   tableUserMappingSelectionFromIedsUI: HTMLElement[] | undefined;
 
   @queryAll(
-    '#tableUserMappingSelection > tr > th.cbname > md-checkbox.rowselect.cbname'
+    '#tableUserMappingSelection > tr > th.cbname > oscd-checkbox.rowselect.cbname'
   )
   tableUserMappingSelectionFromCbsUI: HTMLElement[] | undefined;
 
-  @queryAll('#tableUserMappingSelection td.mapcell > md-checkbox.cb')
+  @queryAll('#tableUserMappingSelection td.mapcell > oscd-checkbox.cb')
   tableUserMappingMappedCheckboxesUI: HTMLElement[] | undefined;
 
-  @queryAll('#function > md-outlined-text-field')
-  functionIedNamesUI!: TextField[];
+  @queryAll('#function > oscd-outlined-text-field')
+  functionIedNamesUI!: OscdOutlinedTextField[];
 
-  @query('#snackBarMessage') snackBarMessageUI!: Snackbar;
+  @query('#snackBarMessage') snackBarMessageUI!: OscdSnackbar;
 
-  @query('#error-dialog') errorDialogUI!: MdDialog;
+  @query('#error-dialog') errorDialogUI!: OscdDialog;
 
-  @query('#applications > md-list-item.selected')
-  selectedApplicationUI!: MdListItem;
+  @query('#applications > oscd-list-item.selected')
+  selectedApplicationUI!: OscdListItem;
 
    
   constructor() {
     super();
     // TODO: Decide whether to package stencils at all
     // this.stencilData = defaultStencil;
+  }
+
+  /** Shows a message in the snackbar. */
+  notify(message: string, variant: SnackbarVariant = 'info'): void {
+    this.snackBarMessageUI.show({ message, variant });
   }
 
   addApplication(): void {
@@ -370,10 +393,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     this.storeSettings();
 
-    this.snackBarMessage = `New application created: ${
+    this.notify(`New application created: ${
       this.appCategory.value.trim() ?? 'UnknownCategory'
-    } > ${this.appName.value.trim() ?? 'UnknownName'}`;
-    this.snackBarMessageUI.show();
+    } > ${this.appName.value.trim() ?? 'UnknownName'}`);
     this.resetCreateApplication();
   }
 
@@ -409,27 +431,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   }
 
   clearIedTemplateSelection(): void {
+    this.templateIedItems = iedSelectItems(this.doc);
     if (this.selectionListUI) {
-      (
-        Array.from(
-          this.selectionListUI.shadowRoot!.querySelectorAll(
-            'md-list.listitems md-list-item md-checkbox'
-          )
-        ) as MdCheckbox[]
-      ).forEach((cb): void => {
-        if (cb.checked) {
-           
-          cb.checked = false;
-          cb.dispatchEvent(new Event('change'));
-          cb.requestUpdate();
-        }
-      });
-
-      const searchField = (this.selectionListUI.shadowRoot!.querySelector(
-        'md-outlined-text-field[placeholder="search"]'
-      ) as MdOutlinedTextField)!;
-      searchField.value = '';
-      searchField.dispatchEvent(new Event('input'));
+      this.selectionListUI.searchValue = '';
     }
   }
 
@@ -477,8 +481,10 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       this.errorDialogUI.show();
     }
 
-    this.snackBarMessage = `${plan.subscriptions} subscriptions and ${plan.supervisions} supervisions done`;
-    this.snackBarMessageUI.show();
+    this.notify(
+      `${plan.subscriptions} subscriptions and ${plan.supervisions} supervisions done`,
+      plan.errors.length > 0 ? 'warning' : 'success'
+    );
     this.resetApplyStencil();
   }
 
@@ -548,7 +554,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     // TODO: Can't use ?disabled=${this.iedsStencilMetadataUI?.selectedElements.length === 0} on button?
 
-    return html`<md-dialog
+    return html`<oscd-dialog
       id="ied-stencil-metadata"
       @cancel=${(event: Event) => {
         event.preventDefault();
@@ -556,41 +562,28 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     >
       <div slot="headline">Select IEDs to add Stencil metadata to</div>
       <form slot="content" id="stencil-metadata" method="dialog">
-        <md-outlined-text-field
+        <oscd-outlined-text-field
           id="stencil-id"
           label="Stencil Id"
           value="My Stencil"
-        ></md-outlined-text-field>
-        <md-outlined-text-field
+        ></oscd-outlined-text-field>
+        <oscd-outlined-text-field
           id="stencil-ver"
           label="Stencil Version"
           value="1.0.0"
-        ></md-outlined-text-field>
-        <selection-list
+        ></oscd-outlined-text-field>
+        <oscd-selection-list
           id="stencil-metadata-ieds"
           filterable
-          .items=${Array.from(this.doc!.querySelectorAll(':root > IED')).map(
-            (ied) => {
-              const { firstLine, secondLine } = getIedDescription(ied);
-
-              const tag = readIedTag(ied);
-
-              return {
-                headline: `${ied.getAttribute('name')!} — ${firstLine}`,
-                supportingText: `${secondLine}${
-                  tag ? ` [${tag.id}, ${tag.version}]` : ''
-                }`,
-                attachedElement: ied
-              };
-            }
-          )}
-        ></selection-list>
+          multiselect
+          .items=${this.metadataIedItems}
+        ></oscd-selection-list>
       </form>
       <div slot="actions">
-        <md-text-button form="stencil-metadata" value="reset"
-          >Cancel</md-text-button
+        <oscd-text-button form="stencil-metadata" value="reset"
+          >Cancel</oscd-text-button
         >
-        <md-text-button
+        <oscd-text-button
           form="stencil-metadata"
           value="ok"
           @click="${() => {
@@ -610,15 +603,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
             const ieds = this.iedsStencilMetadataUI?.selectedElements;
 
-            this.snackBarMessage = `Metadata added to ${ieds.length} IED${
+            this.notify(`Metadata added to ${ieds.length} IED${
               ieds.length > 1 || ieds.length === 0 ? 's' : ''
-            }`;
-            this.snackBarMessageUI.show();
+            }`);
             this.requestUpdate();
           }}"
-          >Add Metadata</md-text-button
+          >Add Metadata</oscd-text-button
         >
-      </div></md-dialog
+      </div></oscd-dialog
     >`;
   }
 
@@ -632,7 +624,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         func ? func.manufacturer : ''
       }"]`
     );
-    return html`<md-dialog
+    return html`<oscd-dialog
       id="ied-function-selector-dialog"
       @close=${() => {
         if (this.applicationSelectedFunction && this.applicationSelectedIed) {
@@ -657,7 +649,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         Select IED for function - ${this.applicationSelectedFunction ?? ''}
       </div>
       <form slot="content" id="ied-selection" method="dialog">
-        <action-list
+        <oscd-action-list
           id="action-list"
           filterable
           .items=${!items
@@ -699,19 +691,19 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                   }
                 };
               })}
-        ></action-list>
+        ></oscd-action-list>
       </form>
       <div slot="actions">
-        <md-text-button
+        <oscd-text-button
           form="ied-selection"
           value="reset"
           @click="${() => {
             this.iedSelectorUI.returnValue = 'reset';
             this.iedSelectorUI.close();
           }}"
-          >Reset</md-text-button
+          >Reset</oscd-text-button
         >
-      </div></md-dialog
+      </div></oscd-dialog
     >`;
   }
 
@@ -720,7 +712,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       this.selectedApplication && this.selectedAppVersion
         ? html`<div id="appContainer">
             <h2>Select IEDs for Function</h2>
-            <md-list id="iedsAndFunctions" class="scrollable">
+            <oscd-list id="iedsAndFunctions" class="scrollable">
               ${Object.keys(this.selectedAppVersion.IEDS)
                 .sort((iedA, iedB) =>
                   iedA.toLowerCase().localeCompare(iedB.toLowerCase())
@@ -729,7 +721,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                   const ied = this.selectedAppVersion!.IEDS[iedFunction];
 
                   return html`
-                    <md-list-item
+                    <oscd-list-item
                       type="button"
                       title="${ied.privates
                         .map(
@@ -740,7 +732,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                       @click=${() => {
                         this.applicationSelectedFunction = iedFunction;
                         this.applicationSelectedFunctionReqs = ied;
-                        // = (<HTMLElement>event.target).closest('md-list-item')
+                        // = (<HTMLElement>event.target).closest('oscd-list-item')
 
                         this.iedSelectorUI.show();
                       }}
@@ -753,32 +745,32 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                       <div slot="supporting-text">
                         ${ied.manufacturer} - ${ied.type}
                       </div>
-                      <md-icon slot="start">developer_board</md-icon>
-                      <md-icon slot="end"
+                      <oscd-icon slot="start">developer_board</oscd-icon>
+                      <oscd-icon slot="end"
                         >${this.functionToIed.get(iedFunction) !== undefined
                           ? 'check_box'
-                          : 'check_box_outline_blank'}</md-icon
+                          : 'check_box_outline_blank'}</oscd-icon
                       >
-                    </md-list-item>
+                    </oscd-list-item>
                   `;
                 })}
-            </md-list>
-            <md-outlined-button
+            </oscd-list>
+            <oscd-outlined-button
               class="button"
               ?disabled=${this.functionToIed.size === 0}
               @click=${() => {
                 this.resetApplyStencil();
               }}
               >Clear IEDs
-              <md-icon slot="icon">cancel</md-icon>
-            </md-outlined-button>
-            <md-filled-button
+              <oscd-icon slot="icon">cancel</oscd-icon>
+            </oscd-outlined-button>
+            <oscd-filled-button
               class="button"
               ?disabled=${this.functionToIed.size === 0}
               @click=${() => this.applyStencil()}
               >Apply Stencil
-              <md-icon slot="icon">draw_collage</md-icon>
-            </md-filled-button>
+              <oscd-icon slot="icon">draw_collage</oscd-icon>
+            </oscd-filled-button>
           </div> `
         : nothing
     }
@@ -819,14 +811,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     return html`<div id="controlBlockMappings" class="columngroup">
       <h2>Application Details</h2>
       <label
-        ><md-switch
+        ><oscd-switch
           touch-target="wrapper"
           ?selected=${true}
           ?disabled=${!this.allowAppCreationToggles}
           @change=${() => {
             this.showSupervisions = !this.showSupervisions;
           }}
-        ></md-switch
+        ></oscd-switch
         >Show Supervisions</label
       >
       ${this.renderCbSelectionTable(
@@ -848,36 +840,36 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           <div>
             <h2 id="appMenuHeader">
               Select Application
-              <md-icon-button
+              <oscd-icon-button
                 id="menuApplicationsButton"
                 @click=${() => {
                   this.menuAppUI.open = !this.menuAppUI.open;
                 }}
-                ><md-icon>more_vert</md-icon></md-icon-button
+                ><oscd-icon>more_vert</oscd-icon></oscd-icon-button
               >
-              <md-menu
+              <oscd-menu
                 positioning="popover"
                 id="menuApplications"
                 anchor="menuApplicationsButton"
               >
-                <md-menu-item
+                <oscd-menu-item
                   @click=${() => {
                     this.showDeprecated = !this.showDeprecated;
                   }}
                 >
                   <div slot="headline">
                     <label class="menu-item">
-                      <md-checkbox
+                      <oscd-checkbox
                         touch-target="wrapper"
                         ?checked=${this.showDeprecated}
-                      ></md-checkbox>
+                      ></oscd-checkbox>
                       Show Deprecated
                     </label>
                   </div>
-                </md-menu-item>
-              </md-menu>
+                </oscd-menu-item>
+              </oscd-menu>
             </h2>
-            <md-list id="applications" class="scrollable"
+            <oscd-list id="applications" class="scrollable"
               >${this.stencilData.applications
                 .filter(
                   app =>
@@ -892,10 +884,10 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                 )
                 .map(
                   appCategory =>
-                    html` <md-list-item data-cat="${appCategory}">
+                    html` <oscd-list-item data-cat="${appCategory}">
                         <div slot="headline">${appCategory}</div>
-                        <md-icon slot="start">ad_group</md-icon>
-                      </md-list-item>
+                        <oscd-icon slot="start">ad_group</oscd-icon>
+                      </oscd-list-item>
                       ${this.stencilData.applications
                         .filter(app => app.category === appCategory)
                         .sort((vAppsA, vAppsB) =>
@@ -911,7 +903,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                             );
                           }
 
-                          return html`<md-list-item
+                          return html`<oscd-list-item
                             @click=${(event: Event) => {
                               this.selectedApplication = app;
                               if (this.showDeprecated === false) {
@@ -921,14 +913,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                               }
                               // TODO: Handle deprecated versions
                               (<HTMLElement>event.target)
-                                .closest('md-list')!
-                                .querySelectorAll('md-list-item')
+                                .closest('oscd-list')!
+                                .querySelectorAll('oscd-list-item')
                                 .forEach((listItem) => {
                                   listItem.classList.remove('selected');
                                 });
 
                               (<HTMLElement>event.target)
-                                .closest('md-list-item')
+                                .closest('oscd-list-item')
                                 ?.classList.add('selected');
                             }}
                             type="button"
@@ -948,12 +940,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                                 ? availableVersion.version
                                 : 'No available version'}
                             </div>
-                            <md-icon slot="start">draw_collage</md-icon>
-                          </md-list-item>`;
+                            <oscd-icon slot="start">draw_collage</oscd-icon>
+                          </oscd-list-item>`;
                         })}`
-                )}</md-list
+                )}</oscd-list
             >
-            <md-outlined-button
+            <oscd-outlined-button
               class="button"
               @click=${() => {
                 // application that already matches parameters
@@ -1005,8 +997,8 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                 this.selectedAppVersion = undefined;
               }}
               >Delete Application
-              <md-icon slot="icon">delete</md-icon>
-            </md-outlined-button>
+              <oscd-icon slot="icon">delete</oscd-icon>
+            </oscd-outlined-button>
           </div>
           ${this.renderIedsForUse()}
         </div>
@@ -1027,24 +1019,24 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           >
         </h1>
         <div id="menuUse">
-          <md-outlined-button
+          <oscd-outlined-button
             id="changeStencilBtn"
             class="button"
             @click=${() => {
               this.changeStencilUI.click();
             }}
             >Open
-            <md-icon slot="icon">file_open</md-icon>
-          </md-outlined-button>
-          <md-outlined-button
+            <oscd-icon slot="icon">file_open</oscd-icon>
+          </oscd-outlined-button>
+          <oscd-outlined-button
             id="saveStencilBtn"
             class="button"
             @click=${() => {
               this.saveStencilAsFile();
             }}
             >Save
-            <md-icon slot="icon">save</md-icon>
-          </md-outlined-button>
+            <oscd-icon slot="icon">save</oscd-icon>
+          </oscd-outlined-button>
         </div>
       </div>
       ${this.renderStencilSelectionAndUse()}
@@ -1082,7 +1074,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           : ''}"
       >
         ${mappedCb && !readOnly
-          ? html`<md-checkbox
+          ? html`<oscd-checkbox
               class="cb ${mappedCb && mappedCb.type === 'SampledValueControl'
                 ? 'sv'
                 : ''}"
@@ -1100,18 +1092,18 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                   row.fromIed
                 );
               }}
-            ></md-checkbox> `
+            ></oscd-checkbox> `
           : nothing}
         ${mappedCb &&
         !this.createCBsToRemove.find(
           cb => cb.id === cbName && cb.from === row.fromIed && cb.to === toIed!
         ) &&
         readOnly
-          ? html`<md-icon
+          ? html`<oscd-icon
               class="cb ${mappedCb && mappedCb.type === 'SampledValueControl'
                 ? 'sv'
                 : ''}"
-              >check</md-icon
+              >check</oscd-icon
             >`
           : nothing}
         <!-- supervision -->
@@ -1149,19 +1141,19 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             </th>
             <th class="iedname iednamebg removeleftborder">
               ${this.allowEditColumns
-                ? html`<md-checkbox
+                ? html`<oscd-checkbox
                     class="rowselect iedname"
                     data-fromIed="${row.fromIed}"
                     touch-target="wrapper"
                     ?checked=${true}
-                    @change=${(event: { target: MdCheckbox }) => {
+                    @change=${(event: { target: OscdCheckbox }) => {
                       this.tableUserMappingSelectionUI
                         ?.querySelectorAll(
-                          `td.mapcell > md-checkbox[data-fromied="${row.fromIed}"]`
+                          `td.mapcell > oscd-checkbox[data-fromied="${row.fromIed}"]`
                         )
                         .forEach((checkbox) => {
                            
-                          (<MdCheckbox>checkbox).checked = event.target.checked;
+                          (<OscdCheckbox>checkbox).checked = event.target.checked;
                         });
 
                       this.updateDependentCheckboxes(
@@ -1172,7 +1164,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                         row.fromIed
                       );
                     }}
-                  ></md-checkbox>`
+                  ></oscd-checkbox>`
                 : nothing}
             </th>
             <td class="iednamebg" colspan="${toIedNames.length}"></td>
@@ -1192,22 +1184,22 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                   </th>
                   <th class="removeleftborder cbname">
                     ${this.allowEditColumns
-                      ? html`<md-checkbox
+                      ? html`<oscd-checkbox
                           class="rowselect cbname"
                           data-fromIed="${row.fromIed}"
                           data-fromCb="${cbName}"
                           touch-target="wrapper"
                           ?checked=${true}
-                          @change=${(event: { target: MdCheckbox }) => {
+                          @change=${(event: { target: OscdCheckbox }) => {
                             this.tableUserMappingSelectionUI
                               ?.querySelectorAll(
-                                `td.mapcell > md-checkbox[data-fromied="${row.fromIed}"][data-fromcb="${cbName}"]`
+                                `td.mapcell > oscd-checkbox[data-fromied="${row.fromIed}"][data-fromcb="${cbName}"]`
                               )
                               .forEach(
                                  
                                 (checkbox) => {
                                    
-                                  (checkbox as MdCheckbox).checked =
+                                  (checkbox as OscdCheckbox).checked =
                                     event.target.checked;
                                 }
                               );
@@ -1218,7 +1210,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                               rowInfo
                             );
                           }}
-                        ></md-checkbox>`
+                        ></oscd-checkbox>`
                       : nothing}
                   </th>
                   ${this.renderRowCbUsed(
@@ -1246,11 +1238,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       return;
     }
 
-    const updateCheckbox = (checkbox: Checkbox, selector: string) => {
+    const updateCheckbox = (checkbox: OscdCheckbox, selector: string) => {
       if (checkbox) {
         const rowIedsChecked = Array.from(
           this.tableUserMappingSelectionUI!.querySelectorAll(selector)
-        ).filter(cb => (cb as Checkbox).checked).length;
+        ).filter(cb => (cb as OscdCheckbox).checked).length;
 
         const rowIedsTotal =
           this.tableUserMappingSelectionUI?.querySelectorAll(selector).length;
@@ -1265,18 +1257,18 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     if (source !== 'to') {
       const checkbox = this.cbMappingsTableUI?.querySelector(
-        `:scope > thead > tr > th > md-checkbox.colselect.iedname[data-toied="${toIedName}"]`
-      ) as Checkbox;
-      const selector = `td.mapcell > md-checkbox[data-toied="${toIedName}"]`;
+        `:scope > thead > tr > th > oscd-checkbox.colselect.iedname[data-toied="${toIedName}"]`
+      ) as OscdCheckbox;
+      const selector = `td.mapcell > oscd-checkbox[data-toied="${toIedName}"]`;
       updateCheckbox(checkbox, selector);
 
       // not a specific IED, update all
       if (!toIedName) {
         toIedNames.forEach((iedName) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
-            `:scope > thead > tr > th > md-checkbox.colselect.iedname[data-toied="${iedName}"]`
-          ) as Checkbox;
-          const selector = `td.mapcell > md-checkbox[data-toied="${iedName}"]`;
+            `:scope > thead > tr > th > oscd-checkbox.colselect.iedname[data-toied="${iedName}"]`
+          ) as OscdCheckbox;
+          const selector = `td.mapcell > oscd-checkbox[data-toied="${iedName}"]`;
           updateCheckbox(checkbox, selector);
           // console.log(`Updated a to ied ${iedName}`);
         });
@@ -1285,18 +1277,18 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     if (source !== 'from') {
       const checkbox = this.cbMappingsTableUI?.querySelector(
-        `:scope > tbody > tr > th.iedname > md-checkbox.rowselect.iedname[data-fromied="${fromIedName}"]`
-      ) as Checkbox;
-      const selector = `td.mapcell > md-checkbox[data-fromied="${fromIedName}"]`;
+        `:scope > tbody > tr > th.iedname > oscd-checkbox.rowselect.iedname[data-fromied="${fromIedName}"]`
+      ) as OscdCheckbox;
+      const selector = `td.mapcell > oscd-checkbox[data-fromied="${fromIedName}"]`;
       updateCheckbox(checkbox, selector);
 
       // update for all from-IEDs
       if (!fromIedName) {
         fromIedNamesAndCBs.forEach((ied) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
-            `:scope > tbody > tr > th.iedname > md-checkbox.rowselect.iedname[data-fromied="${ied.fromIed}"]`
-          ) as Checkbox;
-          const selector = `td.mapcell > md-checkbox[data-fromied="${ied.fromIed}"]`;
+            `:scope > tbody > tr > th.iedname > oscd-checkbox.rowselect.iedname[data-fromied="${ied.fromIed}"]`
+          ) as OscdCheckbox;
+          const selector = `td.mapcell > oscd-checkbox[data-fromied="${ied.fromIed}"]`;
           updateCheckbox(checkbox, selector);
           // console.log(`Updated a from ied ${ied.fromIed}`);
         });
@@ -1305,9 +1297,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     if (source !== 'cb') {
       const checkbox = this.cbMappingsTableUI?.querySelector(
-        `:scope > tbody > tr > th.cbname > md-checkbox.rowselect.cbname[data-fromied="${fromIedName}"][data-fromcb="${cbName}"]`
-      ) as Checkbox;
-      const selector = `td.mapcell > md-checkbox[data-fromied="${fromIedName}"][data-fromcb="${cbName}"]`;
+        `:scope > tbody > tr > th.cbname > oscd-checkbox.rowselect.cbname[data-fromied="${fromIedName}"][data-fromcb="${cbName}"]`
+      ) as OscdCheckbox;
+      const selector = `td.mapcell > oscd-checkbox[data-fromied="${fromIedName}"][data-fromcb="${cbName}"]`;
       updateCheckbox(checkbox, selector);
 
       if (!fromIedName && !cbName) {
@@ -1315,9 +1307,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         fromIedNamesAndCBs.forEach((ied) => {
           ied.cbs?.forEach((cb) => {
             const checkbox = this.cbMappingsTableUI?.querySelector(
-              `:scope > tbody > tr > th.cbname > md-checkbox.rowselect.cbname[data-fromied="${ied.fromIed}"][data-fromcb="${cb}"]`
-            ) as Checkbox;
-            const selector = `td.mapcell > md-checkbox[data-fromied="${ied.fromIed}"][data-fromcb="${cb}"]`;
+              `:scope > tbody > tr > th.cbname > oscd-checkbox.rowselect.cbname[data-fromied="${ied.fromIed}"][data-fromcb="${cb}"]`
+            ) as OscdCheckbox;
+            const selector = `td.mapcell > oscd-checkbox[data-fromied="${ied.fromIed}"][data-fromcb="${cb}"]`;
             updateCheckbox(checkbox, selector);
             // console.log(`Updated an all ieds and cb ${ied.fromIed} ${cb}`);
           });
@@ -1329,9 +1321,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         );
         fromData?.cbs?.forEach((cb) => {
           const checkbox = this.cbMappingsTableUI?.querySelector(
-            `:scope > tbody > tr > th.cbname > md-checkbox.rowselect.cbname[data-fromied="${fromIedName}"][data-fromcb="${cb}"]`
-          ) as Checkbox;
-          const selector = `td.mapcell > md-checkbox[data-fromied="${fromIedName}"][data-fromcb="${cb}"]`;
+            `:scope > tbody > tr > th.cbname > oscd-checkbox.rowselect.cbname[data-fromied="${fromIedName}"][data-fromcb="${cb}"]`
+          ) as OscdCheckbox;
+          const selector = `td.mapcell > oscd-checkbox[data-fromied="${fromIedName}"][data-fromcb="${cb}"]`;
           updateCheckbox(checkbox, selector);
           // console.log(`Updated a cb ${fromIedName} ${cb}`);
         });
@@ -1391,21 +1383,21 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
               html`<th class="stay" scope="col">
                 ${iedName}
                 ${this.allowEditColumns
-                  ? html`<md-checkbox
+                  ? html`<oscd-checkbox
                       class="colselect iedname"
                       data-toIed="${iedName}"
                       touch-target="wrapper"
                       checked
-                      @change=${(event: { target: MdCheckbox }) => {
+                      @change=${(event: { target: OscdCheckbox }) => {
                         this.tableUserMappingSelectionUI
                           ?.querySelectorAll(
-                            `td.mapcell > md-checkbox[data-toied="${iedName}"]`
+                            `td.mapcell > oscd-checkbox[data-toied="${iedName}"]`
                           )
                           .forEach(
                              
                             checkBox =>
                                
-                              ((checkBox as MdCheckbox).checked =
+                              ((checkBox as OscdCheckbox).checked =
                                 event.target.checked)
                           );
 
@@ -1416,7 +1408,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                         );
                       }}
                       }
-                    ></md-checkbox>`
+                    ></oscd-checkbox>`
                   : nothing}
               </th>`
           )}
@@ -1440,25 +1432,25 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     return html`<h1>Select Template Control Blocks</h1>
       <div class="group">
         <label
-          ><md-switch
+          ><oscd-switch
             touch-target="wrapper"
             ?selected=${true}
             ?disabled=${!this.allowAppCreationToggles}
             @change=${() => {
               this.showSupervisions = !this.showSupervisions;
             }}
-          ></md-switch
+          ></oscd-switch
           >Show Supervisions</label
         >
         <label
-          ><md-switch
+          ><oscd-switch
             touch-target="wrapper"
             ?selected=${false}
             ?disabled=${!this.allowAppCreationToggles}
             @change=${() => {
               this.allowEditColumns = !this.allowEditColumns;
             }}
-          ></md-switch
+          ></oscd-switch
           >Allow From/To Selection</label
         >
       </div>
@@ -1472,14 +1464,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             readOnly
           )}
       </div>
-      <md-filled-button
+      <oscd-filled-button
         class="button"
         ?disabled=${this.iedMappingStencilData.length === 0}
         @click=${() => {
           Array.from(this.tableUserMappingMappedCheckboxesUI!).forEach(
             (checkbox) => {
-              const { fromied, fromcb, toied } = (<MdCheckbox>checkbox).dataset;
-              if ((<MdCheckbox>checkbox).checked === false) {
+              const { fromied, fromcb, toied } = (<OscdCheckbox>checkbox).dataset;
+              if ((<OscdCheckbox>checkbox).checked === false) {
                 this.createCBsToRemove.push({
                   id: fromcb!,
                   from: fromied!,
@@ -1518,8 +1510,8 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           });
         }}
         >Name IEDs for Functions
-        <md-icon slot="icon">draw_collage</md-icon>
-      </md-filled-button>`;
+        <oscd-icon slot="icon">draw_collage</oscd-icon>
+      </oscd-filled-button>`;
   }
 
   renderIedsToFunctionNaming(): TemplateResult {
@@ -1529,49 +1521,48 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
           .map(
             ied =>
-              html`<md-outlined-text-field
+              html`<oscd-outlined-text-field
                 class="iedfunction"
                 data-ied="${ied}"
                 label="IED Function (was ${ied})"
                 value="${ied}"
-              ></md-outlined-text-field>`
+              ></oscd-outlined-text-field>`
           )}
       </div>
-      <md-filled-button
+      <oscd-filled-button
         class="button"
         ?disabled=${this.uniqueIeds.length === 0}
         @click=${() => this.addApplication()}
         >Add Application
-        <md-icon slot="icon">draw_collage</md-icon>
-      </md-filled-button>`;
+        <oscd-icon slot="icon">draw_collage</oscd-icon>
+      </oscd-filled-button>`;
   }
 
   renderOutputJSON(): TemplateResult {
     return html`<div class="output">
-      <md-outlined-text-field
+      <oscd-outlined-text-field
         id="outputView"
         type="textarea"
         label="Stencil Settings File"
         @change=${(event: Event) => {
-          const target = event.target as MdOutlinedTextField;
+          const target = event.target as OscdOutlinedTextField;
           if (target) {
             this.stencilData = JSON.parse(target.value);
             this.storeSettings();
-            this.snackBarMessage = 'Stencil settings updated';
-            this.snackBarMessageUI.show();
+            this.notify('Stencil settings updated');
             this.requestUpdate();
           }
         }}
         value="${JSON.stringify(this.stencilData, null, 2)}"
         rows="20"
       >
-      </md-outlined-text-field>
-      <md-outlined-button
+      </oscd-outlined-text-field>
+      <oscd-outlined-button
         class="button"
         @click=${() => this.saveStencilAsFile()}
         >Download
-        <md-icon slot="icon">download</md-icon>
-      </md-outlined-button>
+        <oscd-icon slot="icon">download</oscd-icon>
+      </oscd-outlined-button>
     </div>`;
   }
 
@@ -1583,36 +1574,31 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     return html`
       <h1 id="enterStencilData">
         Enter Stencil Data
-        <md-outlined-button
+        <oscd-outlined-button
           class="button"
           @click=${() => {
+            this.metadataIedItems = iedSelectItems(this.doc, true);
             this.iedStencilMetadataUI.show();
-            this.iedsStencilMetadataUI
-              .shadowRoot!.querySelectorAll('md-list-item > md-checkbox')
-              .forEach(
-                 
-                item => ((item as MdCheckbox).checked = false)
-              );
           }}
           >Add Stencil Metadata to IEDs
-          <md-icon slot="icon">label</md-icon>
-        </md-outlined-button>
+          <oscd-icon slot="icon">label</oscd-icon>
+        </oscd-outlined-button>
       </h1>
       <div class="group appinf">
-        <md-outlined-text-field
+        <oscd-outlined-text-field
           id="stenname"
           label="Name"
           value="${this.stencilData.name ?? ''}"
         >
-        </md-outlined-text-field>
-        <md-outlined-text-field
+        </oscd-outlined-text-field>
+        <oscd-outlined-text-field
           id="stenver"
           label="Version"
           value="${this.stencilData.version ?? ''}"
         >
-        </md-outlined-text-field>
+        </oscd-outlined-text-field>
       </div>
-      <md-outlined-button
+      <oscd-outlined-button
         class="button"
         @click=${() => {
           this.stencilData.name = this.stencilName.value.trim();
@@ -1621,11 +1607,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           this.resetCreateApplication();
         }}
         >Update Stencil Metadata
-        <md-icon slot="icon">sync_alt</md-icon>
-      </md-outlined-button>
+        <oscd-icon slot="icon">sync_alt</oscd-icon>
+      </oscd-outlined-button>
       <h1>
         Enter Application Data
-        <md-outlined-button
+        <oscd-outlined-button
           class="button"
           @click=${() => {
             this.resetCreateApplication();
@@ -1637,38 +1623,38 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             this.appDeprecated.checked = false;
           }}
           >Reset Application
-          <md-icon slot="icon">restart_alt</md-icon>
-        </md-outlined-button>
+          <oscd-icon slot="icon">restart_alt</oscd-icon>
+        </oscd-outlined-button>
       </h1>
       <div class="group appinf">
-        <md-outlined-text-field
+        <oscd-outlined-text-field
           id="appcat"
           label="Category"
           @change=${() => this.requestUpdate()}
         >
-        </md-outlined-text-field>
-        <md-outlined-text-field
+        </oscd-outlined-text-field>
+        <oscd-outlined-text-field
           id="appname"
           label="Name"
           @change=${() => this.requestUpdate()}
         >
-        </md-outlined-text-field>
-        <md-outlined-text-field id="appdesc" label="Description">
-        </md-outlined-text-field>
-        <md-outlined-text-field
+        </oscd-outlined-text-field>
+        <oscd-outlined-text-field id="appdesc" label="Description">
+        </oscd-outlined-text-field>
+        <oscd-outlined-text-field
           id="appver"
           label="Version"
           @change=${() => this.requestUpdate()}
-        ></md-outlined-text-field>
-        <md-outlined-text-field id="appverdesc" label="Version Description">
-        </md-outlined-text-field>
+        ></oscd-outlined-text-field>
+        <oscd-outlined-text-field id="appverdesc" label="Version Description">
+        </oscd-outlined-text-field>
         <label id="deprecated">
-          <md-checkbox id="appdeprecated" touch-target="wrapper"></md-checkbox>
+          <oscd-checkbox id="appdeprecated" touch-target="wrapper"></oscd-checkbox>
           Deprecated
         </label>
       </div>
       <div class="group">
-        <md-filled-button
+        <oscd-filled-button
           class="button"
           ?disabled=${!this.appCategory ||
           !this.appName ||
@@ -1676,10 +1662,13 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           this.appCategory?.value.trim() === '' ||
           this.appName?.value.trim() === '' ||
           this.appVer?.value.trim() === ''}
-          @click=${() => this.iedTemplateSelectorUI.show()}
+          @click=${() => {
+            this.templateIedItems = iedSelectItems(this.doc);
+            this.iedTemplateSelectorUI.show();
+          }}
           >Add IEDs
-          <md-icon slot="icon">developer_board</md-icon>
-        </md-filled-button>
+          <oscd-icon slot="icon">developer_board</oscd-icon>
+        </oscd-filled-button>
       </div>
       ${this.templateCreationStage >= 1 ? this.renderCbSelection() : nothing}
       ${this.templateCreationStage >= 2
@@ -1689,7 +1678,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   }
 
   renderTemplateIedsSelector(): TemplateResult {
-    return html`<md-dialog
+    return html`<oscd-dialog
       id="selection-dialog"
       @cancel=${(event: Event) => {
         event.preventDefault();
@@ -1698,32 +1687,22 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     >
       <div slot="headline">Select IEDs to create a stencil application</div>
       <form slot="content" id="selection" method="dialog">
-        <selection-list
+        <oscd-selection-list
           id="selection-list"
-          .items=${Array.from(this.doc?.querySelectorAll('IED') ?? []).map(
-            (ied) => {
-              const { firstLine, secondLine } = getIedDescription(ied);
-
-              return {
-                headline: `${ied.getAttribute('name')!} — ${firstLine}`,
-                supportingText: secondLine,
-                attachedElement: ied,
-                selected: false
-              };
-            }
-          )}
           filterable
-        ></selection-list>
+          multiselect
+          .items=${this.templateIedItems}
+        ></oscd-selection-list>
       </form>
       <div slot="actions">
-        <md-text-button
+        <oscd-text-button
           @click="${() => {
             this.iedTemplateSelectorUI.close();
             this.clearIedTemplateSelection();
           }}"
-          >Cancel</md-text-button
+          >Cancel</oscd-text-button
         >
-        <md-text-button
+        <oscd-text-button
           @click="${() => {
             const ieds: Element[] = this.selectionListUI.selectedElements;
             this.clearIedTemplateSelection();
@@ -1746,9 +1725,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
             this.templateCreationStage = 1;
           }}"
           form="selection"
-          >Add IEDs</md-text-button
+          >Add IEDs</oscd-text-button
         >
-      </div></md-dialog
+      </div></oscd-dialog
     >`;
   }
 
@@ -1757,7 +1736,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   }
 
   renderErrorMessages(): TemplateResult {
-    return html`<md-dialog
+    return html`<oscd-dialog
       id="error-dialog"
       type="alert"
       @cancel=${(event: Event) => {
@@ -1776,25 +1755,22 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         </ul>
       </div>
       <div slot="actions">
-        <md-text-button
+        <oscd-text-button
           @click="${() => {
             this.errorMessages = [];
             this.errorDialogUI.close();
           }}"
-          >Close</md-text-button
+          >Close</oscd-text-button
         >
-      </div></md-dialog
+      </div></oscd-dialog
     >`;
   }
 
   render(): TemplateResult {
-    return html`<mwc-tab-bar
-        @MDCTabBar:activated=${({
-          detail: { index }
-        }: {
-          detail: { index: number };
-        }) => {
-          this.tabIndex = index;
+    return html`<oscd-tabs
+        .activeTabIndex=${this.tabIndex}
+        @change=${(event: Event) => {
+          this.tabIndex = (event.target as OscdTabs).activeTabIndex;
 
           if (this.tabIndex === 0) {
             this.showSupervisions = true;
@@ -1804,39 +1780,42 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           }
         }}
       >
-        <mwc-tab label="Use" icon="play_circle" default></mwc-tab>
-        <mwc-tab label="Create" icon="construction"></mwc-tab>
-        <mwc-tab label="View" icon="frame_source"></mwc-tab>
-      </mwc-tab-bar>
+        <oscd-primary-tab inline-icon>
+          <oscd-icon slot="icon">play_circle</oscd-icon>Use
+        </oscd-primary-tab>
+        <oscd-primary-tab inline-icon>
+          <oscd-icon slot="icon">construction</oscd-icon>Create
+        </oscd-primary-tab>
+        <oscd-primary-tab inline-icon>
+          <oscd-icon slot="icon">frame_source</oscd-icon>View
+        </oscd-primary-tab>
+      </oscd-tabs>
       <section>
         ${this.tabIndex === 0 ? this.renderUse() : nothing}
         ${this.tabIndex === 1 ? this.renderCreate() : nothing}
         ${this.tabIndex === 2 ? this.renderView() : nothing}
       </section>
       ${this.renderTemplateIedsSelector()}${this.renderFunctionIedSelector()}
-      <mwc-snackbar id="snackBarMessage" labelText="${this.snackBarMessage}">
-      </mwc-snackbar>
+      <oscd-snackbar id="snackBarMessage"></oscd-snackbar>
       ${this.renderAddStencilMetadata()}${this.renderErrorMessages()}`;
   }
 
-  static styles = css`
+  static styles = [
+    ...themeStyles,
+    css`
     :host {
       display: flex;
       flex-direction: column;
 
-      /* incompatibilities in our themeing */
-      --md-sys-color-surface: none;
-
-      --secondaryThemeFallback: #018786;
-      --scrollbarBG: var(--mdc-theme-background, #cfcfcf00);
-      --thumbBG: var(--mdc-button-disabled-ink-color, #996cd8cc);
+      --scrollbarBG: transparent;
+      --thumbBG: var(--oscd-base1);
     }
 
     h1,
     h2,
     h3 {
-      color: var(--mdc-theme-on-surface);
-      font-family: 'Roboto', sans-serif;
+      color: var(--oscd-base00);
+      font-family: var(--oscd-text-font), sans-serif;
       font-weight: 300;
       overflow: hidden;
       white-space: nowrap;
@@ -1847,8 +1826,8 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
 
     p {
-      color: var(--mdc-theme-on-surface);
-      font-family: 'Roboto', sans-serif;
+      color: var(--oscd-base00);
+      font-family: var(--oscd-text-font), sans-serif;
       font-weight: 300;
       text-overflow: ellipsis;
       margin: 0px;
@@ -1856,14 +1835,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
 
     label {
-      color: var(--mdc-theme-on-surface);
-      font-family: 'Roboto', sans-serif;
+      color: var(--oscd-base00);
+      font-family: var(--oscd-text-font), sans-serif;
       font-weight: normal;
       display: flex;
       align-items: center;
     }
 
-    mwc-tab-bar {
+    oscd-tabs {
       width: 100%;
     }
 
@@ -1872,7 +1851,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       max-height: 80vh;
       display: block;
       margin-top: 20px;
-      --md-outlined-text-field-input-text-font: 'Roboto Mono';
+      --md-outlined-text-field-input-text-font: var(--oscd-text-font-mono);
     }
 
     #stencilName {
@@ -1925,7 +1904,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
 
     .button,
-    .appinf > md-outlined-text-field {
+    .appinf > oscd-outlined-text-field {
       margin: 10px;
     }
 
@@ -1954,8 +1933,8 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       justify-content: space-between;
     }
 
-    md-list-item.selected {
-      background-color: color-mix(in srgb, var(--thumbBG) 20%, transparent);
+    oscd-list-item.selected {
+      background-color: color-mix(in srgb, var(--oscd-primary) 20%, transparent);
     }
 
     .menu-item {
@@ -1966,16 +1945,16 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     section {
       position: relative;
       max-height: 100%;
-      background-color: var(--mdc-theme-surface, #fafafa);
+      background-color: var(--oscd-base3);
       padding: 12px;
     }
 
     table {
       position: relative;
       border-collapse: collapse;
-      border: 2px solid rgb(140 140 140);
-      color: var(--mdc-theme-on-surface);
-      font-family: 'Roboto', sans-serif;
+      border: 2px solid var(--oscd-base1);
+      color: var(--oscd-base00);
+      font-family: var(--oscd-text-font), sans-serif;
       font-weight: normal;
       padding: 12px;
       /* font-size: 0.8rem; */
@@ -1990,24 +1969,24 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
     thead,
     tfoot {
-      background-color: var(--mdc-theme-surface, #fafafa);
+      background-color: var(--oscd-base3);
     }
 
     th.stay[scope='col'] {
       position: sticky;
       top: 60px;
-      background-color: var(--mdc-theme-surface, #fafafa);
+      background-color: var(--oscd-base3);
       padding: 5px 10px;
     }
 
     th,
     td {
-      border: 1px solid rgb(160 160 160);
+      border: 1px solid var(--oscd-base1);
       padding: 3px 3px 5px 5px;
     }
 
     .diagonal {
-      background-color: #b3e7ff;
+      background-color: color-mix(in srgb, var(--oscd-primary) 20%, transparent);
     }
 
     td:last-of-type {
@@ -2036,7 +2015,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
 
     .iednamebg {
-      background-color: rgb(210 210 210);
+      background-color: var(--oscd-base2);
     }
 
     .iedname {
@@ -2047,24 +2026,24 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       left: 5px;
     }
 
-    md-checkbox.cb {
+    oscd-checkbox.cb {
       margin: 5px;
     }
 
-    md-checkbox.cb {
-      --md-checkbox-selected-container-color: lightseagreen;
+    oscd-checkbox.cb {
+      --md-checkbox-selected-container-color: var(--stencil-goose-color);
     }
 
-    md-checkbox.cb.sv {
-      --md-checkbox-selected-container-color: darkred;
+    oscd-checkbox.cb.sv {
+      --md-checkbox-selected-container-color: var(--stencil-sv-color);
     }
 
     .cb.sv {
-      color: darkred;
+      color: var(--stencil-sv-color);
     }
 
     .cb {
-      color: lightseagreen;
+      color: var(--stencil-goose-color);
     }
 
     .rowselect,
@@ -2080,7 +2059,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       border-right: none;
     }
 
-    md-switch {
+    oscd-switch {
       padding: 15px;
     }
 
@@ -2134,5 +2113,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       background: var(--thumbBG);
       border-radius: 6px;
     }
-  `;
+  `
+  ];
 }

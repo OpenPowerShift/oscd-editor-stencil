@@ -34,4 +34,11 @@ describe('getIedDescription', () => {
       secondLine: ''
     });
   });
+
+  it('does not leave a trailing separator when there is no schema information', () => {
+    expect(getIedDescription(ied({ desc: 'Bus' })).secondLine).to.equal('Bus');
+    expect(
+      getIedDescription(ied({ desc: 'Bus', configVersion: 'V1' })).secondLine
+    ).to.equal('Bus - V1');
+  });
 });

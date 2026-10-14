@@ -55,12 +55,8 @@
   },
   "dependencies": {
     "@lit/localize": "^0.12.2",
-    "@material/mwc-snackbar": "^0.27.0",
-    "@material/mwc-tab-bar": "^0.27.0",
-    "@material/web": "^1.5.0",
     "@omicronenergy/oscd-ui": "^0.1.1",
     "@open-wc/scoped-elements": "^3.0.10",
-    "@openenergytools/filterable-lists": "^0.0.4",
     "@openscd/oscd-api": "^0.1.6",
     "@openscd/scl-lib": "^2.0.1",
     "@webcomponents/scoped-custom-element-registry": "^0.0.10",

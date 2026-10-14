@@ -33,7 +33,7 @@ export function getIedDescription(ied: Element): {
     .join('');
 
   const secondLine = [desc, configVersion, schemaInformation]
-    .filter(val => val !== null)
+    .filter(val => val !== null && val !== '')
     .join(' - ');
 
   return { firstLine, secondLine };
