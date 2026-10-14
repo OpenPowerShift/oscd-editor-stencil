@@ -301,10 +301,8 @@ Each phase ends with `npm i → tsc --noEmit → build → lint → test` passin
 4. **oscd-ui + theming.** Replace every `mwc-*`, `md-*` and `@openenergytools/*` component with `@omicronenergy/oscd-ui` (done: 18 scoped elements, including `oscd-snackbar`, so no local toast is needed). Add `theme.ts` with the `--oscd-*` palette and the `--oscd-editor-stencil-goose-color` / `-sv-color` hooks. Behaviour is unchanged.
    - *Deferred to phase 7:* wrapping strings in `msg()` and splitting the 2000-line component. Phase 7 rewrites these views, so doing either now would be thrown away. Phase 7 builds the new components with `msg()` from the start, and phase 8 adds the `de` and `pt` locale files.
    - *Note:* oscd-ui 0.1.1 also ships `oscd-ace-editor`, which the phase 7 JSON editor should use instead of adding `ace-builds` directly.
-5. **Bug fixes.** Defects 1–11, each with a regression spec.
-6. **Schema v2.**
-   - `stencil-ref`, `stencil-io` with v1 → v2 migration (adds `schemaVersion`).
-   - Golden test: every v1 fixture resolves to the same elements as scl-lib's `find()`, and `stencil-ref` identities match scl-lib's `identity()`.
+5. **Bug fixes (done).** Defects 1-11 are fixed, each with specs at the pure and component level. New pure modules: `match`, `stencil-model` (immutable library operations), `stencil-io` (validation, `schemaVersion`, file name) and `storage`. `getMappingInfo` is rewritten: IEDs are found without selectors, a missing DataSet no longer throws, and a subscription whose data is not in the control block is skipped. The version picker for deprecated versions is deferred to phase 7, where the Use view is rebuilt; until then the newest current version is used.
+6. **Schema v2 (remaining part).** `stencil-io` already reads files without `schemaVersion` as v1, stamps v2, rejects newer versions, and writes v2. What remains: capture writes ExtRefs without `intAddr` in the `<Inputs identity>>#n` form using `stencil-ref.toRef`, and the review step warns about them. Golden test: `stencil-ref` identities match scl-lib's `identity()` (done for the fixture) and every captured reference resolves back to its element.
 7. **Redesign.**
    - Apply stepper (choose, assign with auto-assign, review with dry run).
    - Manage mode (library tree, version detail, capture wizard, tag IEDs).

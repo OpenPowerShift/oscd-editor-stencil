@@ -13,6 +13,6 @@ export default {
     exclude: [...base.coverageConfig.exclude, 'dist/testing/**'],
     // TEMPORARY: the legacy component is untested until it is split and
     // rewritten (plan phases 3-7). Restore to 90 in phase 8.
-    threshold: { statements: 70, branches: 80, functions: 70, lines: 70 },
+    threshold: { statements: 80, branches: 85, functions: 80, lines: 80 },
   },
 };

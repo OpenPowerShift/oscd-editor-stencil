@@ -9,6 +9,7 @@ import OscdEditorStencil from './oscd-editor-stencil.js';
 import { getMappingInfo } from './foundation/mapping-info.js';
 import { fixtureXml } from './testing/fixture-scd.js';
 import { applicationFrom, cloneAsClean } from './testing/scl.js';
+import { makeApplication, makeStencil, makeVersion } from './testing/stencils.js';
 
 customElements.define('oscd-editor-stencil', OscdEditorStencil);
 
@@ -205,4 +206,218 @@ describe('oscd-editor-stencil UI', () => {
       );
     });
   });
+
+  describe('managing the stencil library', () => {
+    const versions = (app: string) =>
+      plugin.stencilData.applications
+        .find(a => a.name === app)
+        ?.versions.map(v => v.version);
+
+    beforeEach(async () => {
+      plugin.stencilData = makeStencil([
+        makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')]),
+        makeApplication('Bus', 'Old', [makeVersion('1.0.0', true)]),
+        makeApplication('Line', 'Single', [makeVersion('1.0.0')])
+      ]);
+      await plugin.updateComplete;
+    });
+
+    const names = () =>
+      Array.from(
+        plugin.shadowRoot!.querySelectorAll('#applications oscd-list-item[data-name]')
+      ).map(item => item.getAttribute('data-name'));
+
+    const chooseApplication = async (name: string) => {
+      (
+        plugin.shadowRoot!.querySelector(
+          `#applications oscd-list-item[data-name="${name}"]`
+        ) as HTMLElement
+      ).click();
+      await plugin.updateComplete;
+    };
+
+    it('selects the newest version and highlights the application', async () => {
+      await chooseApplication('BZ');
+      expect(plugin.selectedAppVersion?.version).to.equal('2.0.0');
+      expect(
+        plugin.shadowRoot!.querySelector('#applications oscd-list-item.selected')
+          ?.getAttribute('data-name')
+      ).to.equal('BZ');
+    });
+
+    it('hides applications with only deprecated versions until they are shown', async () => {
+      expect(names()).to.deep.equal(['BZ', 'Single']);
+
+      plugin.toggleDeprecated();
+      await plugin.updateComplete;
+      expect(names()).to.deep.equal(['BZ', 'Old', 'Single']);
+    });
+
+    it('can use an application that only has a deprecated version once shown', async () => {
+      plugin.toggleDeprecated();
+      await plugin.updateComplete;
+      await chooseApplication('Old');
+
+      expect(plugin.selectedAppVersion?.version).to.equal('1.0.0');
+      expect(plugin.selectedAppVersion?.deprecated).to.be.true;
+    });
+
+    it('clears the selection when hiding deprecated versions hides the application', async () => {
+      plugin.toggleDeprecated();
+      await plugin.updateComplete;
+      await chooseApplication('Old');
+
+      plugin.toggleDeprecated();
+      await plugin.updateComplete;
+      expect(plugin.selectedApplication).to.be.null;
+      expect(plugin.selectedAppVersion).to.be.undefined;
+    });
+
+    it('forgets the chosen IEDs when another application is chosen', async () => {
+      await chooseApplication('BZ');
+      plugin.functionToIed = new Map([['Fn', 'IED1']]);
+      await chooseApplication('Single');
+      expect(plugin.functionToIed.size).to.equal(0);
+    });
+
+    it('deletes only the selected version when others exist, without throwing', async () => {
+      await chooseApplication('BZ');
+      await click('oscd-outlined-button', 'Delete Application');
+
+      expect(versions('BZ')).to.deep.equal(['1.0.0']);
+      expect(plugin.stencilData.applications).to.have.lengthOf(3);
+      expect(plugin.selectedApplication).to.be.null;
+      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).applications).to.have.lengthOf(3);
+    });
+
+    it('deletes the application together with its last version', async () => {
+      await chooseApplication('Single');
+      await click('oscd-outlined-button', 'Delete Application');
+      expect(plugin.stencilData.applications.map(a => a.name)).to.deep.equal(['BZ', 'Old']);
+    });
+
+    it('does not offer to delete before an application is chosen', () => {
+      const button = Array.from(
+        plugin.shadowRoot!.querySelectorAll('oscd-outlined-button')
+      ).find(b => b.textContent?.includes('Delete Application')) as HTMLElement & { disabled: boolean };
+      expect(button.disabled).to.be.true;
+    });
+  });
+
+  describe('loading and editing the stencil as text', () => {
+    const fileEvent = (content: string) =>
+      ({ target: { files: { item: () => new File([content], 'stencil.json') } } }) as unknown as Event;
+
+    it('loads a stencil file even when no application is selected', async () => {
+      await plugin.loadStencil(
+        fileEvent(JSON.stringify(makeStencil([makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])])))
+      );
+      expect(plugin.stencilData.applications).to.have.lengthOf(1);
+      expect(JSON.parse(localStorage.getItem('oscd-stencil')!).schemaVersion).to.equal(2);
+    });
+
+    it('keeps the current stencil and does not throw for a file that is not JSON', async () => {
+      const before = plugin.stencilData;
+      await plugin.loadStencil(fileEvent('{ not json'));
+      expect(plugin.stencilData).to.equal(before);
+    });
+
+    it('keeps the current stencil for JSON that is not a stencil', async () => {
+      const before = plugin.stencilData;
+      await plugin.loadStencil(fileEvent('{"name": 5}'));
+      expect(plugin.stencilData).to.equal(before);
+    });
+
+    it('does not take invalid text typed into the View tab', async () => {
+      await showTab(2);
+      const before = plugin.stencilData;
+      const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
+      field.value = '{ broken';
+      field.dispatchEvent(new Event('change'));
+      await plugin.updateComplete;
+      expect(plugin.stencilData).to.equal(before);
+    });
+
+    it('takes valid text typed into the View tab', async () => {
+      await showTab(2);
+      const field = plugin.shadowRoot!.querySelector('#outputView') as HTMLInputElement;
+      field.value = JSON.stringify(makeStencil([makeApplication('Bus', 'BZ', [makeVersion('3.0.0')])]));
+      field.dispatchEvent(new Event('change'));
+      await plugin.updateComplete;
+      expect(plugin.stencilData.applications[0].versions[0].version).to.equal('3.0.0');
+    });
+
+    it('starts with an empty stencil when the stored one is damaged', async () => {
+      localStorage.setItem('oscd-stencil', '{ damaged');
+      const fresh = await fixture<OscdEditorStencil>(html`<oscd-editor-stencil></oscd-editor-stencil>`);
+      expect(fresh.stencilData.applications).to.be.empty;
+      fresh.remove();
+    });
+
+    it('downloads JSON with a file name that has every space replaced', async () => {
+      const original = { create: URL.createObjectURL, click: HTMLAnchorElement.prototype.click };
+      let blob: Blob | undefined;
+      let downloaded: string | undefined;
+      URL.createObjectURL = (b: Blob | MediaSource) => {
+        blob = b as Blob;
+        return 'blob:test';
+      };
+      HTMLAnchorElement.prototype.click = function click() {
+        downloaded = this.download;
+      };
+      try {
+        plugin.stencilData = { ...makeStencil(), name: 'Digital Substation Play', version: '0.0.2' };
+        plugin.saveStencilAsFile();
+      } finally {
+        URL.createObjectURL = original.create;
+        HTMLAnchorElement.prototype.click = original.click;
+      }
+      expect(blob?.type).to.equal('application/json');
+      expect(downloaded).to.equal('Digital_Substation_Play_0.0.2.json');
+    });
+  });
+
+  describe('creating an application', () => {
+    const create = async (fields: Record<string, string>) => {
+      await showTab(1);
+      plugin.iedMappingStencilData = getMappingInfo(doc, 'PUB1', 'SUB1');
+      plugin.uniqueIeds = ['PUB1', 'SUB1'];
+      plugin.templateCreationStage = 2;
+      await plugin.updateComplete;
+      Object.entries(fields).forEach(([id, value]) => {
+        (plugin.shadowRoot!.querySelector(`#${id}`) as HTMLInputElement).value = value;
+      });
+      await click('oscd-filled-button', 'Add Application');
+    };
+
+    it('adds a new version to an existing application instead of a second application', async () => {
+      plugin.stencilData = makeStencil([
+        makeApplication('Bus', 'BZ', [makeVersion('1.0.0')])
+      ]);
+      await create({ appcat: 'Bus', appname: 'BZ', appver: '2.0.0' });
+
+      expect(plugin.stencilData.applications).to.have.lengthOf(1);
+      expect(plugin.stencilData.applications[0].versions.map(v => v.version)).to.deep.equal(['1.0.0', '2.0.0']);
+    });
+
+    it('replaces a version with the same number in place', async () => {
+      plugin.stencilData = makeStencil([
+        makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')])
+      ]);
+      await create({ appcat: 'Bus', appname: 'BZ', appver: '1.0.0', appverdesc: 'again' });
+
+      expect(plugin.stencilData.applications).to.have.lengthOf(1);
+      expect(plugin.stencilData.applications[0].versions.map(v => `${v.version}:${v.description}`)).to.deep.equal(['1.0.0:again', '2.0.0:version 2.0.0']);
+    });
+
+    it('creates the first application of an empty stencil with the functions it was given', async () => {
+      await create({ appcat: 'Bus', appname: 'BZ', appver: '1.0.0' });
+
+      const [app] = plugin.stencilData.applications;
+      expect(app).to.include({ category: 'Bus', name: 'BZ' });
+      expect(Object.keys(app.versions[0].IEDS).sort()).to.deep.equal(['PUB1', 'SUB1']);
+      expect(app.versions[0].ControlBlocks).to.have.lengthOf(2);
+    });
+  });
 });
+

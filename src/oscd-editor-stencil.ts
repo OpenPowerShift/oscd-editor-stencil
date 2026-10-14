@@ -39,6 +39,23 @@ import {
 } from './foundation/mapping-info.js';
 import { combinations } from './foundation/combinations.js';
 import { planApply } from './foundation/plan-apply.js';
+import {
+  defaultVersion,
+  removeApplicationVersion,
+  renameStencil,
+  upsertApplicationVersion,
+  visibleApplications
+} from './foundation/stencil-model.js';
+import {
+  parseStencil,
+  serializeStencil,
+  stencilFileName
+} from './foundation/stencil-io.js';
+import {
+  loadStoredStencil,
+  newStencil,
+  storeStencil
+} from './foundation/storage.js';
 import { tagIedEdits } from './foundation/ied-tags.js';
 import type {
   Application,
@@ -51,16 +68,6 @@ import { iedSelectItems } from './foundation/ied-items.js';
 import { themeStyles } from './theme.js';
 
  
-// const defaultStencil = await fetch(
-//   new URL('./default_stencil.json', import.meta.url)
-// ).then(res => res.json());
-
-const defaultStencil = {
-  name: 'Please name your Stencil',
-  version: '0.0.1',
-  applications: []
-};
-
 type ControlBlockTableMapping = {
   id: string;
   from: string;
@@ -115,7 +122,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   @property() uniqueIeds: string[] = [];
 
-  @property() stencilData: StencilData = defaultStencil;
+  @property() stencilData: StencilData = newStencil();
 
   @property() selectedApplication: VersionedApplications | null = null;
 
@@ -219,16 +226,6 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   @query('#error-dialog') errorDialogUI!: OscdDialog;
 
-  @query('#applications > oscd-list-item.selected')
-  selectedApplicationUI!: OscdListItem;
-
-   
-  constructor() {
-    super();
-    // TODO: Decide whether to package stencils at all
-    // this.stencilData = defaultStencil;
-  }
-
   /** Shows a message in the snackbar. */
   notify(message: string, variant: SnackbarVariant = 'info'): void {
     this.snackBarMessageUI.show({ message, variant });
@@ -263,154 +260,42 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       });
     });
 
-    // no existing application
-    const noExistingApplications = this.stencilData.applications.length === 0;
+    const category = this.appCategory.value.trim();
+    const name = this.appName.value.trim();
 
-    // application that already matches parameters
-    const enteringExistingApplication = this.stencilData.applications.find(
-      app =>
-        app.category === this.appCategory.value.trim() &&
-        app.name === this.appName.value.trim()
+    this.stencilData = upsertApplicationVersion(
+      renameStencil(
+        this.stencilData,
+        this.stencilName.value.trim(),
+        this.stencilVersion.value.trim()
+      ),
+      { category, name, description: this.appDesc.value.trim() },
+      {
+        version: this.appVer.value.trim(),
+        description: this.appVerDesc.value.trim(),
+        deprecated: this.appDeprecated.checked,
+        IEDS: Object.fromEntries(ieds),
+        ControlBlocks: this.iedMappingStencilData.map(cb => ({
+          ...cb,
+          from: iedNameMapping.get(cb.from)!,
+          to: iedNameMapping.get(cb.to)!
+        }))
+      }
     );
-
-    // application version that already matches parameters
-    const existingApplicationVersion =
-      enteringExistingApplication &&
-      enteringExistingApplication.versions.find(
-        app => app.version === this.appVer.value.trim()
-      );
-
-    if (noExistingApplications) {
-      this.stencilData = {
-        name: this.stencilName.value.trim(),
-        version: this.stencilVersion.value.trim(),
-        applications: [
-          {
-            category: this.appCategory.value.trim() ?? 'UnknownCategory',
-            name: this.appName.value.trim() ?? 'UnknownName',
-            description: this.appDesc.value.trim(),
-            versions: [
-              {
-                version: this.appVer.value.trim(),
-                description: this.appVerDesc.value.trim(),
-                deprecated: this.appDeprecated.checked,
-                IEDS: Object.fromEntries(ieds),
-                ControlBlocks: this.iedMappingStencilData.map(cb => ({
-                  ...cb,
-                  from: iedNameMapping.get(cb.from)!,
-                  to: iedNameMapping.get(cb.to)!
-                }))
-              }
-            ]
-          }
-        ]
-      };
-    } else if (enteringExistingApplication && !existingApplicationVersion) {
-      this.stencilData = {
-        name: this.stencilName.value.trim(),
-        version: this.stencilVersion.value.trim(),
-        applications: [
-          ...this.stencilData.applications,
-          {
-            category: this.appCategory.value.trim() ?? 'UnknownCategory',
-            name: this.appName.value.trim() ?? 'UnknownName',
-            description: this.appDesc.value.trim(),
-            versions: [
-              {
-                version: this.appVer.value.trim(),
-                description: this.appVerDesc.value.trim(),
-                deprecated: this.appDeprecated.checked,
-                IEDS: Object.fromEntries(ieds),
-                ControlBlocks: this.iedMappingStencilData.map(cb => ({
-                  ...cb,
-                  from: iedNameMapping.get(cb.from)!,
-                  to: iedNameMapping.get(cb.to)!
-                }))
-              }
-            ]
-          }
-        ]
-      };
-    } else if (enteringExistingApplication && existingApplicationVersion) {
-      const newAppVersions = [
-        ...enteringExistingApplication.versions.filter(
-          appVer => appVer.version !== this.appVer.value.trim()
-        ),
-        {
-          version: this.appVer.value.trim(),
-          description: this.appVerDesc.value.trim(),
-          deprecated: this.appDeprecated.checked,
-          IEDS: Object.fromEntries(ieds),
-          ControlBlocks: this.iedMappingStencilData.map(cb => ({
-            ...cb,
-            from: iedNameMapping.get(cb.from)!,
-            to: iedNameMapping.get(cb.to)!
-          }))
-        }
-      ];
-
-      this.stencilData = {
-        name: this.stencilName.value.trim(),
-        version: this.stencilVersion.value.trim(),
-        applications: [
-          ...this.stencilData.applications,
-          {
-            category: this.appCategory.value.trim() ?? 'UnknownCategory',
-            name: this.appName.value.trim() ?? 'UnknownName',
-            // could also update the description this way!
-            description: this.appDesc.value.trim(),
-            versions: newAppVersions
-          }
-        ]
-      };
-    } else if (!enteringExistingApplication && !existingApplicationVersion) {
-      this.stencilData = {
-        name: this.stencilName.value.trim(),
-        version: this.stencilVersion.value.trim(),
-        applications: [
-          ...this.stencilData.applications,
-          {
-            category: this.appCategory.value.trim() ?? 'UnknownCategory',
-            name: this.appName.value.trim() ?? 'UnknownName',
-            description: this.appDesc.value.trim(),
-            versions: [
-              {
-                version: this.appVer.value.trim(),
-                description: this.appVerDesc.value.trim(),
-                deprecated: this.appDeprecated.checked,
-                IEDS: Object.fromEntries(ieds),
-                ControlBlocks: this.iedMappingStencilData.map(cb => ({
-                  ...cb,
-                  from: iedNameMapping.get(cb.from)!,
-                  to: iedNameMapping.get(cb.to)!
-                }))
-              }
-            ]
-          }
-        ]
-      };
-    }
 
     this.storeSettings();
 
-    this.notify(`New application created: ${
-      this.appCategory.value.trim() ?? 'UnknownCategory'
-    } > ${this.appName.value.trim() ?? 'UnknownName'}`);
+    this.notify(`New application created: ${category} > ${name}`);
     this.resetCreateApplication();
   }
 
   saveStencilAsFile(): void {
-    const blob = new Blob([JSON.stringify(this.stencilData, null, 2)], {
-      type: 'application/xml'
+    const blob = new Blob([serializeStencil(this.stencilData)], {
+      type: 'application/json'
     });
 
     const a = document.createElement('a');
-    a.download = `${(this.stencilData.name === null ||
-    this.stencilData.name === ''
-      ? 'Unknown Stencil'
-      : this.stencilData.name
-    ).replace(' ', '_')}_${this.stencilData.version ?? 'Unknown Version'}.json`;
-
+    a.download = stencilFileName(this.stencilData);
     a.href = URL.createObjectURL(blob);
     a.dataset.downloadurl = ['application/json', a.download, a.href].join(':');
     a.style.display = 'none';
@@ -437,24 +322,31 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     }
   }
 
+  /** Replaces the stencil with a validated one. @returns whether it was valid. */
+  protected useStencil(json: string): boolean {
+    const { stencil, errors } = parseStencil(json);
+    if (!stencil) {
+      this.notify(errors.join('. '), 'error');
+      return false;
+    }
+
+    this.stencilData = stencil;
+    this.storeSettings();
+    this.selectedApplication = null;
+    this.selectedAppVersion = undefined;
+    this.resetApplyStencil();
+    return true;
+  }
+
   async loadStencil(event: Event): Promise<void> {
     const file = (<HTMLInputElement | null>event.target)?.files?.item(0);
     if (!file) {
       return;
     }
 
-    const text = await file.text();
-    this.stencilData = JSON.parse(text);
-    this.storeSettings();
-
-    this.changeStencilUI.onchange = null;
-    this.selectedApplicationUI.classList.remove('selected');
-    this.selectedApplication = null;
-    this.selectedAppVersion = undefined;
-    this.resetApplyStencil();
+    this.useStencil(await file.text());
   }
 
-   
   applyStencil(): void {
     if (!this.selectedAppVersion) {
       return;
@@ -508,18 +400,14 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
   /**
    * Restore settings from local storage, applying appropriate defaults
-   * if not set.
+   * if not set or unreadable.
    */
   protected restoreSettings(): void {
-    const storedSettings = localStorage.getItem('oscd-stencil');
-
-    this.stencilData = storedSettings
-      ? JSON.parse(storedSettings)
-      : defaultStencil;
+    this.stencilData = loadStoredStencil();
   }
 
   protected storeSettings(): void {
-    localStorage.setItem('oscd-stencil', JSON.stringify(this.stencilData));
+    storeStencil(this.stencilData);
   }
 
   protected updated(changedProperties: PropertyValues): void {
@@ -619,23 +507,25 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       ? this.selectedAppVersion?.IEDS[this.applicationSelectedFunction]
       : null;
 
-    const items = this.doc?.querySelectorAll(
-      `:root > IED[type="${func ? func.type : ''}"][manufacturer="${
-        func ? func.manufacturer : ''
-      }"]`
+    const items = Array.from(this.doc?.querySelectorAll(':root > IED') ?? []).filter(
+      ied =>
+        ied.getAttribute('type') === (func ? func.type : '') &&
+        ied.getAttribute('manufacturer') === (func ? func.manufacturer : '')
     );
     return html`<oscd-dialog
       id="ied-function-selector-dialog"
       @close=${() => {
-        if (this.applicationSelectedFunction && this.applicationSelectedIed) {
-          const iedName = this.applicationSelectedIed.getAttribute('name')!;
-          this.functionToIed.set(this.applicationSelectedFunction, iedName);
+        const fn = this.applicationSelectedFunction;
+        if (fn && this.applicationSelectedIed) {
+          this.functionToIed = new Map(this.functionToIed).set(
+            fn,
+            this.applicationSelectedIed.getAttribute('name')!
+          );
         }
-        if (
-          this.applicationSelectedFunction &&
-          this.iedSelectorUI.returnValue === 'reset'
-        ) {
-          this.functionToIed.delete(this.applicationSelectedFunction);
+        if (fn && this.iedSelectorUI.returnValue === 'reset') {
+          const next = new Map(this.functionToIed);
+          next.delete(fn);
+          this.functionToIed = next;
         }
         this.applicationSelectedFunction = null;
         this.applicationSelectedIed = null;
@@ -652,45 +542,42 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         <oscd-action-list
           id="action-list"
           filterable
-          .items=${!items
-            ? []
-            : Array.from(items)
-              .filter((ied) => {
-                const id = ied.querySelector(
-                  ':scope > Private[type="OpenSCD-Stencil-Id"]'
-                )?.textContent;
-                const version = ied.querySelector(
-                  ':scope > Private[type="OpenSCD-Stencil-Version"]'
-                )?.textContent;
-                return (
-                  !func ||
+          .items=${items              .filter((ied) => {
+            const id = ied.querySelector(
+              ':scope > Private[type="OpenSCD-Stencil-Id"]'
+            )?.textContent;
+            const version = ied.querySelector(
+              ':scope > Private[type="OpenSCD-Stencil-Version"]'
+            )?.textContent;
+            return (
+              !func ||
                     func.privates.some(
                       priv =>
                         priv['OpenSCD-Stencil-Id'] === id &&
                         priv['OpenSCD-Stencil-Version'] === version
                     )
-                );
-              })
-              .filter(
-                ied =>
-                  !Array.from(this.functionToIed.values()).includes(
-                    ied.getAttribute('name')!
-                  )
-              )
-              .map((ied) => {
-                const { firstLine, secondLine } = getIedDescription(ied);
+            );
+          })
+            .filter(
+              ied =>
+                !Array.from(this.functionToIed.values()).includes(
+                  ied.getAttribute('name')!
+                )
+            )
+            .map((ied) => {
+              const { firstLine, secondLine } = getIedDescription(ied);
 
-                return {
-                  headline: `${ied.getAttribute('name')!} — ${firstLine}`,
-                  supportingText: secondLine,
-                  attachedElement: ied,
-                  primaryAction: () => {
-                    this.applicationSelectedIed = ied;
-                    this.iedSelectorUI.returnValue = 'ok';
-                    this.iedSelectorUI.close();
-                  }
-                };
-              })}
+              return {
+                headline: `${ied.getAttribute('name')!} — ${firstLine}`,
+                supportingText: secondLine,
+                attachedElement: ied,
+                primaryAction: () => {
+                  this.applicationSelectedIed = ied;
+                  this.iedSelectorUI.returnValue = 'ok';
+                  this.iedSelectorUI.close();
+                }
+              };
+            })}
         ></oscd-action-list>
       </form>
       <div slot="actions">
@@ -830,6 +717,96 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     </div>`;
   }
 
+  private isSelected(app: VersionedApplications): boolean {
+    return (
+      this.selectedApplication?.category === app.category &&
+      this.selectedApplication?.name === app.name
+    );
+  }
+
+  selectApplication(app: VersionedApplications): void {
+    this.selectedApplication = app;
+    this.selectedAppVersion = defaultVersion(app, this.showDeprecated);
+    this.resetApplyStencil();
+  }
+
+  toggleDeprecated(): void {
+    this.showDeprecated = !this.showDeprecated;
+
+    const stillVisible = visibleApplications(
+      this.stencilData,
+      this.showDeprecated
+    ).some(app => this.selectedApplication && this.isSelected(app));
+    if (!stillVisible) {
+      this.selectedApplication = null;
+      this.selectedAppVersion = undefined;
+      this.resetApplyStencil();
+    }
+  }
+
+  /** Removes the selected version, and its application if it was the last. */
+  deleteSelectedVersion(): void {
+    if (!this.selectedApplication || !this.selectedAppVersion) {
+      return;
+    }
+
+    this.stencilData = removeApplicationVersion(
+      this.stencilData,
+      this.selectedApplication,
+      this.selectedAppVersion.version
+    );
+    this.storeSettings();
+    this.selectedApplication = null;
+    this.selectedAppVersion = undefined;
+    this.resetApplyStencil();
+  }
+
+  renderApplicationList(): TemplateResult[] {
+    const applications = visibleApplications(
+      this.stencilData,
+      this.showDeprecated
+    );
+    const lower = (text: string): string => text.toLowerCase();
+
+    return applications
+      .map(app => app.category)
+      .filter((category, i, all) => all.indexOf(category) === i)
+      .sort((a, b) => lower(a).localeCompare(lower(b)))
+      .map(
+        category => html`<oscd-list-item data-cat="${category}">
+            <div slot="headline">${category}</div>
+            <oscd-icon slot="start">ad_group</oscd-icon>
+          </oscd-list-item>
+          ${applications
+            .filter(app => app.category === category)
+            .sort((a, b) => lower(a.name).localeCompare(lower(b.name)))
+            .map((app) => {
+              const version = defaultVersion(app, this.showDeprecated);
+
+              return html`<oscd-list-item
+                class="${this.isSelected(app) ? 'selected' : ''}"
+                @click=${() => this.selectApplication(app)}
+                type="button"
+                data-cat="${category}"
+                data-name="${app.name}"
+              >
+                <div slot="headline">${app.name}</div>
+                <div slot="supporting-text">
+                  ${app.description}${version?.description
+                    ? ` - ${version.description}`
+                    : ''}
+                </div>
+                <div slot="trailing-supporting-text">
+                  ${version
+                    ? `${version.version}${version.deprecated ? ' (deprecated)' : ''}`
+                    : 'No available version'}
+                </div>
+                <oscd-icon slot="start">draw_collage</oscd-icon>
+              </oscd-list-item>`;
+            })}`
+      );
+  }
+
   renderStencilSelectionAndUse(): TemplateResult {
     if (this.stencilData.applications.length === 0) {
       return html`<p>No applications exist in the current stencil.</p>`;
@@ -853,9 +830,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                 anchor="menuApplicationsButton"
               >
                 <oscd-menu-item
-                  @click=${() => {
-                    this.showDeprecated = !this.showDeprecated;
-                  }}
+                  @click=${() => this.toggleDeprecated()}
                 >
                   <div slot="headline">
                     <label class="menu-item">
@@ -870,132 +845,12 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
               </oscd-menu>
             </h2>
             <oscd-list id="applications" class="scrollable"
-              >${this.stencilData.applications
-                .filter(
-                  app =>
-                    app.versions.some(
-                      version => version.deprecated && this.showDeprecated
-                    ) || !this.showDeprecated
-                )
-                .map(app => app.category)
-                .filter((item, i, ar) => ar.indexOf(item) === i)
-                .sort((catA, catB) =>
-                  catA.toLowerCase().localeCompare(catB.toLowerCase())
-                )
-                .map(
-                  appCategory =>
-                    html` <oscd-list-item data-cat="${appCategory}">
-                        <div slot="headline">${appCategory}</div>
-                        <oscd-icon slot="start">ad_group</oscd-icon>
-                      </oscd-list-item>
-                      ${this.stencilData.applications
-                        .filter(app => app.category === appCategory)
-                        .sort((vAppsA, vAppsB) =>
-                          `${vAppsA.name}`
-                            .toLowerCase()
-                            .localeCompare(`${vAppsB.name}`.toLowerCase())
-                        )
-                        .flatMap((app) => {
-                          let availableVersion = null;
-                          if (this.showDeprecated === false) {
-                            availableVersion = app.versions.find(
-                              appVer => appVer.deprecated === false
-                            );
-                          }
-
-                          return html`<oscd-list-item
-                            @click=${(event: Event) => {
-                              this.selectedApplication = app;
-                              if (this.showDeprecated === false) {
-                                this.selectedAppVersion = app.versions.find(
-                                  appVer => appVer.deprecated === false
-                                );
-                              }
-                              // TODO: Handle deprecated versions
-                              (<HTMLElement>event.target)
-                                .closest('oscd-list')!
-                                .querySelectorAll('oscd-list-item')
-                                .forEach((listItem) => {
-                                  listItem.classList.remove('selected');
-                                });
-
-                              (<HTMLElement>event.target)
-                                .closest('oscd-list-item')
-                                ?.classList.add('selected');
-                            }}
-                            type="button"
-                            data-cat="${appCategory}"
-                            data-name="${app.name}"
-                          >
-                            <div slot="headline">${app.name}</div>
-                            <div slot="supporting-text">
-                              ${app.description}${availableVersion?.description ===
-                                undefined ||
-                              availableVersion?.description === ''
-                                ? ''
-                                : ` - ${availableVersion?.description}`}
-                            </div>
-                            <div slot="trailing-supporting-text">
-                              ${availableVersion
-                                ? availableVersion.version
-                                : 'No available version'}
-                            </div>
-                            <oscd-icon slot="start">draw_collage</oscd-icon>
-                          </oscd-list-item>`;
-                        })}`
-                )}</oscd-list
+              >${this.renderApplicationList()}</oscd-list
             >
             <oscd-outlined-button
               class="button"
-              @click=${() => {
-                // application that already matches parameters
-
-                if (!this.selectedApplication) {
-                  return;
-                }
-
-                const otherAppVersions = [
-                  ...this.selectedApplication.versions.filter(
-                    appVer =>
-                      appVer.version !== this.selectedAppVersion?.version
-                  )
-                ];
-
-                if (otherAppVersions.length > 0) {
-                  // there are other applications with different version
-                  this.stencilData = {
-                    name: this.stencilName.value.trim(),
-                    version: this.stencilVersion.value.trim(),
-                    applications: [
-                      ...this.stencilData.applications,
-                      {
-                        category:
-                          this.appCategory.value.trim() ?? 'UnknownCategory',
-                        name: this.appName.value.trim() ?? 'UnknownName',
-                        // could also update the description this way!
-                        description: this.appDesc.value.trim(),
-                        versions: otherAppVersions
-                      }
-                    ]
-                  };
-                } else {
-                  // this was the last application, safe to remove
-                  const otherApplications = [
-                    ...this.stencilData.applications.filter(
-                      app => app !== this.selectedApplication
-                    )
-                  ];
-
-                  this.stencilData = {
-                    name: this.stencilData.name,
-                    version: this.stencilData.version,
-                    applications: otherApplications
-                  };
-                }
-                this.selectedApplicationUI.classList.remove('selected');
-                this.selectedApplication = null;
-                this.selectedAppVersion = undefined;
-              }}
+              ?disabled=${!this.selectedAppVersion}
+              @click=${() => this.deleteSelectedVersion()}
               >Delete Application
               <oscd-icon slot="icon">delete</oscd-icon>
             </oscd-outlined-button>
@@ -1468,25 +1323,24 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         class="button"
         ?disabled=${this.iedMappingStencilData.length === 0}
         @click=${() => {
-          Array.from(this.tableUserMappingMappedCheckboxesUI!).forEach(
-            (checkbox) => {
-              const { fromied, fromcb, toied } = (<OscdCheckbox>checkbox).dataset;
-              if ((<OscdCheckbox>checkbox).checked === false) {
-                this.createCBsToRemove.push({
-                  id: fromcb!,
-                  from: fromied!,
-                  to: toied!
-                });
+          this.createCBsToRemove = [
+            ...this.createCBsToRemove,
+            ...Array.from(this.tableUserMappingMappedCheckboxesUI!).flatMap(
+              (checkbox) => {
+                const { fromied, fromcb, toied } = (<OscdCheckbox>checkbox)
+                  .dataset;
+                return (<OscdCheckbox>checkbox).checked
+                  ? []
+                  : [{ id: fromcb!, from: fromied!, to: toied! }];
               }
-            }
-          );
+            )
+          ];
 
           // No longer acceptable to edit columns at this stage of the process
           this.allowEditColumns = false;
           this.allowAppCreationToggles = false;
 
           this.templateCreationStage = 2;
-          this.uniqueIeds = [];
 
           // remove unused control blocks
           this.iedMappingStencilData = this.iedMappingStencilData.filter(
@@ -1500,14 +1354,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
           );
 
           // now generate list of remaining IEDs for naming
-          this.iedMappingStencilData.forEach((val: ControlBlockInfo) => {
-            if (!this.uniqueIeds.includes(val.to)) {
-              this.uniqueIeds.push(val.to);
-            }
-            if (!this.uniqueIeds.includes(val.from)) {
-              this.uniqueIeds.push(val.from);
-            }
-          });
+          this.uniqueIeds = this.iedMappingStencilData
+            .flatMap(val => [val.to, val.from])
+            .filter((name, i, names) => names.indexOf(name) === i);
         }}
         >Name IEDs for Functions
         <oscd-icon slot="icon">draw_collage</oscd-icon>
@@ -1546,14 +1395,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         label="Stencil Settings File"
         @change=${(event: Event) => {
           const target = event.target as OscdOutlinedTextField;
-          if (target) {
-            this.stencilData = JSON.parse(target.value);
-            this.storeSettings();
-            this.notify('Stencil settings updated');
-            this.requestUpdate();
+          if (target && this.useStencil(target.value)) {
+            this.notify('Stencil settings updated', 'success');
           }
         }}
-        value="${JSON.stringify(this.stencilData, null, 2)}"
+        value="${serializeStencil(this.stencilData)}"
         rows="20"
       >
       </oscd-outlined-text-field>
@@ -1601,8 +1447,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       <oscd-outlined-button
         class="button"
         @click=${() => {
-          this.stencilData.name = this.stencilName.value.trim();
-          this.stencilData.version = this.stencilVersion.value.trim();
+          this.stencilData = renameStencil(
+            this.stencilData,
+            this.stencilName.value.trim(),
+            this.stencilVersion.value.trim()
+          );
           this.storeSettings();
           this.resetCreateApplication();
         }}
@@ -1711,16 +1560,11 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
 
             const iedCombinations = Array.from(combinations(iedNames, 2));
 
-            this.iedMappingStencilData = [];
-            iedCombinations.forEach((iedPairs) => {
-              // A to B
-              const aDir = getMappingInfo(this.doc, iedPairs[0]!, iedPairs[1]!);
-              this.iedMappingStencilData.push(...aDir);
-
-              // B to A
-              const bDir = getMappingInfo(this.doc, iedPairs[1]!, iedPairs[0]!);
-              this.iedMappingStencilData.push(...bDir);
-            });
+            this.iedMappingStencilData = iedCombinations.flatMap(iedPairs => [
+              // A to B, then B to A
+              ...getMappingInfo(this.doc, iedPairs[0]!, iedPairs[1]!),
+              ...getMappingInfo(this.doc, iedPairs[1]!, iedPairs[0]!)
+            ]);
 
             this.templateCreationStage = 1;
           }}"
