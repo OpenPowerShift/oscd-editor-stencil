@@ -104,8 +104,44 @@ describe('stencil-io', () => {
       expect(result.errors).to.have.lengthOf(10);
     });
 
+    it('refuses what would confuse the stencil: blank or repeated names, unknown functions and types', () => {
+      const broken = stencil();
+      const version = broken.applications[0].versions[0];
+      broken.applications.push({ ...broken.applications[0] });
+      broken.applications[0].versions.push({ ...version });
+      version.ControlBlocks = [
+        {
+          id: '>>LD0>GC1',
+          name: 'GC1',
+          from: 'Nobody',
+          to: 'Fn',
+          type: 'ReportControl',
+          mappings: [],
+          supervision: 'None'
+        }
+      ];
+      const errors = validateStencil(broken).errors!.join('|');
+      expect(errors).to.contain('there twice');
+      expect(errors).to.contain('version "1.0.0" twice');
+      expect(errors).to.contain('"Nobody", which is not in IEDS');
+      expect(errors).to.contain('must be GSEControl or SampledValueControl');
+
+      expect(validateStencil({ ...stencil(), name: '  ' }).errors!.join()).to.contain('blank');
+      expect(
+        validateStencil({ ...stencil(), name: 'a\u0001b' }).errors!.join()
+      ).to.contain('control characters');
+    });
+
+    it('removes spaces around names', () => {
+      const spaced = stencil();
+      spaced.applications[0].category = '  Bus  ';
+      expect(validateStencil(spaced).stencil!.applications[0].category).to.equal('Bus');
+    });
+
     it('keeps control block details, including SEL supervision', () => {
       const withCb = stencil();
+      const fn = withCb.applications[0].versions[0].IEDS.Fn;
+      withCb.applications[0].versions[0].IEDS = { A: fn, B: fn };
       withCb.applications[0].versions[0].ControlBlocks = [
         {
           id: '>>LD0>GC1',

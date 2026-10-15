@@ -1,5 +1,7 @@
 import { find, identity } from '@openscd/scl-lib';
 
+import { findIed } from './match.js';
+
 /** Element types a stencil refers to. */
 export type RefTag =
   | 'GSEControl'
@@ -46,7 +48,8 @@ export function resolveRef(
   iedName: string,
   ref: string
 ): Element | null {
-  return find(doc, tag, `${iedName}${ref}`);
+  // searching the IED alone is much faster than the whole document
+  return find(findIed(doc, iedName) ?? doc, tag, `${iedName}${ref}`);
 }
 
 /**
@@ -64,9 +67,10 @@ export function resolveSink(
   }
 
   const owner = `${iedName}${inputsRef(ref)}`;
+  const ied = findIed(doc, iedName) ?? doc;
   return (
-    find(doc, 'Inputs', owner) ??
-    find(doc, 'LN0', owner) ??
-    find(doc, 'LN', owner)
+    find(ied, 'Inputs', owner) ??
+    find(ied, 'LN0', owner) ??
+    find(ied, 'LN', owner)
   );
 }

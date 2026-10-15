@@ -43,7 +43,9 @@ export function isSubscribed(extRef: Element): boolean {
     extRef.hasAttribute('iedName') &&
     extRef.hasAttribute('ldInst') &&
     extRef.hasAttribute('lnClass') &&
-    extRef.hasAttribute('lnInst') &&
+    // LLN0 has no instance, so an ExtRef to its data needs no lnInst
+    (extRef.hasAttribute('lnInst') ||
+      extRef.getAttribute('lnClass') === 'LLN0') &&
     extRef.hasAttribute('doName')
   );
 }

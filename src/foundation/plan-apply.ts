@@ -1,5 +1,6 @@
 import {
   controlBlockObjRef,
+  doesFcdaMeetExtRefRestrictions,
   find,
   instantiateSubscriptionSupervision,
   matchDataAttributes,
@@ -11,6 +12,7 @@ import type { EditV2, SetAttributes } from '@openscd/oscd-api';
 import { combinations } from './combinations.js';
 import {
   findIed,
+  isSubscribed,
   isSubscribedTo,
   matchSrcAttributes
 } from './match.js';
@@ -22,6 +24,8 @@ export type PartStatus = 'new' | 'present' | 'none' | 'error';
 
 /** What applying a stencil does for one control block on the chosen IEDs. */
 export type PlanItem = {
+  /** The control block as the stencil refers to it, such as `>>LD0>GC1`. */
+  id: string;
   controlBlock: string;
   type: 'GSEControl' | 'SampledValueControl';
   from: string;
@@ -33,6 +37,8 @@ export type PlanItem = {
   supervision: PartStatus;
   /** The SEL message-quality ExtRef. */
   quality: PartStatus;
+  /** Whether part of the control block could not be applied. */
+  failed: boolean;
 };
 
 export type ApplyPlan = {
@@ -140,23 +146,29 @@ export function planApply(
         const newToIed = cb.to === fn1 ? newIed1Name : newIed2Name;
 
         const newCbId = newIedIdentity(newFromIed, cb.id);
-        const newCb = find(doc, cb.type as 'GSEControl', newCbId);
-        if (!newCb) {
-          plan.errors.push(`Could not find CB: ${newCbId}`);
-          return;
-        }
+        const newCb = find(
+          findIed(doc, newFromIed) ?? doc,
+          cb.type as 'GSEControl',
+          newCbId
+        );
 
         const item: PlanItem = {
-          controlBlock: newCb.getAttribute('name') ?? cb.name,
+          id: cb.id,
+          controlBlock: newCb?.getAttribute('name') ?? cb.name,
           type: cb.type as PlanItem['type'],
           from: newFromIed,
           to: newToIed,
           subscriptions: 0,
           present: 0,
           supervision: 'none',
-          quality: 'none'
+          quality: 'none',
+          failed: !newCb
         };
         plan.items.push(item);
+        if (!newCb) {
+          plan.errors.push(`Could not find CB: ${newCbId}`);
+          return;
+        }
 
         const connections: Connection[] = [];
         cb.mappings.forEach((mapping) => {
@@ -165,6 +177,7 @@ export function planApply(
             plan.errors.push(
               `Could not find FCDA: ${newIedIdentity(newFromIed, mapping.FCDA)}`
             );
+            item.failed = true;
             return;
           }
 
@@ -176,6 +189,7 @@ export function planApply(
             if (!plan.errors.includes(message)) {
               plan.errors.push(message);
             }
+            item.failed = true;
             return;
           }
 
@@ -186,12 +200,37 @@ export function planApply(
                 ? `Could not find ExtRef: ${newIedIdentity(newToIed, mapping.ExtRef)}`
                 : `Could not find logical node for input: ${newIedIdentity(newToIed, inputsRef(mapping.ExtRef))}`
             );
+            item.failed = true;
             return;
           }
 
           if (isBound(newSink, newSource, newCb)) {
             item.present += 1;
             return;
+          }
+
+          // an input prepared by the IED tool is only filled when it is free
+          // and accepts the data: one bound to another source is not replaced
+          if (newSink.tagName === 'ExtRef') {
+            const where = newIedIdentity(newToIed, mapping.ExtRef);
+            if (isSubscribed(newSink)) {
+              plan.errors.push(
+                `Already subscribed to ${newSink.getAttribute('iedName')}, not changed: ${where}`
+              );
+              item.failed = true;
+              return;
+            }
+            if (
+              !doesFcdaMeetExtRefRestrictions(newSink, newSource, {
+                controlBlockType:
+                  newCb.tagName === 'GSEControl' ? 'GOOSE' : 'SMV',
+                checkOnlyBType: true
+              })
+            ) {
+              plan.errors.push(`The input does not accept this data: ${where}`);
+              item.failed = true;
+              return;
+            }
           }
 
           connections.push({

@@ -73,6 +73,25 @@ function requireText(
   return typeof value === 'string' ? value : '';
 }
 
+/**
+ * A name that identifies something in the stencil: text that is not blank
+ * and has no control characters. Spaces around it are removed.
+ */
+function requireKey(problems: Problems, path: string, value: unknown): string {
+  if (typeof value !== 'string') {
+    problems.add(`${path} must be text`);
+    return '';
+  }
+  const key = value.trim();
+  // eslint-disable-next-line no-control-regex
+  if (!key || /[\u0000-\u001f]/.test(key)) {
+    problems.add(`${path} must not be blank or contain control characters`);
+  }
+  return key;
+}
+
+const CONTROL_BLOCK_TYPES = ['GSEControl', 'SampledValueControl'];
+
 function readControlBlock(
   problems: Problems,
   path: string,
@@ -104,9 +123,13 @@ function readControlBlock(
   return {
     id: requireText(problems, `${path}.id`, cb.id),
     name: requireText(problems, `${path}.name`, cb.name),
-    from: requireText(problems, `${path}.from`, cb.from),
-    to: requireText(problems, `${path}.to`, cb.to),
-    type: requireText(problems, `${path}.type`, cb.type),
+    from: requireKey(problems, `${path}.from`, cb.from),
+    to: requireKey(problems, `${path}.to`, cb.to),
+    type: requireText(problems, `${path}.type`, cb.type, (where, type) =>
+      CONTROL_BLOCK_TYPES.includes(type as string)
+        ? undefined
+        : `${where} must be GSEControl or SampledValueControl`
+    ),
     mappings,
     supervision: requireText(problems, `${path}.supervision`, cb.supervision),
     ...(selSupervision && { selSupervision })
@@ -160,21 +183,39 @@ function readVersion(
   const ieds = readRecord(problems, `${path}.IEDS`, version.IEDS) ?? {};
   const controlBlocks = readList(problems, `${path}.ControlBlocks`, version.ControlBlocks) ?? [];
 
-  return {
-    version: requireText(problems, `${path}.version`, version.version),
+  const IEDS: Record<string, IedRequirement> = {};
+  Object.entries(ieds).forEach(([name, ied]) => {
+    const key = requireKey(problems, `${path}.IEDS["${name}"]`, name);
+    const requirement = readIed(problems, `${path}.IEDS["${name}"]`, ied);
+    if (key && Object.prototype.hasOwnProperty.call(IEDS, key)) {
+      problems.add(`${path}.IEDS has the function "${key}" twice`);
+    }
+    if (requirement) {
+      IEDS[key] = requirement;
+    }
+  });
+
+  const read: Application = {
+    version: requireKey(problems, `${path}.version`, version.version),
     description: typeof version.description === 'string' ? version.description : '',
     deprecated: version.deprecated === true,
-    IEDS: Object.fromEntries(
-      Object.entries(ieds).flatMap(([name, ied]) => {
-        const requirement = readIed(problems, `${path}.IEDS["${name}"]`, ied);
-        return requirement ? [[name, requirement]] : [];
-      })
-    ),
+    IEDS,
     ControlBlocks: controlBlocks.flatMap((cb, i) => {
       const info = readControlBlock(problems, `${path}.ControlBlocks[${i}]`, cb);
       return info ? [info] : [];
     })
   };
+
+  read.ControlBlocks.forEach((cb, i) => {
+    [cb.from, cb.to].forEach((fn) => {
+      if (fn && !Object.prototype.hasOwnProperty.call(IEDS, fn)) {
+        problems.add(
+          `${path}.ControlBlocks[${i}] refers to the function "${fn}", which is not in IEDS`
+        );
+      }
+    });
+  });
+  return read;
 }
 
 function readApplication(
@@ -188,15 +229,22 @@ function readApplication(
   }
 
   const versions = readList(problems, `${path}.versions`, app.versions) ?? [];
-  return {
-    category: requireText(problems, `${path}.category`, app.category),
-    name: requireText(problems, `${path}.name`, app.name),
+  const read: VersionedApplications = {
+    category: requireKey(problems, `${path}.category`, app.category),
+    name: requireKey(problems, `${path}.name`, app.name),
     description: typeof app.description === 'string' ? app.description : '',
     versions: versions.flatMap((version, i) => {
-      const read = readVersion(problems, `${path}.versions[${i}]`, version);
-      return read ? [read] : [];
+      const result = readVersion(problems, `${path}.versions[${i}]`, version);
+      return result ? [result] : [];
     })
   };
+  const numbers = read.versions.map(v => v.version);
+  numbers
+    .filter((number, i) => number && numbers.indexOf(number) !== i)
+    .forEach(number =>
+      problems.add(`${path} has the version "${number}" twice`)
+    );
+  return read;
 }
 
 /**
@@ -228,13 +276,21 @@ export function validateStencil(value: unknown): ParseResult {
   const applications = readList(problems, 'applications', stencil.applications) ?? [];
   const result: StencilData = {
     schemaVersion: SCHEMA_VERSION,
-    name: requireText(problems, 'name', stencil.name),
-    version: requireText(problems, 'version', stencil.version),
+    name: requireKey(problems, 'name', stencil.name),
+    version: requireKey(problems, 'version', stencil.version),
     applications: applications.flatMap((app, i) => {
       const read = readApplication(problems, `applications[${i}]`, app);
       return read ? [read] : [];
     })
   };
+
+  const keys = result.applications.map(app => `${app.category}\u0000${app.name}`);
+  keys
+    .filter((key, i) => keys.indexOf(key) !== i)
+    .forEach((key) => {
+      const [category, name] = key.split('\u0000');
+      problems.add(`The application "${category} › ${name}" is there twice`);
+    });
 
   return problems.any ? { errors: problems.list } : { stencil: result };
 }

@@ -133,4 +133,13 @@ describe('match', () => {
       expect(isSubscribedTo(smvData, sv1)).to.be.true;
     });
   });
+
+  it('counts an ExtRef to LLN0 data as subscribed without lnInst', () => {
+    const doc = new DOMParser().parseFromString(
+      '<SCL><ExtRef id="a" iedName="P" ldInst="LD0" lnClass="LLN0" doName="Beh"/><ExtRef id="b" iedName="P" ldInst="LD0" lnClass="GGIO" doName="Ind1"/></SCL>',
+      'application/xml'
+    );
+    expect(isSubscribed(doc.querySelector('#a')!)).to.be.true;
+    expect(isSubscribed(doc.querySelector('#b')!)).to.be.false;
+  });
 });

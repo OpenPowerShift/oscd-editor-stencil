@@ -99,6 +99,8 @@ describe('planApply', () => {
       });
       expect(plan.items).to.deep.equal([
         {
+          id: '>>LD0>GC1',
+          failed: false,
           controlBlock: 'GC1',
           type: 'GSEControl',
           from: 'PUB2',
@@ -109,6 +111,8 @@ describe('planApply', () => {
           quality: 'none'
         },
         {
+          id: '>>LD0>SV1',
+          failed: false,
           controlBlock: 'SV1',
           type: 'SampledValueControl',
           from: 'PUB2',
@@ -161,6 +165,58 @@ describe('planApply', () => {
       const next = planApply(doc, application, functions);
       expect(next.present).to.equal(1);
       expect(next.subscriptions).to.equal(2);
+    });
+
+    it('does not replace an input that is already subscribed to another source', () => {
+      const functions = new Map([
+        ['PUBF', 'PUB2'],
+        ['SUBF', 'SUB2']
+      ]);
+      const taken = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      [
+        ['iedName', 'OTHER'],
+        ['ldInst', 'LD0'],
+        ['lnClass', 'GGIO'],
+        ['lnInst', '1'],
+        ['doName', 'Ind9']
+      ].forEach(([name, value]) => taken.setAttribute(name, value));
+
+      const plan = planApply(doc, application, functions);
+      expect(plan.errors.join()).to.contain('Already subscribed to OTHER');
+      expect(plan.items[0].failed).to.be.true;
+      plan.edits.forEach(edit => handleEdit(edit));
+      expect(taken.getAttribute('iedName')).to.equal('OTHER');
+      expect(taken.getAttribute('doName')).to.equal('Ind9');
+    });
+
+    it('does not fill an input whose restrictions the data does not meet', () => {
+      const functions = new Map([
+        ['PUBF', 'PUB2'],
+        ['SUBF', 'SUB2']
+      ]);
+      const sampledOnly = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      sampledOnly.setAttribute('pDO', 'Ind1');
+      sampledOnly.setAttribute('pServT', 'SMV');
+
+      const plan = planApply(doc, application, functions);
+      expect(plan.errors.join()).to.contain('does not accept this data');
+      plan.edits.forEach(edit => handleEdit(edit));
+      expect(sampledOnly.hasAttribute('iedName')).to.be.false;
+    });
+
+    it('marks a control block that cannot be found as failed', () => {
+      doc.querySelector('IED[name="PUB2"] GSEControl[name="GC1"]')!.remove();
+      const plan = planApply(
+        doc,
+        application,
+        new Map([
+          ['PUBF', 'PUB2'],
+          ['SUBF', 'SUB2']
+        ])
+      );
+      const gc1 = plan.items.find(item => item.id === '>>LD0>GC1')!;
+      expect(gc1.failed).to.be.true;
+      expect(plan.errors.join()).to.contain('Could not find CB');
     });
 
     it('plans nothing until both functions have an IED', () => {
