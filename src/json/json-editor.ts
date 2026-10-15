@@ -136,24 +136,28 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
       import('@omicronenergy/oscd-ui/ace-editor/ace/mode-json.js'),
       ace.updateComplete
     ]);
-    // Ask for the mode, and also set it on the session once there is one:
+    // Ace starts a worker script, which is not served, as soon as a mode is
+    // set while workers are on: turn them off before asking for JSON. The
+    // text is checked here instead. Ask for the mode on the element too, as
     // the editor may already ask for JSON (before the mode was loaded), when
-    // asking again changes nothing. Ace would also fetch a worker script that
-    // is not served; the text is checked here instead.
-    if (ace.aceEditorBase) {
-      ace.aceEditorBase.mode = JSON_MODE;
-    }
+    // asking again changes nothing.
     for (let tries = 0; tries < 40; tries += 1) {
       const editor = ace.editor ?? ace.aceEditorBase?.editor;
       if (editor) {
         editor.session.setUseWorker(false);
+        if (ace.aceEditorBase) {
+          ace.aceEditorBase.mode = JSON_MODE;
+        }
         editor.session.setMode(JSON_MODE);
         return;
       }
-       
+
       await new Promise((resolve) => {
         setTimeout(resolve, 50);
       });
+    }
+    if (ace.aceEditorBase) {
+      ace.aceEditorBase.mode = JSON_MODE;
     }
   }
 
