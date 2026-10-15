@@ -1,0 +1,188 @@
+= Development
+include::partial$base.adoc[]
+
+This page is for developers and for the people who maintain an OpenSCD distribution.
+The source is in the {url-repo}[repository].
+
+== Build and test
+
+You need a current Node.js (24).
+
+[source,sh,subs=+attributes]
+----
+git clone {url-repo}
+cd oscd-editor-stencil
+npm ci
+npm start          # demo at http://localhost:8004/demo/
+----
+
+[cols="1,3"]
+|===
+| Command | What it does
+
+| `npm run build` | Compiles the TypeScript to `dist`.
+| `npm run bundle` | Builds the single-file bundle and the demo pages into `dist`. Ace and the translations are separate chunks.
+| `npm run start:bundle` | Serves the bundled demo, as it is deployed.
+| `npm test` | Runs the unit tests with coverage. The coverage gate is 90%.
+| `npm run test:visual` | Runs the screenshot tests against the baselines in `screenshots/`.
+| `npm run test:update` | Makes the baselines again. Check the pictures first.
+| `npm run lint` / `npm run format` | Runs ESLint and formats the code.
+| `npm run localize` | Extracts the messages to `xliff/` and generates `src/locales/`.
+|===
+
+The tooling is `@omicronenergy/oscd-tooling`, as in the other OpenPowerShift plugins.
+
+== Screenshot tests and the documentation images
+
+The screenshot tests are in `src/visual.test.ts` and `src/visual-plugin.test.ts`.
+The baselines are in `screenshots/Chromium/baseline/oscd-editor-stencil/`.
+They are ordinary files in Git, not Git LFS files.
+
+The images of this documentation are relative symbolic links from `docs/modules/ROOT/images/` to the baselines.
+When the UI changes and CI makes the baselines again, the documentation shows the new images.
+To show a new UI state in the documentation, add a screenshot test for it, then add a link with a short name.
+Do not capture images by hand.
+
+CI runs the screenshot tests in the Playwright container (`mcr.microsoft.com/playwright`), whose fonts and rendering are fixed:
+
+* `test.yml` runs them on each push and pull request.
+When they fail, it uploads the pictures that differ as the `visual-test-failures` artifact.
+* `update-screenshots.yml` runs on pushes to branches other than `main`, and on demand.
+When the tests fail, it makes the baselines again and commits them to the branch.
+Review the changed pictures in the pull request.
+
+Screenshots taken on your own computer usually differ a little from the screenshots of the container.
+Use `npm run test:visual` locally to look at the pictures, and let CI make the baselines that you commit.
+To make the baselines locally in the same container, run:
+
+[source,sh]
+----
+docker run --rm --user $(id -u):$(id -g) -e HOME=/tmp/home -e CI=true \
+  -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.59.1-noble \
+  bash -c "npm ci && npm run test:update"
+----
+
+== The documentation
+
+The user documentation is the Antora component `{plugin-name}` in `docs/`.
+The OpenSCD documentation site builds it with the other plugins, from `start_path: docs`.
+
+To build the site with this repository as a local source, change the source of this plugin in the playbook of the site to the local path, then run `npx antora antora-playbook.yml` in the site repository.
+
+The developer notes in `docs/*.md` are not part of the Antora component.
+
+== Demo and release
+
+`npm run bundle` builds the plugin and the two demo pages (`index.html` and the dark `index-themed.html`) into `dist`.
+`continuous-deployment.yml` publishes them to GitHub Pages.
+The demo is not part of the npm package.
+
+Commits follow Conventional Commits.
+release-please makes the releases.
+
+== Use the plugin in a distribution
+
+Register the element and add it to the plugins of the shell.
+`demo/plugins.js` is a complete example.
+Refer to xref:installation.adoc[].
+
+The plugin has a `locale` property (`en`, `de` or `pt`).
+It follows the `doc`, `docVersion` and `locale` properties that the shell gives.
+It makes each change as one `EditV2` event (`oscd-edit-v2`) with a title.
+
+The plugin keeps the library in the `localStorage` of the browser, under the key `oscd-stencil-library`.
+When that key is empty, the plugin reads the single stencil that earlier versions kept under the key `oscd-stencil`.
+
+== Theming
+
+The plugin follows the OpenSCD theming model in {url-theming}[`@openscd/oscd-api` docs/theming.md].
+All declarations are in `src/theme.ts`.
+
+. *Distribution palette.*
+Each component sets internal `--oscd-*` tokens from the `--oscd-theme-*` variables of the distribution, with Solarized defaults.
+The components use only the internal tokens.
+The plugin never sets `--oscd-theme-*`.
+. *Material components.*
+`oscdMd3Mappings` from `@omicronenergy/oscd-ui` maps the same palette to the `--md-sys-color-*` roles of buttons, fields, switches, dialogs and trees.
+The plugin changes some roles for text contrast.
+The shape scale (`--md-sys-shape-corner-*`) comes from `--oscd-theme-shape`.
+. *Editor.*
+The JSON editor uses the `--oscd-ace-editor-*` tokens of `oscd-ui`, which follow the same palette.
+
+The components have no fixed colours.
+An icon and a colour together show the difference between GOOSE and sampled values.
+
+=== Palette variables
+
+[cols="1,2"]
+|===
+| Variable | Used for
+
+| `--oscd-theme-primary` | Selected steps, buttons, switches, GOOSE colour
+| `--oscd-theme-secondary` | Sampled value colour
+| `--oscd-theme-error` | Delete actions, problems
+| `--oscd-theme-base00`, `base0`, `base1` | Text, secondary text, borders
+| `--oscd-theme-base2`, `base3` | Cards and page backgrounds
+| `--oscd-theme-shape` | Corner radii
+| `--oscd-theme-text-font`, `text-font-mono`, `icon-font` | Fonts
+|===
+
+=== Plugin hooks
+
+[cols="1,1,2"]
+|===
+| Hook | Default | Affects
+
+| `--oscd-editor-stencil-goose-color` | The primary colour, darkened for contrast | GOOSE icons in the tables of control blocks and in the capture
+| `--oscd-editor-stencil-sv-color` | The secondary colour, darkened for contrast | Sampled value icons
+| `--oscd-editor-stencil-quality-color` | A mix of the primary and secondary colours, darkened for contrast | The SEL message quality badge
+|===
+
+Set a hook on the plugin element, on the shell or on `:root`:
+
+[source,css]
+----
+oscd-editor-stencil {
+  --oscd-editor-stencil-goose-color: #cb4b16;
+}
+----
+
+`demo/index-themed.html` shows the plugin with a dark palette and other service colours.
+
+.The plugin with a dark palette and other service colours
+image::apply-themed.png[The Choose application step on a dark background. The text and the cards use the dark palette.]
+
+== Translations
+
+The messages use `msg()` from `@lit/localize`.
+
+. Change the messages in the source.
+. Run `npm run localize`.
+. Add the `<target>` of each new message to `xliff/de.xlf` and `xliff/pt.xlf`.
+. Run `npm run localize` again to generate the locale files.
+
+A page can configure lit-localize only one time for each copy of the library.
+The bundled plugin has its own copy and translates.
+When a host loads the plugin unbundled and configures a shared copy first, as the `npm start` demo does, the plugin stays in English.
+
+== Source layout
+
+[cols="1,3"]
+|===
+| Path | Holds
+
+| `src/oscd-editor-stencil.ts` | The plugin: tabs, library, import, tag dialog, edit events
+| `src/apply/` | The Apply steps
+| `src/manage/` | The Manage tab
+| `src/capture/` | The capture steps
+| `src/json/` | The JSON editor
+| `src/shared/` | The table of control blocks and the help dialogs
+| `src/foundation/` | Logic without a user interface: reading control blocks, planning edits, the stencil model, the file format, the library
+| `src/testing/` | Test fixtures, not published
+| `docs/plan.md` | The upgrade plan and its decisions
+|===
+
+== Credit
+
+This plugin was refactored from base code in OpenSCD.
+It relies on the code, architecture and review effort of many people, including Rob Tjalma, Dennis Labordus, Jakob Vogelsang and Juan Munoz.

@@ -1,0 +1,143 @@
+= Edit a stencil as JSON
+include::partial$base.adoc[]
+
+A stencil is a JSON file.
+The *Manage* tab has a JSON editor for the parts that the forms do not change.
+An example is the removal of one subscription from a version.
+
+Use the forms for usual changes.
+For more information, refer to xref:manage.adoc[].
+
+== Open the JSON editor
+
+You can edit the whole stencil, one application or one version.
+A smaller part is shorter and easier to read.
+
+[cols="1,2"]
+|===
+| To edit | Click
+
+| The whole stencil | *Edit the stencil as JSON* (`{ }` icon) in the *Stencils* card.
+| One application | *Edit the application as JSON* (`{ }` icon) in the *Application* card.
+| One version | *Edit the version as JSON* (`{ }` icon) in the *Version* card.
+|===
+
+The plugin loads the editor the first time that you open it.
+If the editor cannot load, the plugin shows a message.
+Check the network connection and open the editor again.
+
+.The JSON editor
+image::json-valid.png[The JSON editor with the heading Edit stencil Demo Stencil as JSON. The editor shows the stencil as JSON text with syntax highlighting. The buttons Discard edits and Save to stencil are below the editor.]
+
+== Change the JSON
+
+. Open the JSON editor for the part to change.
+. Change the text.
++
+The plugin checks the text while you type.
+If the text has problems, the plugin lists them below the editor.
+. Click *Save to stencil*.
++
+The plugin saves the change to the library.
+
+*Save to stencil* is not available while the text has problems.
+
+.Problems in the text
+image::json-invalid.png[The JSON editor with invalid text. Below the editor, the heading This cannot be applied yet is followed by a list of three problems. Save to stencil is not available.]
+
+To remove your changes, click *Discard edits*.
+
+To go back without saving, click *Back to stencils*.
+If you changed the text, the plugin asks you to confirm.
+Click *Discard edits* to go back.
+
+If the stencil changes in another place while you edit, the plugin shows a message.
+Discard your edits to see the new stencil, then make your changes again.
+
+The plugin checks the same rules as when you import a file.
+For example, two applications cannot have the same category and name.
+The text of the problems is in English only.
+
+== File format
+
+The file has these top-level keys:
+
+[cols="1,3"]
+|===
+| Key | Value
+
+| `schemaVersion` | The version of the file format. The current version is `2`.
+| `name` | The name of the stencil.
+| `version` | The version of the stencil.
+| `applications` | A list of applications. Each application has `category`, `name`, `description` and `versions`.
+|===
+
+Each version has `version`, `description`, `deprecated`, `IEDS` and `ControlBlocks`.
+
+* `IEDS` has one entry for each function.
+The key is the function name.
+The entry has `manufacturer`, `type`, `originalName` and `privates`, which holds the stencil tag.
+* `ControlBlocks` has one entry for each control block and subscribing function.
+The entry has `from`, `to`, `type` (`GSEControl` or `SampledValueControl`), `id`, `name`, `mappings`, `supervision` and, for SEL relays, `selSupervision`.
+
+References to elements are the identity of the element without the IED name, for example `>>LD0>GC1`.
+
+Files from earlier versions of the plugin have no `schemaVersion`.
+The plugin reads these files without change.
+The plugin always writes version `2`.
+
+The plugin does not read a file with a `schemaVersion` that is newer than it knows.
+Update the plugin to read such a file.
+
+.Part of a stencil file
+[source,json]
+----
+{
+  "schemaVersion": 2,
+  "name": "Demo Stencil",
+  "version": "1.0.0",
+  "applications": [
+    {
+      "category": "Bus Protection",
+      "name": "Publisher to Subscriber",
+      "description": "Demonstration application",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "description": "GOOSE and SV from one publisher to a merging unit and a SEL relay",
+          "deprecated": false,
+          "IEDS": {
+            "Publisher": {
+              "originalName": "PUB1",
+              "type": "7SS85",
+              "manufacturer": "SIEMENS",
+              "privates": [
+                {
+                  "OpenSCD-Stencil-Id": "BZ-Publisher",
+                  "OpenSCD-Stencil-Version": "1.0.0"
+                }
+              ]
+            }
+          },
+          "ControlBlocks": [
+            {
+              "id": ">>LD0>GC1",
+              "name": "GC1",
+              "from": "Publisher",
+              "to": "Subscriber",
+              "type": "GSEControl",
+              "mappings": [
+                {
+                  "FCDA": ">>LD0>DS_G>LD0/ GGIO 1.Ind1 stVal (ST)",
+                  "ExtRef": ">>LD0>I1[0]"
+                }
+              ],
+              "supervision": ">>LD0> LGOS 1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+----

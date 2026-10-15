@@ -1,0 +1,13 @@
+= Support
+include::partial$base.adoc[]
+
+* To report a problem or to ask for a change, open an {url-issues}[issue].
+* To ask a question, use the OpenSCD {url-chat}[Zulip chat].
+
+When you report a problem, include these items if possible:
+
+* The version of the plugin.
+* The steps that cause the problem.
+* The stencil file. Use *Export stencil file* in the *Manage* tab.
+* A small SCL file that shows the problem.
+Remove confidential data from the files first.

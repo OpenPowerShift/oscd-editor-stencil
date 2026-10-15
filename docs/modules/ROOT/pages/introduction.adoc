@@ -1,0 +1,72 @@
+= Introduction
+include::partial$base.adoc[]
+:sectnums!:
+
+The {plugin-title} plugin sets up the GOOSE and sampled value (SV) subscriptions of a group of IEDs in one step.
+It is an editor plugin for OpenSCD.
+
+A stencil is a reusable, tested part of the communication configuration.
+An example is a bus zone protection relay and the merging units that send sampled values to it.
+You configure and test the communication one time.
+Then you apply the stencil to the IEDs of each new project.
+
+== Terms
+
+The plugin and this guide use these terms.
+
+Stencil:: A file that holds applications. A stencil has a name and a version.
+Application:: A group of IEDs that communicate, for example _Bus Protection › BZ with merging units_.
+An application has a category, a name and one or more versions.
+Version:: One release of an application, for example `1.0.0`.
+A version records the functions, the control blocks, the subscriptions and the supervisions.
+Function:: A role in an application, for example _Publisher_ or _Merging unit 1_.
+A function records the IED that it needs: the manufacturer, the type and, as an option, a stencil tag.
+Stencil tag:: Two `Private` elements on an IED: `OpenSCD-Stencil-Id` and `OpenSCD-Stencil-Version`.
+When a function records a stencil tag, only an IED with the same stencil tag can fill the function.
+For more information, refer to xref:stencil-tags.adoc[].
+Input:: An `ExtRef` element of a subscribing IED.
+Subscription:: An input that receives data from a control block of a publishing IED.
+Supervision:: The logical node (`LGOS` for GOOSE, `LSVS` for SV) that monitors one subscribed control block.
+Library:: The stencils that you imported or made.
+The plugin keeps the library in the browser.
+
+== The two tabs
+
+The plugin has two tabs.
+
+Apply:: You apply an application of a stencil to the IEDs of the open document.
+You do not need to know how the stencil was made.
+For more information, refer to xref:apply.adoc[].
+Manage:: You import, export and change stencils.
+You also make new applications from IEDs that are already configured in the open document.
+For more information, refer to xref:manage.adoc[] and xref:create-application.adoc[].
+
+.The Apply tab, with an application chosen
+image::apply-chosen.png[The Apply tab. A list of applications with a search field is on the left. The details of the chosen application are on the right: its version, its counts and the IED that each function needs.]
+
+== What applying does
+
+When you apply an application, the plugin makes these changes:
+
+* It subscribes the inputs of each subscribing IED to the control blocks of each publishing IED.
+* It configures the supervision of each subscribed control block.
+* For SEL relays, it links the message quality input.
+
+The plugin makes all the changes as one edit.
+To remove the changes, use undo in the menu bar of OpenSCD.
+
+The plugin does not change the `IEDName` elements of the control blocks.
+
+== Help in the plugin
+
+The help icon (a question mark in a circle) is next to some headings.
+Click the help icon to open a longer explanation of that part of the plugin.
+
+.A help dialog
+image::help-dialog.png[A dialog with the title Reviewing before applying. It explains the review step in a few short paragraphs and has a Close button.]
+
+== Languages
+
+The plugin shows its text in English, German or Portuguese.
+It uses the language of OpenSCD.
+Some messages about problems in the document are in English only.

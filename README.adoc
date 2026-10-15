@@ -1,216 +1,48 @@
 = OpenSCD Plugin: Stencil
-:sectnums:
-:sectlinks:
-:toc: macro
-:imagesdir: docs/media
-:icons: font
-:experimental:
 :uri-repo: https://github.com/OpenPowerShift/oscd-editor-stencil
 :uri-openscd: https://openscd.org
 :uri-openwc: https://github.com/open-wc/open-wc
+:docs: docs/modules/ROOT/pages
 
 image:{uri-repo}/actions/workflows/test.yml/badge.svg[title='Unit Tests',link={uri-repo}/actions/workflows/test.yml]
 image:https://img.shields.io/badge/built%20with-open--wc-blue.svg[link={uri-openwc},title='Built with open-wc recommendations']
 
-toc::[]
-
-== What is this?
-
-A stencil is a reusable, tested piece of IEC 61850 communication configuration, for example "a bus zone relay and its merging units".
+A stencil is a reusable, tested piece of IEC 61850 communication configuration, for example a bus zone relay and its merging units.
 It records which GOOSE and sampled value (SV) control blocks one IED sends to another, which signals are subscribed, and the supervisions.
 
-This plugin applies a stencil to the IEDs of the document that is open, in one undoable change, and helps you to build and manage stencils.
+This {uri-openscd}[OpenSCD] editor plugin applies a stencil to the IEDs of the open document in one undoable change.
+It also captures new stencil applications from configured IEDs, and manages a library of stencils.
 
-* It is an editor plugin for {uri-openscd}[OpenSCD], written as a web component using `@openscd/oscd-api` (EditV2), `@openscd/scl-lib` and `@omicronenergy/oscd-ui`.
-* It uses the link:LICENSE[Apache License].
+* It uses `@openscd/oscd-api` (EditV2), `@openscd/scl-lib` and `@omicronenergy/oscd-ui`.
 * The interface is available in English, German and Portuguese.
+* It uses the link:LICENSE[Apache License].
 
-image::apply-choose.png[Choosing an application,width=900]
+image::screenshots/Chromium/baseline/oscd-editor-stencil/apply 2 chosen.png[The Apply tab with an application chosen,width=900]
 
-== Concepts
+== Documentation
 
-[horizontal]
-Stencil:: A file (JSON) with a name and a version. It holds applications.
-Application:: A category and a name, such as _Bus Protection / BZ with merging units_. It has one or more versions.
-Version:: One version of an application. A deprecated version is hidden when applying.
-Function:: A role in an application, such as _Publisher_ or _Merging unit 3_. A function says what IED it needs: manufacturer, type and optionally a stencil tag.
-Stencil tag:: Two `Private` elements on an IED, `OpenSCD-Stencil-Id` and `OpenSCD-Stencil-Version`. A function that asks for a tag is only filled by an IED that has it.
+The user documentation is an Antora component in `docs/`, published on the OpenSCD documentation site.
+To read it in the repository, start at link:{docs}/introduction.adoc[Introduction]:
 
-== Applying a stencil
+* link:{docs}/first-steps.adoc[First steps]
+* link:{docs}/apply.adoc[Apply a stencil]
+* link:{docs}/mappings.adoc[Read the table of control blocks]
+* link:{docs}/stencil-tags.adoc[Stencil tags]
+* link:{docs}/manage.adoc[Manage stencils]
+* link:{docs}/create-application.adoc[Create an application from a document]
+* link:{docs}/edit-json.adoc[Edit a stencil as JSON]
+* link:{docs}/installation.adoc[Get the plugin]
+* link:{docs}/development.adoc[Development]: build, tests, screenshots, theming, translations and release
 
-This is the first tab. You do not need to know how stencils are made.
-
-. *Choose application.*
-Pick an application. The newest version that is not deprecated is selected, and you can pick another.
-You see what the application needs and the table of control blocks it sets up, before anything is chosen.
-. *Assign IEDs.*
-Each function lists only the IEDs that can fill it, and says why when there are none.
-*Assign automatically* fills every function that has exactly one candidate.
-. *Review and apply.*
-A dry run shows, for each control block, the new subscriptions, supervisions and SEL quality links, and what is already present.
-Anything that cannot be found is listed and skipped.
-*Apply* makes one change, which you can undo with the undo button of the menu bar.
-
-image::apply-review.png[Reviewing before applying,width=900]
-
-After applying, the table of control blocks shows which cells were added and which were already present.
-
-=== What applying creates
-
-* The GOOSE or SV subscriptions as `ExtRef` elements.
-An `ExtRef` with an `intAddr` is filled in, as IEC 61850-6 describes for IEDs that bind later.
-An `ExtRef` without an `intAddr` is a complete reference and is created by the plugin.
-* The supervision (`LGOS` or `LSVS`) of each control block, when the IED has a free instance.
-* For SEL IEDs, the message quality `ExtRef`.
-
-The plugin does not change `IEDName` of control blocks.
-
-NOTE: An IED whose `ClientServices` has `noIctBinding="true"` accepts only the `ExtRef` elements its IED tool supplied. The plugin does not create new ones on it and reports that.
-
-== Help in the plugin
-
-The help icons (a question mark in a circle) next to key headings open a short explanation: what a stencil is, how to read the table of control blocks, how IEDs are assigned, what the review means, how the library works, how capturing works and what stencil tags are.
-
-== Managing stencils
-
-The *Manage* tab holds the library of stencils you have imported, with the most recently used first.
-
-* Make a new empty stencil, rename the current one, import and export stencil files with the icons beside the stencil list (the trash can removes a stencil from the library). Stencils are kept in the browser's local storage.
-* Browse the tree of categories, applications and versions.
-* Rename and describe applications and versions, deprecate a version, rename functions and change what they need.
-Every change is checked, and the field says what is wrong.
-* See the table of control blocks of a version.
-* Tag the IEDs of the open document with a stencil Id and version, with the tag icon above the stencil list or from the assign step of Apply.
-* Delete a version, an application or a stencil. This asks first, and does not change any document.
-
-image::manage.png[Managing stencils,width=900]
-
-== Creating a stencil
-
-*Create* above the list of applications in the *Manage* tab makes an application from the open document, in four steps (a *Back to stencils* link returns to the library, and the wizard keeps its progress):
-
-. *Select IEDs*: at least two.
-. *Select control blocks*: the control blocks sent between the chosen IEDs, in a table where you can untick single cells, rows, columns or all of an IED.
-. *Name the application*: category, name, version, and a name for the function of each IED.
-Names must be filled in and different.
-. *Review and save*: the table and counts. IEDs without a stencil tag are listed, with a shortcut to tag them.
-Saving a version that exists asks you to confirm that you want to replace it.
-
-image::capture.png[Selecting control blocks,width=900]
-
-== Editing the JSON
-
-*Edit as JSON* in *Manage* opens an editor with syntax highlighting, for the whole stencil.
-The same button on a selected application or version edits only that part, which is shorter and easier to read.
-The editor is loaded when you first open it.
-The text is checked as you type, and only valid text can be saved.
-
-=== File format
-
-Files have a `schemaVersion`, currently 2. Files written by earlier versions of the plugin have none and are read unchanged. Files are always written as version 2.
-References to elements keep the form of earlier files, the identity of the element without the IED name, for example `>>LD0>GC1`.
-
-== Installation
-
-=== In an OpenSCD distribution built on `oscd-shell`
-
-Register the element and add it to the plugins of the shell. `demo/plugins.js` is a complete example:
-
-[source,js]
-----
-import OscdEditorStencil from '@openpowershift/oscd-editor-stencil';
-
-registry.define('oscd-editor-stencil', OscdEditorStencil);
-
-const plugins = {
-  editor: [
-    {
-      name: 'Stencil',
-      translations: { de: 'Schablone', pt: 'Modelo' },
-      icon: 'draw_collage',
-      requireDoc: true,
-      tagName: 'oscd-editor-stencil'
-    }
-  ]
-};
-----
-
-The plugin has a `locale` property (`en`, `de` or `pt`) and follows the `docVersion` and `doc` properties given by the shell.
-
-=== Theming
-
-The plugin follows the OpenSCD theming model. See link:THEMING.adoc[THEMING.adoc].
-`demo/index-themed.html` shows a dark palette.
-
-image::themed.png[A dark theme,width=900]
-
-== Development
-
-You need a current Node.js (24).
+== Quick start for developers
 
 [source,sh]
 ----
-git clone https://github.com/OpenPowerShift/oscd-editor-stencil
-cd oscd-editor-stencil
 npm ci
 npm start          # demo at http://localhost:8004/demo/
+npm test           # unit tests with coverage
 ----
 
-[cols="1,3"]
-|===
-| Command | What it does
-
-| `npm run build` | Compiles to `dist`
-| `npm run bundle` | Builds the single-file bundle, with Ace and the translations as separate chunks
-| `npm test` | Unit tests with coverage. The gate is 90%
-| `npm run test:visual` | Screenshot tests against the baselines in `screenshots/`
-| `npm run test:update` | Replaces the baselines (check the pictures first)
-| `npm run bundle` and `npm run start:bundle` | Builds and serves the demo as it is deployed
-| `npm run lint` / `npm run format` | ESLint and formatting
-| `npm run localize` | Extracts messages to `xliff/` and generates `src/locales/`
-|===
-
-Tooling is `@omicronenergy/oscd-tooling`, as in the other OpenPowerShift plugins.
-
-=== Screenshot tests in CI
-
-As in the OMICRONEnergyOSS plugins, the screenshot tests run in CI in the Playwright container (`mcr.microsoft.com/playwright`), whose fonts and rendering are fixed, and the baselines are made there too:
-
-* `test.yml` runs them on every push and pull request. When they fail, the differing pictures are uploaded as the `visual-test-failures` artifact, as in `oscd-editor-subscriber-later-binding`.
-* `update-screenshots.yml` runs on pushes to branches other than `main` (and on demand). When the tests fail, it makes the baselines again and commits them to the branch, so the changed pictures can be reviewed in the pull request.
-
-Screenshots taken on your own machine usually differ a little from the container's. Run `npm run test:visual` locally to look at the pictures, and let CI make the baselines that are committed.
-
-=== The demo
-
-`npm run bundle` builds the plugin and the two demo pages (`index.html` and the dark `index-themed.html`) into `dist`. `continuous-deployment.yml` publishes them to GitHub Pages, so the plugin can be tried online. The demo is not part of the npm package.
-Commits follow Conventional Commits, and releases are made by release-please.
-
-=== Translating
-
-Messages use `msg()` from `@lit/localize`. After changing messages run `npm run localize`, add the `<target>` of each new message to `xliff/de.xlf` and `xliff/pt.xlf`, and run `npm run localize` again to generate the locale files.
-
-A page can configure lit-localize only once per copy of the library. The bundled plugin has its own copy and translates. When the plugin is loaded unbundled into a host that shares one copy and configured it first (the `npm start` demo), it stays in English.
-
-=== Source layout
-
-[cols="1,3"]
-|===
-| Path | Holds
-
-| `src/oscd-editor-stencil.ts` | The plugin: tabs, library, tagging dialog, edit events
-| `src/apply/` | The apply stepper
-| `src/manage/` | The manage view
-| `src/capture/` | The capture wizard
-| `src/json/` | The JSON editor
-| `src/shared/` | The table of control blocks
-| `src/foundation/` | Logic without a user interface: reading control blocks, planning edits, the stencil model, file format, library
-| `src/testing/` | Test fixtures, not published
-| `docs/plan.md` | The upgrade plan and decisions
-|===
-
-== Credit
-
-This plugin was refactored from base code in OpenSCD and relies on the code, architecture and review effort of many people, including Rob Tjalma, Dennis Labordus, Jakob Vogelsang and Juan Munoz.
+For everything else, refer to link:{docs}/development.adoc[Development].
 
 © OpenSCD Daniel Mulholland, Christian Dinkel

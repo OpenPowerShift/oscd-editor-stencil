@@ -1,0 +1,44 @@
+= Get the plugin
+include::partial$base.adoc[]
+
+== Try the plugin online
+
+The {url-demo}[online demo] shows the plugin in OpenSCD.
+Open an SCL file with *Open File*, then open the {plugin-title} plugin.
+
+The demo shows the latest version of the `main` branch.
+
+== Add the plugin to an OpenSCD distribution
+
+The plugin is an editor plugin.
+It uses the OpenSCD plugin API, which `oscd-shell` and the newer OpenSCD distributions use.
+
+The person who maintains the distribution adds the plugin.
+Give them this information:
+
+* The npm package is {url-npm}[`@openpowershift/oscd-editor-stencil`].
+* The plugin needs an open document.
+* The plugin has translations in German and Portuguese.
+
+This is an example of the plugin entry for a distribution built on `oscd-shell`:
+
+[source,js]
+----
+import OscdEditorStencil from '@openpowershift/oscd-editor-stencil';
+
+registry.define('oscd-editor-stencil', OscdEditorStencil);
+
+const plugins = {
+  editor: [
+    {
+      name: 'Stencil',
+      translations: { de: 'Schablone', pt: 'Modelo' },
+      icon: 'draw_collage',
+      requireDoc: true,
+      tagName: 'oscd-editor-stencil'
+    }
+  ]
+};
+----
+
+For more information, refer to xref:development.adoc[].

@@ -1,0 +1,10 @@
+:plugin-name: oscd-editor-stencil
+:plugin-title: Stencil
+:url-repo: https://github.com/OpenPowerShift/oscd-editor-stencil
+:url-issues: https://github.com/OpenPowerShift/oscd-editor-stencil/issues
+:url-chat: https://openscd.zulipchat.com/
+:url-demo: https://openpowershift.github.io/oscd-editor-stencil/demo/
+:url-npm: https://www.npmjs.com/package/@openpowershift/oscd-editor-stencil
+:url-theming: https://github.com/openscd/oscd-api/blob/153e3d5428e44c03305aa40d2894c8440346bde7/docs/theming.md
+:sectnums:
+:experimental:
