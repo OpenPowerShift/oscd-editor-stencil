@@ -12,6 +12,9 @@ const visual = process.argv.includes('visual');
 export default {
   ...base,
   concurrency: 4,
+  // screenshots wait for fonts, the editor and dialogs, which takes longer
+  // than the unit tests, especially in the CI container
+  testsFinishTimeout: visual ? 5 * 60 * 1000 : base.testsFinishTimeout,
   coverageConfig: {
     ...base.coverageConfig,
     exclude: [
