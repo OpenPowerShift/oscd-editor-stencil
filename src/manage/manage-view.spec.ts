@@ -99,6 +99,26 @@ describe('oscd-stencil-manage', () => {
       expect(last('stencil-select')).to.equal('b');
     });
 
+    it('shows the current stencil in the list after one is added or removed', async () => {
+      const select = () =>
+        q<HTMLElement & { displayText: string; updateComplete: Promise<unknown> }>('#stencils');
+      const fresh = { ...el.stencil, name: 'Fresh' };
+      el.library = [{ id: 'c', stencil: fresh, lastUsed: 3 }, ...el.library];
+      el.currentId = 'c';
+      el.stencil = fresh;
+      await el.updateComplete;
+      await select().updateComplete;
+      expect(select().displayText).to.contain('Fresh');
+
+      el.library = el.library.filter(entry => entry.id !== 'c');
+      el.currentId = 'a';
+      el.stencil = el.library[0].stencil;
+      await el.updateComplete;
+      await select().updateComplete;
+      expect(select().displayText).to.contain('My Stencil');
+      expect(select().displayText).to.not.contain('Fresh');
+    });
+
     it('imports and exports', async () => {
       q<HTMLElement>('#import').click();
       await el.updateComplete;
@@ -214,10 +234,12 @@ describe('oscd-stencil-manage', () => {
       expect(q('#confirm').hasAttribute('open')).to.be.false;
     });
 
-    it('cannot remove when there is no stencil in the library', async () => {
+    it('offers no remove, and no divider before it, when there is no stencil in the library', async () => {
+      expect(q('.tools .divider')).to.exist;
       el.currentId = '';
       await el.updateComplete;
-      expect(q<HTMLButtonElement>('#remove-stencil').disabled).to.be.true;
+      expect(q('#remove-stencil')).to.not.exist;
+      expect(q('.tools .divider')).to.not.exist;
     });
   });
 
@@ -616,7 +638,7 @@ describe('oscd-stencil-manage', () => {
     it('does not export, rename or edit a stencil that is not in the library', async () => {
       el.currentId = '';
       await el.updateComplete;
-      ['#export', '#rename', '#edit-json-stencil', '#remove-stencil'].forEach(id =>
+      ['#export', '#rename', '#edit-json-stencil'].forEach(id =>
         expect(q<HTMLButtonElement>(id).disabled, id).to.be.true
       );
     });

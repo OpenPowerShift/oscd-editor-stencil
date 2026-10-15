@@ -1,6 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { keyed } from 'lit/directives/keyed.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 import { prefersReducedMotion } from '../shared/motion.js';
@@ -19,6 +20,7 @@ import { OscdTree } from '@omicronenergy/oscd-ui/tree/OscdTree.js';
 import { OscdTreeItem } from '@omicronenergy/oscd-ui/tree/OscdTreeItem.js';
 import type { TreeNode } from '@omicronenergy/oscd-ui/tree/OscdTree.js';
 
+import { libraryKey } from '../foundation/library.js';
 import type { LibraryEntry } from '../foundation/library.js';
 import {
   applicationProblem,
@@ -278,7 +280,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       <div class="with-help"><h2>
         ${msg('Stencil library')}</h2><oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help></div>
       <div class="row">
-        <oscd-outlined-select
+        ${keyed(
+          libraryKey(this.library, this.currentId),
+          html`<oscd-outlined-select
           id="stencils"
           label=${msg('Stencil')}
           .value=${this.currentId}
@@ -295,7 +299,8 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
                 </div></oscd-select-option
               >`
           )}
-        </oscd-outlined-select>
+        </oscd-outlined-select>`
+        )}
         <div class="tools" role="group" aria-label=${msg('Stencil actions')}>
           <oscd-icon-button
             id="new-stencil"
@@ -343,16 +348,17 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             @click=${() => this.editJson({ kind: 'stencil' })}
             ><oscd-icon aria-hidden="true">data_object</oscd-icon></oscd-icon-button
           >
-          <span class="divider" aria-hidden="true"></span>
+          ${this.currentId
+            ? html`<span class="divider" aria-hidden="true"></span>
           <oscd-icon-button
             id="remove-stencil"
             class="danger-icon"
             aria-label=${msg('Remove from library')}
             title=${msg('Remove from library')}
-            ?disabled=${!this.currentId}
             @click=${() => (this.confirming = 'stencil')}
             ><oscd-icon aria-hidden="true">delete</oscd-icon></oscd-icon-button
-          >
+          >`
+            : nothing}
         </div>
       </div>
     </div>`;

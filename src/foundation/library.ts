@@ -61,6 +61,18 @@ export function copyName(library: Library, stencil: StencilData): string {
   return `${stencil.name} (${n})`;
 }
 
+/**
+ * Changes whenever the current stencil or what the library lists changes,
+ * for a stencil selector to be made again: an `oscd-outlined-select` does
+ * not update the text it shows when its options change.
+ */
+export function libraryKey(library: Library, currentId: string): string {
+  return [
+    currentId,
+    ...library.map(entry => `${entry.id}\u0000${entry.stencil.name}\u0000${entry.stencil.version}`)
+  ].join('\u0001');
+}
+
 /** Marks a stencil as used now. */
 export function useStencilEntry(
   library: Library,

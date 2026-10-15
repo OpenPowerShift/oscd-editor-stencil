@@ -2,6 +2,7 @@ import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from '
 import { prefersReducedMotion } from './shared/motion.js';
 
 import { property, query, state } from 'lit/decorators.js';
+import { keyed } from 'lit/directives/keyed.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
@@ -32,6 +33,7 @@ import { newStencil } from './foundation/storage.js';
 import {
   addStencil,
   copyName,
+  libraryKey,
   loadLibrary,
   recentFirst,
   removeStencilEntry,
@@ -648,7 +650,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
         </h1>
         <div id="menuUse">
           ${this.library.length > 1
-            ? html`<oscd-outlined-select
+            ? keyed(
+              libraryKey(this.library, this.currentId),
+              html`<oscd-outlined-select
                 id="recent"
                 label=${msg('Stencil')}
                 .value=${this.currentId}
@@ -666,6 +670,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
                     >`
                 )}
               </oscd-outlined-select>`
+            )
             : nothing}
           <oscd-outlined-button
             id="changeStencilBtn"

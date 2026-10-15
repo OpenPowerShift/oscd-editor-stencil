@@ -4,6 +4,7 @@ import {
   LIBRARY_KEY,
   addStencil,
   copyName,
+  libraryKey,
   loadLibrary,
   recentFirst,
   removeStencilEntry,
@@ -126,5 +127,13 @@ describe('library', () => {
     expect(copyName(library, stencilV('1.0.0'))).to.equal('My Stencil (2)');
     ({ library } = addStencil(library, { ...stencilV('1.0.0'), name: 'My Stencil (2)' }, 2, newId));
     expect(copyName(library, stencilV('1.0.0'))).to.equal('My Stencil (3)');
+  });
+
+  it('gives a key that changes with the current stencil and with what is listed', () => {
+    const { library, id } = addStencil([], stencilV('1.0.0'), 1, newId);
+    const key = libraryKey(library, id);
+    expect(libraryKey(library, '')).to.not.equal(key);
+    expect(libraryKey(updateStencilEntry(library, id, stencilV('1.1.0')), id)).to.not.equal(key);
+    expect(libraryKey(library, id)).to.equal(key);
   });
 });
