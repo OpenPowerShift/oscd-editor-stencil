@@ -1,7 +1,6 @@
 import { fixture, html, waitUntil } from '@open-wc/testing';
 import { setViewport } from '@web/test-runner-commands';
 import { visualDiff } from '@web/test-runner-visual-regression';
-import type { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
 
 import { OscdStencilApply } from './apply/apply-view.js';
 import { OscdStencilCapture } from './capture/capture-wizard.js';
@@ -269,13 +268,13 @@ describe('screenshots', () => {
       const el = await fixture<OscdStencilCapture>(
         html`<oscd-stencil-capture .doc=${doc} .stencil=${makeStencil()}></oscd-stencil-capture>`
       );
-      const list = el.shadowRoot!.querySelector('#ieds') as OscdSelectionList;
-      list.items.forEach((item) => {
-        item.selected = ['PUB1', 'SUB1', 'SELR'].includes(
-          item.attachedElement!.getAttribute('name')!
-        );
-      });
-      list.dispatchEvent(new CustomEvent('selection-list-change'));
+      // a new list of items, so that the list shows the ticks
+      el.items = el.items.map(item => ({
+        ...item,
+        selected: ['PUB1', 'SUB1', 'SELR'].includes(
+          item.attachedElement.getAttribute('name')!
+        )
+      }));
       await el.updateComplete;
       await shoot(el, 'capture 1 ieds');
 
