@@ -153,4 +153,47 @@ describe('oscd-stencil-json', () => {
     expect(q('#problems').textContent).to.contain('category');
     expect(q<HTMLButtonElement>('#apply').disabled).to.be.true;
   });
+
+  it('names what it edits', async () => {
+    expect(q('h2').textContent).to.contain('Edit stencil My Stencil as JSON');
+    el.scope = { kind: 'version', key: { category: 'Bus', name: 'BZ' }, version: '1.0.0' };
+    await el.updateComplete;
+    expect(q('h2').textContent).to.contain('Edit BZ 1.0.0 as JSON');
+    el.scope = { kind: 'application', key: { category: 'Bus', name: 'BZ' } };
+    await el.updateComplete;
+    expect(q('h2').textContent).to.contain('Edit application BZ as JSON');
+  });
+
+  it('shows what was saved as stored, so nothing is left to save', async () => {
+    const compact = JSON.stringify(stencil);
+    await edit(compact.replace('"BZ"', '"Zone"'));
+    expect(el.dirty).to.be.true;
+    q<HTMLElement>('#apply').click();
+    el.stencil = changes[0];
+    await el.updateComplete;
+    expect(el.dirty).to.be.false;
+    expect(q<HTMLButtonElement>('#apply').disabled).to.be.true;
+  });
+
+  it('will not save edits made to a stencil that has changed since', async () => {
+    await edit('{ "edited": true }');
+    el.stencil = makeStencil([makeApplication('Line', 'Dist', [makeVersion('1.0.0')])]);
+    await el.updateComplete;
+    expect(q('#conflict')).to.exist;
+    expect(q<HTMLButtonElement>('#apply').disabled).to.be.true;
+    q<HTMLElement>('#revert').click();
+    await el.updateComplete;
+    expect(q('#conflict')).to.not.exist;
+  });
+
+  it('moves with a version whose number is changed', async () => {
+    let moved: unknown;
+    el.addEventListener('json-scope-change', e => (moved = (e as CustomEvent).detail));
+    const key = { category: 'Bus', name: 'BZ' };
+    el.scope = { kind: 'version', key, version: '1.0.0' };
+    await el.updateComplete;
+    await edit(JSON.stringify({ ...JSON.parse(el.draft), version: '1.1.0' }));
+    q<HTMLElement>('#apply').click();
+    expect(moved).to.deep.equal({ kind: 'version', key, version: '1.1.0' });
+  });
 });

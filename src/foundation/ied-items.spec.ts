@@ -1,7 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { handleEdit } from '@omicronenergy/oscd-editor';
 
-import { iedSelectItems } from './ied-items.js';
+import { iedSelectItems, visibleItems } from './ied-items.js';
 import { tagIedEdits } from './ied-tags.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
 
@@ -51,5 +51,15 @@ describe('iedSelectItems', () => {
     const first = iedSelectItems(doc);
     first[0].selected = true;
     expect(iedSelectItems(doc)[0].selected).to.be.false;
+  });
+
+  it('finds the items a list shows for its search', () => {
+    const items = [
+      { headline: 'PUB1', supportingText: 'Publisher' },
+      { headline: 'SUB1', supportingText: 'Subscriber' }
+    ];
+    expect(visibleItems({ searchRegex: /pub/i }, items)).to.deep.equal([items[0]]);
+    expect(visibleItems({}, items)).to.deep.equal(items);
+    expect(visibleItems(null, items)).to.deep.equal(items);
   });
 });

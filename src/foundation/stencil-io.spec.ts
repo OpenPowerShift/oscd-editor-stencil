@@ -1,6 +1,7 @@
 import { expect } from '@open-wc/testing';
 
 import {
+  sameStencilContent,
   SCHEMA_VERSION,
   parseStencil,
   serializeStencil,
@@ -188,5 +189,12 @@ describe('stencil-io', () => {
         'Unknown_Stencil_Unknown_Version.json'
       );
     });
+  });
+
+  it('compares content whatever the order of keys or the schema version', () => {
+    const a = stencil();
+    const b = JSON.parse(JSON.stringify({ schemaVersion: 2, ...a }));
+    expect(sameStencilContent(a, b)).to.be.true;
+    expect(sameStencilContent(a, { ...a, name: 'other' })).to.be.false;
   });
 });

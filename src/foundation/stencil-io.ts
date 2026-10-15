@@ -323,3 +323,22 @@ export function stencilFileName(stencil: StencilData): string {
     'Unknown Version'
   )}.json`;
 }
+
+/** Whether two stencils hold the same content, whatever the order of their keys. */
+export function sameStencilContent(a: StencilData, b: StencilData): boolean {
+  const canonical = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(canonical);
+    }
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.keys(value)
+          .filter(key => key !== 'schemaVersion')
+          .sort()
+          .map(key => [key, canonical((value as Record<string, unknown>)[key])])
+      );
+    }
+    return value;
+  };
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}

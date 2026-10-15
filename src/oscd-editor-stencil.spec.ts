@@ -48,7 +48,7 @@ describe('oscd-editor-stencil', () => {
     (plugin.shadowRoot!.querySelector('#first-create') as HTMLElement).click();
     await plugin.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(plugin.tabIndex).to.equal(1);
+    expect(plugin.activeTab).to.equal(1);
     const manage = plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & { view: string };
     expect(manage.view).to.equal('capture');
   });
@@ -57,7 +57,7 @@ describe('oscd-editor-stencil', () => {
     (plugin.shadowRoot!.querySelector('#first-new') as HTMLElement).click();
     await plugin.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(plugin.tabIndex).to.equal(1);
+    expect(plugin.activeTab).to.equal(1);
     const manage = plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & { renaming: boolean; dialogMode: string };
     expect(manage.renaming).to.be.true;
     expect(manage.dialogMode).to.equal('new');
@@ -77,14 +77,6 @@ describe('oscd-editor-stencil UI', () => {
   let doc: XMLDocument;
   let edits: CustomEvent[];
 
-  const click = async (selector: string, text: string) => {
-    const button = Array.from(
-      plugin.shadowRoot!.querySelectorAll(selector)
-    ).find(el => el.textContent?.includes(text)) as HTMLElement | undefined;
-    expect(button, `${selector} "${text}"`).to.exist;
-    button!.click();
-    await plugin.updateComplete;
-  };
 
   const showTab = async (index: number) => {
     const tabs = plugin.shadowRoot!.querySelector('oscd-tabs') as OscdTabs;
@@ -159,67 +151,140 @@ describe('oscd-editor-stencil UI', () => {
       await plugin.updateComplete;
     };
 
-    it('cannot add metadata before an IED is chosen, and starts from the stencil name', async () => {
+    const q = <T extends Element>(selector: string) =>
+      plugin.shadowRoot!.querySelector(selector) as T;
+    const list = () => q<OscdSelectionList>('#stencil-metadata-ieds');
+    const tick = async (...indexes: number[]) => {
+      indexes.forEach((i) => {
+        list().items[i].selected = true;
+      });
+      list().dispatchEvent(new CustomEvent('selection-list-change'));
+      await plugin.updateComplete;
+    };
+    const typeIn = async (selector: string, value: string) => {
+      const field = q<HTMLInputElement>(selector);
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+      await plugin.updateComplete;
+    };
+    const tagButton = () => q<HTMLButtonElement>('#tag-apply');
+
+    it('needs a chosen IED and a tag Id and version', async () => {
       await openDialog();
-      const add = () =>
-        Array.from(plugin.shadowRoot!.querySelectorAll('oscd-text-button')).find(b =>
-          b.textContent?.includes('Add Metadata')
-        ) as unknown as HTMLButtonElement;
-      expect(add().disabled).to.be.true;
-      expect((plugin.shadowRoot!.querySelector('#stencil-id') as HTMLInputElement).value).to.equal(
-        plugin.stencilData.name
-      );
+      expect(q('#ied-stencil-metadata').hasAttribute('open')).to.be.true;
+      expect(tagButton().disabled).to.be.true;
+      await tick(1);
+      expect(tagButton().disabled).to.be.true;
+      await typeIn('#stencil-id', 'BZ-Sub');
+      expect(tagButton().disabled).to.be.false;
+      await typeIn('#stencil-ver', ' ');
+      expect(tagButton().disabled).to.be.true;
     });
 
     it('offers every IED of the document', async () => {
       await openDialog();
-      const list = plugin.shadowRoot!.querySelector(
-        '#stencil-metadata-ieds'
-      ) as OscdSelectionList;
-      expect(list.items.map(item => item.attachedElement?.getAttribute('name'))).to.deep.equal(
+      expect(list().items.map(item => item.attachedElement?.getAttribute('name'))).to.deep.equal(
         ['PUB1', 'SUB1', 'SELR', 'EDN1']
       );
     });
 
-    it('commits one edit that tags the selected IEDs and updates tags on a second run', async () => {
+    it('commits one edit that tags the chosen IEDs, and updates tags on a second run', async () => {
       await openDialog();
-      const list = plugin.shadowRoot!.querySelector(
-        '#stencil-metadata-ieds'
-      ) as OscdSelectionList;
-      list.items[1].selected = true;
-      list.items[2].selected = true;
-      list.dispatchEvent(new CustomEvent('selection-list-change'));
+      await typeIn('#stencil-id', 'BZ');
+      await tick(1, 2);
+      expect(tagButton().textContent).to.contain('Tag 2 IEDs');
+      tagButton().click();
       await plugin.updateComplete;
-
-      await click('oscd-text-button', 'Add Metadata');
 
       expect(edits).to.have.lengthOf(1);
       expect(edits[0].type).to.equal('oscd-edit-v2');
-      expect(edits[0].detail.title).to.equal('Add stencil metadata');
+      expect(edits[0].detail.title).to.equal('Tag IEDs');
       expect(edits[0].detail.edit).to.have.lengthOf(4);
       (edits[0].detail.edit as EditV2[]).forEach(edit => handleEdit(edit));
       expect(doc.querySelectorAll('IED > Private')).to.have.lengthOf(4);
+      expect(q('#ied-stencil-metadata').hasAttribute('open')).to.be.false;
 
       // a second run with a new version updates in place
       await openDialog();
-      const again = plugin.shadowRoot!.querySelector(
-        '#stencil-metadata-ieds'
-      ) as OscdSelectionList;
-      again.items[1].selected = true;
-      again.dispatchEvent(new CustomEvent('selection-list-change'));
+      await typeIn('#stencil-id', 'BZ');
+      await typeIn('#stencil-ver', '2.0.0');
+      await tick(1);
+      tagButton().click();
       await plugin.updateComplete;
-      (plugin.shadowRoot!.querySelector('#stencil-ver') as HTMLInputElement).value =
-        '2.0.0';
-      await click('oscd-text-button', 'Add Metadata');
 
       expect(edits).to.have.lengthOf(2);
       (edits[1].detail.edit as EditV2[]).forEach(edit => handleEdit(edit));
       expect(doc.querySelectorAll('IED > Private')).to.have.lengthOf(4);
       expect(
-        doc.querySelector(
-          'IED[name="SUB1"] > Private[type="OpenSCD-Stencil-Version"]'
-        )?.textContent
+        doc.querySelector('IED[name="SUB1"] > Private[type="OpenSCD-Stencil-Version"]')
+          ?.textContent
       ).to.equal('2.0.0');
+    });
+
+    it('offers the tag of each function of the version it was opened for', async () => {
+      const version = makeVersion('1.0.0');
+      version.IEDS = {
+        Untagged: { ...version.IEDS.Fn, privates: [] },
+        Publisher: {
+          ...version.IEDS.Fn,
+          privates: [{ 'OpenSCD-Stencil-Id': 'BZ-Pub', 'OpenSCD-Stencil-Version': '1.0.0' }]
+        },
+        Subscriber: {
+          ...version.IEDS.Fn,
+          privates: [{ 'OpenSCD-Stencil-Id': 'BZ-Sub', 'OpenSCD-Stencil-Version': '2.0.0' }]
+        }
+      };
+      await showTab(1);
+      plugin.shadowRoot!.querySelector('oscd-stencil-manage')!.dispatchEvent(
+        new CustomEvent('stencil-tag', { detail: version, bubbles: true, composed: true })
+      );
+      await plugin.updateComplete;
+      expect(q<HTMLInputElement>('#stencil-id').value).to.equal('BZ-Pub');
+
+      const choose = q<
+        HTMLElement & { selectIndex(index: number): void; updateComplete: Promise<unknown> }
+      >('#tag-function');
+      await choose.updateComplete;
+      choose.selectIndex(1);
+      await choose.updateComplete;
+      choose.dispatchEvent(new Event('change'));
+      await plugin.updateComplete;
+      expect(q<HTMLInputElement>('#stencil-id').value).to.equal('BZ-Sub');
+      expect(q<HTMLInputElement>('#stencil-ver').value).to.equal('2.0.0');
+    });
+
+    it('makes no edit when the IEDs already have the tag', async () => {
+      await openDialog();
+      await typeIn('#stencil-id', 'BZ');
+      await tick(0);
+      tagButton().click();
+      await plugin.updateComplete;
+      (edits[0].detail.edit as EditV2[]).forEach(edit => handleEdit(edit));
+
+      await openDialog();
+      await typeIn('#stencil-id', 'BZ');
+      await tick(0);
+      tagButton().click();
+      await plugin.updateComplete;
+      expect(edits.length).to.equal(1);
+    });
+
+    it('closes without tagging', async () => {
+      await openDialog();
+      q<HTMLElement>('#tag-cancel').click();
+      await plugin.updateComplete;
+      expect(q('#ied-stencil-metadata').hasAttribute('open')).to.be.false;
+      q('#ied-stencil-metadata').dispatchEvent(new Event('closed'));
+    });
+
+    it('selects all and none of the IEDs the search shows', async () => {
+      await openDialog();
+      q<HTMLElement>('#tag-select-all').click();
+      await plugin.updateComplete;
+      expect(list().items.every(i => i.selected)).to.be.true;
+      q<HTMLElement>('#tag-select-none').click();
+      await plugin.updateComplete;
+      expect(list().items.some(i => i.selected)).to.be.false;
     });
   });
 
@@ -289,6 +354,54 @@ describe('oscd-editor-stencil UI', () => {
         makeApplication('Bus', 'BZ', [makeVersion('1.0.0'), makeVersion('2.0.0')])
       ]);
       await showTab(1);
+    });
+
+    it('asks before an import replaces a stencil of the same name and version', async () => {
+      raise('stencil-change', plugin.stencilData);
+      await plugin.updateComplete;
+      const changed = makeStencil([makeApplication('Bus', 'BZ', [makeVersion('9.0.0')])]);
+      const dialog = () => plugin.shadowRoot!.querySelector('#import-conflict')!;
+
+      await plugin.loadStencil(fileEvent(JSON.stringify(changed)));
+      await plugin.updateComplete;
+      expect(dialog().hasAttribute('open')).to.be.true;
+      expect(plugin.stencilData.applications[0].versions).to.have.lengthOf(2);
+
+      (plugin.shadowRoot!.querySelector('#import-cancel') as HTMLElement).click();
+      await plugin.updateComplete;
+      expect(dialog().hasAttribute('open')).to.be.false;
+      expect(plugin.library).to.have.lengthOf(1);
+
+      await plugin.loadStencil(fileEvent(JSON.stringify(changed)));
+      await plugin.updateComplete;
+      (plugin.shadowRoot!.querySelector('#import-copy') as HTMLElement).click();
+      await plugin.updateComplete;
+      expect(plugin.library).to.have.lengthOf(2);
+      expect(plugin.stencilData.name).to.equal('My Stencil (2)');
+
+      await plugin.loadStencil(fileEvent(JSON.stringify(changed)));
+      await plugin.updateComplete;
+      (plugin.shadowRoot!.querySelector('#import-replace') as HTMLElement).click();
+      await plugin.updateComplete;
+      expect(plugin.library).to.have.lengthOf(2);
+      expect(plugin.stencilData.applications[0].versions[0].version).to.equal('9.0.0');
+    });
+
+    it('imports the same stencil again without asking', async () => {
+      raise('stencil-change', plugin.stencilData);
+      await plugin.loadStencil(fileEvent(JSON.stringify(plugin.stencilData)));
+      await plugin.updateComplete;
+      expect(plugin.shadowRoot!.querySelector('#import-conflict')!.hasAttribute('open')).to.be.false;
+      expect(plugin.library).to.have.lengthOf(1);
+    });
+
+    it('refuses an edit that gives the stencil the name and version of another one', async () => {
+      raise('stencil-change', plugin.stencilData);
+      raise('stencil-new', { name: 'Other', version: '1.0.0' });
+      await plugin.updateComplete;
+      raise('stencil-change', { ...plugin.stencilData, name: 'My Stencil' });
+      await plugin.updateComplete;
+      expect(plugin.stencilData.name).to.equal('Other');
     });
 
     it('keeps an edited stencil in the library', async () => {

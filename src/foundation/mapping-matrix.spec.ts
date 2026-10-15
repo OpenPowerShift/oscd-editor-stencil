@@ -64,8 +64,8 @@ describe('mapping-matrix', () => {
       const [gc1, sv1] = matrix.rows[0].blocks;
       expect(gc1.cells.map(c => c?.key ?? null)).to.deep.equal([
         null,
-        'Pub|sub 1|GC1',
-        'Pub|Sub 2|GC1'
+        'Pub|sub 1|>>LD0>GC1',
+        'Pub|Sub 2|>>LD0>GC1'
       ]);
       expect(sv1.cells.map(c => c?.block.type ?? null)).to.deep.equal([
         null,

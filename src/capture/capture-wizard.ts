@@ -25,7 +25,7 @@ import {
   untaggedIeds
 } from '../foundation/capture.js';
 import type { CheckState } from '../foundation/capture.js';
-import { iedSelectItems } from '../foundation/ied-items.js';
+import { iedSelectItems, visibleItems } from '../foundation/ied-items.js';
 import type { IedSelectItem } from '../foundation/ied-items.js';
 import type { ControlBlockInfo } from '../foundation/mapping-info.js';
 import { buildMatrix } from '../foundation/mapping-matrix.js';
@@ -109,6 +109,9 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
   @property({ attribute: false }) stencil!: StencilData;
 
+  /** Changes whenever the document is edited, for example when IEDs are tagged. */
+  @property({ attribute: false }) docVersion?: unknown;
+
   @state() step: Step = 'ieds';
 
   /** One entry per IED. The selection list keeps the selection in them. */
@@ -129,6 +132,14 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
   protected willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('doc')) {
       this.reset();
+    } else if (changed.has('docVersion')) {
+      // IEDs may have been added, removed or tagged: list them again,
+      // keeping what was ticked
+      const ticked = new Set(this.selectedIeds);
+      this.items = iedSelectItems(this.doc).map(item => ({
+        ...item,
+        selected: ticked.has(item.attachedElement.getAttribute('name')!)
+      }));
     }
   }
 
@@ -150,8 +161,14 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       .map(item => item.attachedElement.getAttribute('name')!);
   }
 
+  /** Ticks or clears the IEDs the search of the list shows. */
   private chooseAll(selected: boolean): void {
-    this.items = this.items.map(item => ({ ...item, selected }));
+    const shown = new Set(
+      visibleItems(this.shadowRoot?.querySelector('#ieds'), this.items)
+    );
+    this.items = this.items.map(item =>
+      shown.has(item) ? { ...item, selected } : item
+    );
   }
 
   private get chosenBlocks(): ControlBlockInfo[] {
@@ -272,10 +289,8 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
 
   private renderIeds(): TemplateResult {
     return html`<div class="card">
-      <h2 class="with-help">
-        ${msg('Which IEDs make up the application?')}
-        <oscd-stencil-help heading=${msg('Capturing an application')}>${helpCapture()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Which IEDs make up the application?')}</h2><oscd-stencil-help heading=${msg('Capturing an application')}>${helpCapture()}</oscd-stencil-help></div>
       <p class="muted">
         ${msg('Choose at least two. The control blocks one of them sends to another are the application.')}
       </p>
@@ -345,10 +360,8 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     }
 
     return html`<div class="card wide">
-      <h2 class="with-help">
-        ${msg('Which control blocks belong to the application?')}
-        <oscd-stencil-help heading=${msg('Choosing control blocks')}>${helpCaptureBlocks()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Which control blocks belong to the application?')}</h2><oscd-stencil-help heading=${msg('Choosing control blocks')}>${helpCaptureBlocks()}</oscd-stencil-help></div>
       <p class="muted">
         ${msg('Untick what should not be part of it. Ticking a row, a column or an IED ticks all of its cells.')}
       </p>
@@ -420,6 +433,7 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
                         <oscd-icon
                           class="${isGoose ? 'goose' : 'smv'}"
                           role="img"
+ aria-hidden="false"
                           aria-label="${isGoose ? msg('GOOSE') : msg('Sampled values')}"
                           >${isGoose ? 'gooseIcon' : 'smvIcon'}</oscd-icon
                         >
@@ -472,10 +486,8 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
     const problems = this.nameProblems;
 
     return html`<div class="card">
-      <h2 class="with-help">
-        ${msg('Name the application')}
-        <oscd-stencil-help heading=${msg('Naming the application and its functions')}>${helpCaptureNames()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Name the application')}</h2><oscd-stencil-help heading=${msg('Naming the application and its functions')}>${helpCaptureNames()}</oscd-stencil-help></div>
       <div class="fields">
         ${this.detailField('category', msg('Category'), false, true)}
         ${this.detailField('name', msg('Name'), false, true)}
@@ -856,6 +868,13 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
         align-items: center;
         display: flex;
         gap: 4px;
+        margin-bottom: 12px;
+      }
+
+      .with-help > h1,
+      .with-help > h2,
+      .with-help > h3 {
+        margin: 0;
       }
     `
   ];

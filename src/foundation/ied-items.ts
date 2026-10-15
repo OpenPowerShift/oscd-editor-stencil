@@ -33,3 +33,20 @@ export function iedSelectItems(
     };
   });
 }
+
+/** A list that can be searched, as `oscd-selection-list` is. */
+type Searchable = { searchRegex?: RegExp };
+
+/**
+ * The items a selection list shows for its current search, with the same
+ * test the list uses, so that "select all" only selects what can be seen.
+ */
+export function visibleItems<T extends { headline: string; supportingText?: string }>(
+  list: unknown,
+  items: T[]
+): T[] {
+  const search = (list as Searchable | null)?.searchRegex;
+  return search
+    ? items.filter(item => search.test(`${item.headline} ${item.supportingText ?? ''}`))
+    : items;
+}

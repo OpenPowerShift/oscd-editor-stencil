@@ -1,9 +1,10 @@
-import { expect, fixture, html } from '@open-wc/testing';
+import { expect, fixture, html, waitUntil } from '@open-wc/testing';
 import type { OscdOutlinedSelect } from '@omicronenergy/oscd-ui/select/OscdOutlinedSelect.js';
 import type { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
 import type { OscdSwitch } from '@omicronenergy/oscd-ui/switch/OscdSwitch.js';
 
 import { OscdStencilManage, nodeId } from './manage-view.js';
+import type { OscdStencilJson } from '../json/json-editor.js';
 import type { LibraryEntry } from '../foundation/library.js';
 import type { StencilData } from '../foundation/types.js';
 import { fixtureXml } from '../testing/fixture-scd.js';
@@ -292,7 +293,7 @@ describe('oscd-stencil-manage', () => {
       expect(q('oscd-stencil-mapping-table')).to.exist;
       expect(q('#delete-application')).to.exist;
       expect(q('#delete-version')).to.exist;
-      expect(q('#fn-Fn')).to.exist;
+      expect(q('#fn-0')).to.exist;
     });
 
     it('forgets the selection when it is no longer in the stencil, or the stencil changes', async () => {
@@ -387,7 +388,7 @@ describe('oscd-stencil-manage', () => {
     });
 
     it('renames a function, refusing a name already used or empty', async () => {
-      await type('fn-Fn', 'Publisher');
+      await type('fn-0', 'Publisher');
       expect(Object.keys(versions()[0].IEDS)).to.deep.equal(['Publisher']);
 
       el.stencil = {
@@ -403,17 +404,17 @@ describe('oscd-stencil-manage', () => {
       };
       await el.updateComplete;
       const count = events.length;
-      await type('fn-Publisher', 'Second');
-      await type('fn-Publisher', ' ');
+      await type('fn-0', 'Second');
+      await type('fn-0', ' ');
       expect(events).to.have.lengthOf(count);
-      expect(q<OscdOutlinedTextField>('#fn-Publisher').errorText).to.not.equal('');
+      expect(q<OscdOutlinedTextField>('#fn-0').errorText).to.not.equal('');
     });
 
     it('changes what a function requires', async () => {
-      await type('fn-Fn-manufacturer', 'ABB');
-      await type('fn-Fn-type', 'REL670');
-      await type('fn-Fn-id', 'BZ-REL');
-      await type('fn-Fn-idversion', '2.0.0');
+      await type('fn-0-manufacturer', 'ABB');
+      await type('fn-0-type', 'REL670');
+      await type('fn-0-id', 'BZ-REL');
+      await type('fn-0-idversion', '2.0.0');
       const requirement = versions()[0].IEDS.Fn;
       expect(requirement).to.include({ manufacturer: 'ABB', type: 'REL670' });
       expect(requirement.privates[0]).to.deep.equal({
@@ -422,7 +423,10 @@ describe('oscd-stencil-manage', () => {
       });
     });
 
-    it('asks to tag IEDs', () => {
+    it('asks to tag IEDs, with a document', async () => {
+      expect(q<HTMLButtonElement>('#tag').disabled).to.be.true;
+      el.doc = new DOMParser().parseFromString(fixtureXml, 'application/xml');
+      await el.updateComplete;
       q<HTMLElement>('#tag').click();
       expect((last('stencil-tag') as { version: string }).version).to.equal('1.0.0');
     });
@@ -451,8 +455,8 @@ describe('oscd-stencil-manage', () => {
       };
       el.stencil = makeStencil([makeApplication('Bus', 'BZ', [bare])]);
       await select(nodeId({ ...key, version: '3.0.0' }));
-      expect(q<OscdOutlinedTextField>('#fn-Fn-id').value).to.equal('');
-      await type('fn-Fn-id', 'Tagged');
+      expect(q<OscdOutlinedTextField>('#fn-0-id').value).to.equal('');
+      await type('fn-0-id', 'Tagged');
       expect(versions()[0].IEDS.Fn.privates[0]['OpenSCD-Stencil-Id']).to.equal('Tagged');
     });
   });
@@ -547,6 +551,74 @@ describe('oscd-stencil-manage', () => {
       el.stencil = makeStencil();
       await el.updateComplete;
       expect(el.view).to.equal('browse');
+    });
+  });
+
+  describe('more care', () => {
+    it('asks before going back from unsaved JSON edits', async () => {
+      q<HTMLElement>('#edit-json-stencil').click();
+      await el.updateComplete;
+      const json = q<OscdStencilJson>('oscd-stencil-json');
+      await waitUntil(() => json.editorReady, 'editor loads', { timeout: 5000 });
+      await json.updateComplete;
+      json.shadowRoot!.querySelector('#editor')!.dispatchEvent(
+        new CustomEvent('change', { detail: '{ "edited": true }' })
+      );
+      await json.updateComplete;
+
+      q<HTMLElement>('#back').click();
+      await el.updateComplete;
+      expect(el.view).to.equal('json');
+      expect(q('#confirm').hasAttribute('open')).to.be.true;
+      expect(q('#confirm-ok').textContent).to.contain('Discard edits');
+      q<HTMLElement>('#confirm-ok').click();
+      await el.updateComplete;
+      expect(el.view).to.equal('browse');
+    });
+
+    it('follows a version whose number is changed in its JSON', async () => {
+      await select(nodeId({ ...key, version: '1.0.0' }));
+      q<HTMLElement>('#edit-json-version').click();
+      await el.updateComplete;
+      q('oscd-stencil-json').dispatchEvent(
+        new CustomEvent('json-scope-change', {
+          detail: { kind: 'version', key, version: '1.5.0' },
+          bubbles: true,
+          composed: true
+        })
+      );
+      await el.updateComplete;
+      expect(el.jsonScope).to.deep.equal({ kind: 'version', key, version: '1.5.0' });
+      expect(el.selection).to.deep.equal({ ...key, version: '1.5.0' });
+    });
+
+    it('opens an application when it is clicked in the tree', async () => {
+      q('oscd-tree').dispatchEvent(
+        new CustomEvent('node-click', { detail: { id: nodeId(key) } })
+      );
+      await el.updateComplete;
+      expect(el.selection).to.deep.include(key);
+      q('oscd-tree').dispatchEvent(new CustomEvent('node-click', { detail: { id: 'Bus' } }));
+      await el.updateComplete;
+      expect(el.selection).to.deep.include(key);
+    });
+
+    it('saves the stencil name with Enter, and shows problems only once typing starts', async () => {
+      q<HTMLElement>('#new-stencil').click();
+      await el.updateComplete;
+      expect(q<OscdOutlinedTextField>('#rename-name').error).to.be.false;
+      await type('rename-name', 'Typed');
+      q('#rename-name').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await el.updateComplete;
+      expect(last('stencil-new')).to.deep.equal({ name: 'Typed', version: '1.0.0' });
+    });
+
+    it('does not export, rename or edit a stencil that is not in the library', async () => {
+      el.currentId = '';
+      await el.updateComplete;
+      ['#export', '#rename', '#edit-json-stencil', '#remove-stencil'].forEach(id =>
+        expect(q<HTMLButtonElement>(id).disabled, id).to.be.true
+      );
     });
   });
 });

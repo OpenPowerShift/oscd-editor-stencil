@@ -47,6 +47,20 @@ export function addStencil(
   return { id, library: [...library, { id, stencil, lastUsed: now }] };
 }
 
+/** A name for a copy of a stencil that no stencil in the library has with its version. */
+export function copyName(library: Library, stencil: StencilData): string {
+  const taken = (name: string): boolean =>
+    library.some(
+      entry =>
+        entry.stencil.name === name && entry.stencil.version === stencil.version
+    );
+  let n = 2;
+  while (taken(`${stencil.name} (${n})`)) {
+    n += 1;
+  }
+  return `${stencil.name} (${n})`;
+}
+
 /** Marks a stencil as used now. */
 export function useStencilEntry(
   library: Library,

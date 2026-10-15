@@ -324,15 +324,18 @@ export function updateRequirement(
         ...existing,
         manufacturer: requirement.manufacturer,
         type: requirement.type,
-        privates:
-          requirement.id.trim() === '' && requirement.idVersion.trim() === ''
+        // the first tag is the one edited; any others are kept
+        privates: [
+          ...(requirement.id.trim() === '' && requirement.idVersion.trim() === ''
             ? []
             : [
               {
                 'OpenSCD-Stencil-Id': requirement.id,
                 'OpenSCD-Stencil-Version': requirement.idVersion
               }
-            ]
+            ]),
+          ...existing.privates.slice(1)
+        ]
       }
     }
   };

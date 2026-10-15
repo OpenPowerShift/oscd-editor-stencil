@@ -64,7 +64,7 @@ export function buildMatrix(blocks: ControlBlockInfo[]): Matrix {
           cells: columns.map((to) => {
             const block = lookup.get(`${from}\u0000${id}\u0000${to}`);
             return block
-              ? { block, key: cellKey(from, to, block.name) }
+              ? { block, key: cellKey(from, to, block.id) }
               : null;
           })
         }))

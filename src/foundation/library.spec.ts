@@ -3,6 +3,7 @@ import { expect } from '@open-wc/testing';
 import {
   LIBRARY_KEY,
   addStencil,
+  copyName,
   loadLibrary,
   recentFirst,
   removeStencilEntry,
@@ -118,5 +119,12 @@ describe('library', () => {
     } finally {
       Object.defineProperty(window, 'localStorage', original);
     }
+  });
+
+  it('names a copy so that it does not clash', () => {
+    let { library } = addStencil([], stencilV('1.0.0'), 1, newId);
+    expect(copyName(library, stencilV('1.0.0'))).to.equal('My Stencil (2)');
+    ({ library } = addStencil(library, { ...stencilV('1.0.0'), name: 'My Stencil (2)' }, 2, newId));
+    expect(copyName(library, stencilV('1.0.0'))).to.equal('My Stencil (3)');
   });
 });

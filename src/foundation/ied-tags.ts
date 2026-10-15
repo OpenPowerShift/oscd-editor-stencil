@@ -26,6 +26,10 @@ export function tagIedEdits(
   id: string,
   version: string
 ): EditV2[] {
+  // a blank tag would only remove the one that is there
+  if (!id.trim() || !version.trim()) {
+    return [];
+  }
   const doc = ied.ownerDocument;
   const reference = getReference(ied, 'Private');
 

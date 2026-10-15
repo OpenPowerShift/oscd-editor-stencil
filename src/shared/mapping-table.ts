@@ -75,6 +75,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       <span class="service ${isGoose ? 'goose' : 'smv'}">
         <oscd-icon
           role="img"
+ aria-hidden="false"
           aria-label="${isGoose ? msg('GOOSE') : msg('Sampled values')}"
           >${isGoose ? 'gooseIcon' : 'smvIcon'}</oscd-icon
         >
@@ -107,6 +108,7 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
     return html`<div class="tools">
         <label class="switch"
           ><oscd-switch
+            aria-label=${msg('Show supervisions')}
             touch-target="wrapper"
             ?selected=${this.showSupervisions}
             @change=${() => (this.showSupervisions = !this.showSupervisions)}

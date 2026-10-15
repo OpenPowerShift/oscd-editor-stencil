@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { msg, updateWhenLocaleChanges } from '@lit/localize';
+import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
@@ -85,6 +85,21 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
 
   @state() editorReady = false;
 
+  @state() loadFailed = false;
+
+  /** Whether the stencil changed underneath edits that were not saved. */
+  @state() conflict = false;
+
+  /** Set when saving, so that the saved stencil becomes the text. */
+  private justSaved = false;
+
+  private checked?: {
+    stencil: StencilData;
+    scope: JsonScope;
+    draft: string;
+    result: ReturnType<typeof applyScopeText>;
+  };
+
   private saved = '';
 
   /** The mode other editors use, which is put back when this one goes. */
@@ -100,6 +115,8 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
         this.registry?.define('oscd-ace-editor', OscdAceEditor);
       }
       this.editorReady = true;
+    }).catch(() => {
+      this.loadFailed = true;
     });
   }
 
@@ -151,16 +168,38 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
   protected willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('stencil') || changed.has('scope')) {
       const text = scopeText(this.stencil, this.scope);
-      // edits are kept when the stencil is replaced, but not for another scope
-      if (this.draft === '' || this.draft === this.saved || changed.has('scope')) {
+      const clean = this.draft === '' || this.draft === this.saved;
+      if (clean || this.justSaved || changed.has('scope')) {
+        // what was saved is shown as stored, which may differ in layout
         this.draft = text;
+        this.conflict = false;
+      } else if (text !== this.saved) {
+        // edits are kept, but they were made to what is no longer there
+        this.conflict = true;
       }
+      this.justSaved = false;
       this.saved = text;
     }
   }
 
+  /** The edited text checked against the stencil, worked out once per change. */
   private get result(): ReturnType<typeof applyScopeText> {
-    return applyScopeText(this.stencil, this.scope, this.draft);
+    const { stencil, scope, draft } = this;
+    const checked = this.checked;
+    if (
+      !checked ||
+      checked.stencil !== stencil ||
+      checked.scope !== scope ||
+      checked.draft !== draft
+    ) {
+      this.checked = {
+        stencil,
+        scope,
+        draft,
+        result: applyScopeText(stencil, scope, draft)
+      };
+    }
+    return this.checked!.result;
   }
 
   private get changed(): boolean {
@@ -168,9 +207,20 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
   }
 
   private apply(): void {
-    const { stencil } = this.result;
-    if (!stencil) {
+    const { stencil, scope } = this.result;
+    if (!stencil || this.conflict) {
       return;
+    }
+    this.justSaved = true;
+    // a changed name or version moves the scope with it
+    if (scope) {
+      this.dispatchEvent(
+        new CustomEvent<JsonScope>('json-scope-change', {
+          detail: scope,
+          bubbles: true,
+          composed: true
+        })
+      );
     }
     this.dispatchEvent(
       new CustomEvent<StencilData>('stencil-change', {
@@ -183,6 +233,23 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
 
   private revert(): void {
     this.draft = this.saved;
+    this.conflict = false;
+  }
+
+  private heading(): string {
+    const scope = this.scope;
+    if (scope.kind === 'application') {
+      return msg(str`Edit application ${scope.key.name} as JSON`);
+    }
+    if (scope.kind === 'version') {
+      return msg(str`Edit ${scope.key.name} ${scope.version} as JSON`);
+    }
+    return msg(str`Edit stencil ${this.stencil.name} as JSON`);
+  }
+
+  /** Whether there are edits that would be lost. */
+  get dirty(): boolean {
+    return this.changed;
   }
 
   private renderEditor(): TemplateResult {
@@ -192,21 +259,30 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
           .value=${this.draft}
           @change=${(e: CustomEvent<string>) => (this.draft = e.detail ?? '')}
         ></oscd-ace-editor>`
-      : html`<p class="muted" id="loading">${msg('Loading the editor…')}</p>`;
+      : html`<p class="muted" id="loading">
+          ${this.loadFailed
+            ? msg('The editor could not be loaded. Check the connection and open it again.')
+            : msg('Loading the editor…')}
+        </p>`;
   }
 
   render(): TemplateResult {
     const errors = this.result.errors ?? [];
     const valid = errors.length === 0;
 
-    return html`<h2 class="with-help">
-        ${msg('Edit as JSON')}
+    return html`<div class="with-help">
+        <h2>${this.heading()}</h2>
         <oscd-stencil-help heading=${msg('About the JSON')}>${helpJson()}</oscd-stencil-help>
-      </h2>
+      </div>
+      ${this.conflict
+        ? html`<p class="conflict" role="status" id="conflict">
+            ${msg('The stencil was changed elsewhere while you were editing. Discard your edits to see it, then make them again.')}
+          </p>`
+        : nothing}
       <div class="editor">${this.renderEditor()}</div>
       ${valid
         ? nothing
-        : html`<div class="problems" role="alert" id="problems">
+        : html`<div class="problems" id="problems">
             <strong>${msg('This cannot be applied yet:')}</strong>
             <ul>
               ${errors.map(error => html`<li>${error}</li>`)}
@@ -221,7 +297,7 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
         >
         <oscd-filled-button
           id="apply"
-          ?disabled=${!valid || !this.changed}
+          ?disabled=${!valid || !this.changed || this.conflict}
           @click=${() => this.apply()}
           >${msg('Save to stencil')}<oscd-icon slot="icon" aria-hidden="true">check</oscd-icon></oscd-filled-button
         >
@@ -269,6 +345,12 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
       h2 {
         font-weight: 400;
         margin: 0 0 8px;
+      }
+
+      .conflict {
+        border-left: 4px solid var(--stencil-danger);
+        margin: 8px 0;
+        padding: 4px 12px;
       }
     `
   ];

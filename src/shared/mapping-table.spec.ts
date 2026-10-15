@@ -145,9 +145,9 @@ describe('oscd-stencil-mapping-table', () => {
 
   it('marks cells with what was done to them', async () => {
     const markers = new Map<string, CellMarker>([
-      [cellKey('Pub', 'Sub', 'GC1'), { kind: 'new', label: 'Added' }],
-      [cellKey('Sub', 'Pub', 'GC9'), { kind: 'present', label: 'Already present' }],
-      [cellKey('Pub', 'Sub', 'SV1'), { kind: 'skipped', label: 'Not applied' }]
+      [cellKey('Pub', 'Sub', '>>LD0>GC1'), { kind: 'new', label: 'Added' }],
+      [cellKey('Sub', 'Pub', '>>LD0>GC9'), { kind: 'present', label: 'Already present' }],
+      [cellKey('Pub', 'Sub', '>>LD0>SV1'), { kind: 'skipped', label: 'Not applied' }]
     ]);
     el.markers = markers;
     await el.updateComplete;

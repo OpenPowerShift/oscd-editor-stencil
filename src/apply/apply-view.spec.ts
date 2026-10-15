@@ -322,6 +322,16 @@ describe('oscd-stencil-apply', () => {
       );
     });
 
+    it('drops an IED that no longer fits when the stencil changes, and goes back to assigning', async () => {
+      const changed = structuredClone(stencil);
+      changed.applications[0].versions[0].IEDS.Publisher.type = '7SS99';
+      el.stencil = changed;
+      await el.updateComplete;
+      expect(el.assignment.has('Publisher')).to.be.false;
+      expect(el.assignment.has('Subscriber')).to.be.true;
+      expect(el.step).to.equal('assign');
+    });
+
     it('names the functions that have no IED and are not applied', () => {
       expect(q('#unassigned').textContent).to.contain('Relay');
     });
@@ -363,6 +373,25 @@ describe('oscd-stencil-apply', () => {
       expect(q('#done').textContent).to.contain('undo');
     });
 
+    it('says when what was applied is no longer all there, and reviews again', async () => {
+      await click('#apply');
+      expect(q('#applied-changed')).to.not.exist;
+
+      el.docVersion = 1;
+      await el.updateComplete;
+      expect(q('#applied-changed')).to.exist;
+      await click('#review-again');
+      expect(el.step).to.equal('review');
+    });
+
+    it('notices that applying put everything in place', async () => {
+      await click('#apply');
+      applied[0].edits.forEach((edit: EditV2) => handleEdit(edit));
+      el.docVersion = 2;
+      await el.updateComplete;
+      expect(q('#applied-changed')).to.not.exist;
+    });
+
     it('shows the mappings after applying, with the IEDs and what was added', async () => {
       await click('#apply');
 
@@ -383,6 +412,18 @@ describe('oscd-stencil-apply', () => {
       expect(ieds).to.deep.equal(['SUB2']);
     });
 
+    it('marks a control block that was only partly applied', async () => {
+      el.reset();
+      doc.querySelector('IED[name="PUB2"] DataSet FCDA')!.remove();
+      await el.updateComplete;
+      await toReview();
+      await click('#apply');
+      const table = q<HTMLElement & { markers: Map<string, { label: string }> }>(
+        'oscd-stencil-mapping-table'
+      );
+      expect([...table.markers.values()].map(m => m.label)).to.include('Not fully applied');
+    });
+
     it('marks control blocks of a function that was not given an IED as not applied', async () => {
       const version = stencil.applications[0].versions[0];
       version.ControlBlocks.push(
@@ -399,8 +440,8 @@ describe('oscd-stencil-apply', () => {
       const table = q<HTMLElement & { markers: Map<string, { label: string }> }>(
         'oscd-stencil-mapping-table'
       );
-      expect(table.markers.get('Publisher|Relay|GC1')?.label).to.equal('Not applied');
-      expect(table.markers.get('Publisher|Subscriber|GC1')?.label).to.equal('Added');
+      expect(table.markers.get('Publisher|Relay|>>LD0>GC1')?.label).to.equal('Not applied');
+      expect(table.markers.get('Publisher|Subscriber|>>LD0>GC1')?.label).to.equal('Added');
     });
 
     it('can start again after applying', async () => {

@@ -61,7 +61,7 @@ export const nodeId = (selection: Selection): string =>
     .filter(part => part !== undefined)
     .join(SEPARATOR);
 
-type Confirming = 'version' | 'application' | 'stencil' | null;
+type Confirming = 'version' | 'application' | 'stencil' | 'discard' | null;
 
 /**
  * Manages the stencils: pick one from the library, import and export it,
@@ -102,6 +102,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   /** The open document, which stencil applications are captured from. */
   @property({ attribute: false }) doc?: XMLDocument;
 
+  /** Changes whenever the document is edited. */
+  @property({ attribute: false }) docVersion?: unknown;
+
   /** The stencils that have been imported, the most recently used first. */
   @property({ attribute: false }) library: readonly LibraryEntry[] = [];
 
@@ -128,12 +131,25 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
   @state() renameVersion = '';
 
+  /** Problems in the dialog are shown once something has been typed. */
+  @state() renameTouched = false;
+
   @state() selection: Selection | null = null;
 
   @state() confirming: Confirming = null;
 
   /** The problem with the last value entered in each field. */
   @state() problems: Record<string, string> = {};
+
+  protected updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
+    // the select sets its value before its options are rendered, so set it
+    // again once they are
+    const select = this.shadowRoot?.querySelector<OscdOutlinedSelect>('#stencils');
+    if (select && select.value !== this.currentId) {
+      select.value = this.currentId;
+    }
+  }
 
   protected willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('stencil') && this.selection) {
@@ -148,7 +164,8 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     if (changed.has('selection')) {
       this.reveal();
     }
-    if (changed.has('currentId')) {
+    // a new stencil made by saving a capture keeps the wizard on its result
+    if (changed.has('currentId') && changed.get('currentId')) {
       this.selection = null;
       this.expanded = [];
       this.problems = {};
@@ -254,10 +271,8 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
   private renderLibrary(): TemplateResult {
     return html`<div class="card" id="library">
-      <h2 class="with-help">
-        ${msg('Stencil library')}
-        <oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Stencil library')}</h2><oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help></div>
       <div class="row">
         <oscd-outlined-select
           id="stencils"
@@ -277,7 +292,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               >`
           )}
         </oscd-outlined-select>
-        <div class="tools" role="toolbar" aria-label=${msg('Stencil actions')}>
+        <div class="tools" role="group" aria-label=${msg('Stencil actions')}>
           <oscd-icon-button
             id="new-stencil"
             aria-label=${msg('New stencil')}
@@ -304,6 +319,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             id="export"
             aria-label=${msg('Export stencil file')}
             title=${msg('Export stencil file')}
+            ?disabled=${!this.currentId}
             @click=${() => this.emit('stencil-export')}
             ><oscd-icon aria-hidden="true">download</oscd-icon></oscd-icon-button
           >
@@ -317,8 +333,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           >
           <oscd-icon-button
             id="edit-json-stencil"
-            aria-label=${msg('Edit as JSON')}
-            title=${msg('Edit as JSON')}
+            aria-label=${msg('Edit the stencil as JSON')}
+            title=${msg('Edit the stencil as JSON')}
+            ?disabled=${!this.currentId}
             @click=${() => this.editJson({ kind: 'stencil' })}
             ><oscd-icon aria-hidden="true">data_object</oscd-icon></oscd-icon-button
           >
@@ -342,12 +359,14 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     label: string,
     value: string,
     commit: (value: string) => string | null,
-    type: 'text' | 'textarea' = 'text'
+    type: 'text' | 'textarea' = 'text',
+    accessibleLabel?: string
   ): TemplateResult {
     return html`<oscd-outlined-text-field
       id=${id}
       type=${type}
       label=${label}
+      aria-label=${accessibleLabel ?? label}
       .value=${value}
       .error=${!!this.problems[id]}
       .errorText=${this.problems[id] ?? ''}
@@ -380,14 +399,15 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         <div class="head-actions">
           <oscd-icon-button
             id="edit-json-application"
-            aria-label=${msg('Edit as JSON')}
-            title=${msg('Edit as JSON')}
+            aria-label=${msg('Edit the application as JSON')}
+            title=${msg('Edit the application as JSON')}
             @click=${() => this.editJson({ kind: 'application', key })}
             ><oscd-icon aria-hidden="true">data_object</oscd-icon></oscd-icon-button
           >
           <oscd-outlined-button
             id="delete-application"
             class="danger-outline"
+            aria-label=${msg('Delete application')}
             @click=${() => (this.confirming = 'application')}
             ><oscd-icon slot="icon" aria-hidden="true">delete</oscd-icon>${msg('Delete')}</oscd-outlined-button
           >
@@ -422,14 +442,15 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         <div class="head-actions">
           <oscd-icon-button
             id="edit-json-version"
-            aria-label=${msg('Edit as JSON')}
-            title=${msg('Edit as JSON')}
+            aria-label=${msg('Edit the version as JSON')}
+            title=${msg('Edit the version as JSON')}
             @click=${() => this.editJson({ kind: 'version', key, version: version.version })}
             ><oscd-icon aria-hidden="true">data_object</oscd-icon></oscd-icon-button
           >
           <oscd-outlined-button
             id="delete-version"
             class="danger-outline"
+            aria-label=${msg('Delete version')}
             @click=${() => (this.confirming = 'version')}
             ><oscd-icon slot="icon" aria-hidden="true">delete</oscd-icon>${msg('Delete')}</oscd-outlined-button
           >
@@ -441,6 +462,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         <label class="switch"
           ><oscd-switch
             id="deprecated"
+            aria-label=${msg('Deprecated, hidden when applying')}
             ?selected=${version.deprecated}
             @change=${(e: Event) =>
               editVersion({ deprecated: (e.target as OscdSwitch).selected })}
@@ -456,7 +478,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
       <h3>${msg('Functions and what they require')}</h3>
       <div id="functions">
-        ${Object.entries(version.IEDS).map(([fn, ied]) => {
+        ${Object.entries(version.IEDS).map(([fn, ied], index) => {
           const tag = ied.privates[0];
           const requirement = (
             field: 'manufacturer' | 'type' | 'id' | 'idVersion'
@@ -473,7 +495,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             return null;
           };
           return html`<div class="function">
-            ${this.textField(`fn-${fn}`, msg('Function'), fn, (value) => {
+            ${this.textField(`fn-${index}`, msg('Function'), fn, (value) => {
               const problem = functionProblem(version, fn, value);
               if (!problem) {
                 editVersionBody(renameFunction(version, fn, value));
@@ -481,10 +503,10 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               return problem;
             })}
             <div class="requirement">
-              ${this.textField(`fn-${fn}-manufacturer`, msg('Manufacturer'), ied.manufacturer, requirement('manufacturer'))}
-              ${this.textField(`fn-${fn}-type`, msg('Type'), ied.type, requirement('type'))}
-              ${this.textField(`fn-${fn}-id`, msg('Stencil Id'), tag?.['OpenSCD-Stencil-Id'] ?? '', requirement('id'))}
-              ${this.textField(`fn-${fn}-idversion`, msg('Stencil version'), tag?.['OpenSCD-Stencil-Version'] ?? '', requirement('idVersion'))}
+              ${this.textField(`fn-${index}-manufacturer`, msg('Manufacturer'), ied.manufacturer, requirement('manufacturer'), 'text', `${msg('Manufacturer')}: ${fn}`)}
+              ${this.textField(`fn-${index}-type`, msg('Type'), ied.type, requirement('type'), 'text', `${msg('Type')}: ${fn}`)}
+              ${this.textField(`fn-${index}-id`, msg('Tag Id'), tag?.['OpenSCD-Stencil-Id'] ?? '', requirement('id'), 'text', `${msg('Tag Id')}: ${fn}`)}
+              ${this.textField(`fn-${index}-idversion`, msg('Tag version'), tag?.['OpenSCD-Stencil-Version'] ?? '', requirement('idVersion'), 'text', `${msg('Tag version')}: ${fn}`)}
             </div>
           </div>`;
         })}
@@ -493,7 +515,10 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       <div class="actions">
         <span class="spacer"></span>
         <oscd-stencil-help heading=${msg('Stencil tags')}>${helpTags()}</oscd-stencil-help>
-        <oscd-outlined-button id="tag" @click=${() => this.emit('stencil-tag', version)}
+        <oscd-outlined-button
+          id="tag"
+          ?disabled=${!this.doc}
+          @click=${() => this.emit('stencil-tag', version)}
           >${msg('Tag IEDs in this document…')}<oscd-icon slot="icon" aria-hidden="true">sell</oscd-icon></oscd-outlined-button
         >
       </div>
@@ -506,7 +531,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     </div>`;
   }
 
-  private confirmation(): { title: string; text: string; run: () => void } | null {
+  private confirmation(): {
+    title: string;
+    text: string;
+    action?: string;
+    run: () => void;
+  } | null {
     const app = this.application;
     switch (this.confirming) {
       case 'version':
@@ -527,6 +557,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             run: () => this.change(removeApplication(this.stencil, app))
           }
           : null;
+      case 'discard':
+        return {
+          title: msg('Discard your edits?'),
+          text: msg('The JSON you changed has not been saved.'),
+          action: msg('Discard edits'),
+          run: () => (this.view = 'browse')
+        };
       case 'stencil':
         return {
           title: msg('Remove this stencil from the library?'),
@@ -538,8 +575,18 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /** Returns to the stencils, asking first when JSON edits would be lost. */
+  private back(): void {
+    const json = this.shadowRoot?.querySelector<OscdStencilJson>('oscd-stencil-json');
+    if (this.view === 'json' && json?.dirty) {
+      this.confirming = 'discard';
+      return;
+    }
+    this.view = 'browse';
+  }
+
   private backButton(): TemplateResult {
-    return html`<oscd-text-button id="back" @click=${() => (this.view = 'browse')}
+    return html`<oscd-text-button id="back" @click=${() => this.back()}
       ><oscd-icon slot="icon" aria-hidden="true">arrow_back</oscd-icon>${msg('Back to stencils')}</oscd-text-button
     >`;
   }
@@ -549,6 +596,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       ${this.backButton()}
       <oscd-stencil-capture
         .doc=${this.doc}
+        .docVersion=${this.docVersion}
         .stencil=${this.stencil}
         @stencil-goto=${(e: CustomEvent<string>) => {
           e.stopPropagation();
@@ -564,6 +612,16 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       <oscd-stencil-json
         .stencil=${this.stencil}
         .scope=${this.jsonScope}
+        @json-scope-change=${(e: CustomEvent<JsonScope>) => {
+          e.stopPropagation();
+          this.jsonScope = e.detail;
+          if (e.detail.kind !== 'stencil') {
+            this.selection = {
+              ...e.detail.key,
+              version: e.detail.kind === 'version' ? e.detail.version : undefined
+            };
+          }
+        }}
       ></oscd-stencil-json>
     </div>`;
   }
@@ -592,7 +650,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             confirmation?.run();
             this.confirming = null;
           }}
-          >${msg('Delete')}</oscd-filled-button
+          >${confirmation?.action ?? msg('Delete')}</oscd-filled-button
         >
       </div>
     </oscd-dialog>`;
@@ -622,7 +680,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
               >${msg('Create')}<oscd-icon slot="icon" aria-hidden="true">add</oscd-icon></oscd-filled-button
             >
           </div>
-            <div class="tools tree-tools" role="toolbar" aria-label=${msg('Tree actions')}>
+            <div class="tools tree-tools" role="group" aria-label=${msg('Tree actions')}>
               <oscd-icon-button
                 id="expand-all"
                 aria-label=${msg('Expand all')}
@@ -665,6 +723,12 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
                   </oscd-tree-item>`}
                 @selected-ids-changed=${(e: CustomEvent<{ selectedIds: string[] }>) =>
                   this.select(e.detail.selectedIds[0])}
+                @node-click=${(e: CustomEvent<{ id: string }>) => {
+                  // an application is also opened by clicking it, not only folded
+                  if (e.detail.id.includes(SEPARATOR)) {
+                    this.select(e.detail.id);
+                  }
+                }}
               ></oscd-tree>`}
         </div>
         <div class="detail">
@@ -696,6 +760,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     this.dialogMode = 'rename';
     this.renameName = this.stencil.name;
     this.renameVersion = this.stencil.version;
+    this.renameTouched = false;
     this.renaming = true;
   }
 
@@ -704,6 +769,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     this.dialogMode = 'new';
     this.renameName = '';
     this.renameVersion = '1.0.0';
+    this.renameTouched = false;
     this.renaming = true;
   }
 
@@ -741,6 +807,14 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
   private renderRename(): TemplateResult {
     const problems = this.renameProblems;
+    const shown = this.renameTouched ? problems : {};
+    const enter = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.renameTouched = true;
+        this.saveRename();
+      }
+    };
     const creating = this.dialogMode === 'new';
     const unchanged =
       !creating &&
@@ -773,17 +847,25 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           id="rename-name"
           label=${msg('Name')}
           .value=${this.renameName}
-          .error=${!!problems.name}
-          .errorText=${problems.name ?? ''}
-          @input=${(e: Event) => (this.renameName = (e.target as OscdOutlinedTextField).value)}
+          .error=${!!shown.name}
+          .errorText=${shown.name ?? ''}
+          @keydown=${enter}
+          @input=${(e: Event) => {
+            this.renameTouched = true;
+            this.renameName = (e.target as OscdOutlinedTextField).value;
+          }}
         ></oscd-outlined-text-field>
         <oscd-outlined-text-field
           id="rename-version"
           label=${msg('Version')}
           .value=${this.renameVersion}
-          .error=${!!problems.version}
-          .errorText=${problems.version ?? ''}
-          @input=${(e: Event) => (this.renameVersion = (e.target as OscdOutlinedTextField).value)}
+          .error=${!!shown.version}
+          .errorText=${shown.version ?? ''}
+          @keydown=${enter}
+          @input=${(e: Event) => {
+            this.renameTouched = true;
+            this.renameVersion = (e.target as OscdOutlinedTextField).value;
+          }}
         ></oscd-outlined-text-field>
       </form>
       <div slot="actions">
@@ -1037,6 +1119,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         align-items: center;
         display: flex;
         gap: 4px;
+        margin-bottom: 12px;
+      }
+
+      .with-help > h1,
+      .with-help > h2,
+      .with-help > h3 {
+        margin: 0;
       }
     `
   ];

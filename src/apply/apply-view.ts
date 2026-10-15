@@ -119,6 +119,9 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
   @state() plan: ApplyPlan | null = null;
 
+  /** Whether what was applied is no longer all in the document, as after undo. */
+  @state() appliedChanged = false;
+
   /** What was applied, shown on the last step. */
   @state() applied: ApplyPlan | null = null;
 
@@ -128,6 +131,15 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     }
     if (changed.has('stencil') && this.application) {
       this.keepSelectionIn(this.stencil);
+    }
+    if (
+      this.step === 'done' &&
+      changed.has('docVersion') &&
+      this.doc &&
+      this.version
+    ) {
+      this.appliedChanged =
+        planApply(this.doc, this.version, this.assignment).edits.length > 0;
     }
     // what was reviewed must still be what will be applied
     if (
@@ -149,6 +161,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     this.assignment = new Map();
     this.plan = null;
     this.applied = null;
+    this.appliedChanged = false;
   }
 
   /** Follows the selected application into a new stencil, or resets. */
@@ -168,6 +181,31 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     }
     this.application = app;
     this.version = version;
+
+    // an assignment is kept only while its function is there and its IED
+    // still fits it
+    if (this.doc) {
+      const pruned = new Map(
+        [...this.assignment].filter(([fn, ied]) => {
+          const requirement = version.IEDS[fn];
+          const others = new Set(
+            [...this.assignment].filter(([other]) => other !== fn).map(([, i]) => i)
+          );
+          return (
+            !!requirement &&
+            candidateIeds(this.doc!, requirement, others).some(
+              candidate => candidate.getAttribute('name') === ied
+            )
+          );
+        })
+      );
+      if (pruned.size !== this.assignment.size) {
+        this.assignment = pruned;
+        if (this.step === 'review') {
+          this.step = 'assign';
+        }
+      }
+    }
   }
 
   private choose(app: VersionedApplications): void {
@@ -254,7 +292,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
     const detail: StencilApplyDetail = {
       edits: fresh.edits,
-      title: `Apply stencil ${this.application.name} ${this.version.version}`,
+      title: msg(str`Apply stencil ${this.application.name} ${this.version.version}`),
       plan: fresh
     };
     this.applied = fresh;
@@ -282,13 +320,14 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         return;
       }
 
-      const failed = item.supervision === 'error' || item.quality === 'error';
+      const failed =
+        item.failed || item.supervision === 'error' || item.quality === 'error';
       const added =
         item.subscriptions > 0 ||
         item.supervision === 'new' ||
         item.quality === 'new';
       markers.set(
-        cellKey(from, to, item.controlBlock),
+        cellKey(from, to, item.id),
         failed
           ? { kind: 'error', label: msg('Not fully applied') }
           : added
@@ -299,7 +338,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     // control blocks of a function that was not given an IED were not applied
     this.version?.ControlBlocks.forEach((cb) => {
       if (!this.assignment.has(cb.from) || !this.assignment.has(cb.to)) {
-        markers.set(cellKey(cb.from, cb.to, cb.name), {
+        markers.set(cellKey(cb.from, cb.to, cb.id), {
           kind: 'skipped',
           label: msg('Not applied')
         });
@@ -496,7 +535,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   private renderChoose(): TemplateResult {
     if (this.stencil.applications.length === 0) {
       return html`<p class="hint" id="empty">
-        ${msg('This stencil has no applications yet. Open a stencil file, or create an application from this document on the Create tab.')}
+        ${msg('This stencil has no applications yet. Import a stencil file, or create an application from this document under Manage.')}
       </p>`;
     }
 
@@ -506,6 +545,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           ? html`<label class="switch"
               ><oscd-switch
                 id="show-deprecated"
+                aria-label=${msg('Show deprecated')}
                 touch-target="wrapper"
                 ?selected=${this.showDeprecated}
                 @change=${() => this.toggleDeprecated()}
@@ -542,6 +582,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         ? html`<p class="reason" role="note"><oscd-icon aria-hidden="true">info</oscd-icon>${reason}</p>`
         : html`<oscd-outlined-select
             label="${msg('IED')}"
+            aria-label=${`${msg('IED')}: ${name}`}
             @change=${(event: Event) =>
               this.assign(name, (event.target as OscdOutlinedSelect).value)}
           >
@@ -564,13 +605,13 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
   private renderAssign(): TemplateResult {
     const version = this.version!;
-    const assigned = this.assignment.size;
+    const assigned = functionNames(version).filter(name =>
+      this.assignment.has(name)
+    ).length;
 
     return html`<div class="card wide">
-      <h2 class="with-help">
-        ${msg('Assign an IED to each function')}
-        <oscd-stencil-help heading=${msg('Assigning IEDs')}>${helpAssign()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Assign an IED to each function')}</h2><oscd-stencil-help heading=${msg('Assigning IEDs')}>${helpAssign()}</oscd-stencil-help></div>
       <ul class="functions">
         ${functionNames(version).map(name => this.renderFunction(version, name))}
       </ul>
@@ -646,10 +687,8 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     const nothingToDo = plan.edits.length === 0;
 
     return html`<div class="card wide">
-      <h2 class="with-help">
-        ${msg('Review')}
-        <oscd-stencil-help heading=${msg('Reviewing before applying')}>${helpReview()}</oscd-stencil-help>
-      </h2>
+      <div class="with-help"><h2>
+        ${msg('Review')}</h2><oscd-stencil-help heading=${msg('Reviewing before applying')}>${helpReview()}</oscd-stencil-help></div>
       <p class="summary" id="plan-summary">
         ${msg(str`${plan.subscriptions} new subscriptions`)} ·
         ${msg(str`${plan.supervisions} new supervisions`)} ·
@@ -729,6 +768,20 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
     return html`<div class="card wide" id="done" role="status">
       <h2>${msg('Applied')}</h2>
+      ${this.appliedChanged
+        ? html`<p class="reason" id="applied-changed" role="status">
+            <oscd-icon aria-hidden="true">history</oscd-icon>
+            <span
+              >${msg('The document has changed since this was applied, for example by undo, so not all of it is in place now.')}
+              <oscd-text-button id="review-again" @click=${() => {
+                this.appliedChanged = false;
+                this.goToReview();
+              }}
+                >${msg('Review again')}</oscd-text-button
+              ></span
+            >
+          </p>`
+        : nothing}
       <p>
         ${msg(
           str`${plan.subscriptions} subscriptions, ${plan.supervisions} supervisions and ${plan.qualityLinks} SEL quality links were added.`
@@ -1016,6 +1069,13 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         align-items: center;
         display: flex;
         gap: 4px;
+        margin-bottom: 12px;
+      }
+
+      .with-help > h1,
+      .with-help > h2,
+      .with-help > h3 {
+        margin: 0;
       }
 
       .steps-row {

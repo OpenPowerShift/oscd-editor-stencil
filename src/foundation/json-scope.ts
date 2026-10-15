@@ -13,8 +13,8 @@ export type JsonScope =
   | { kind: 'version'; key: ApplicationKey; version: string };
 
 export type JsonEdit =
-  | { stencil: StencilData; errors?: undefined }
-  | { stencil?: undefined; errors: string[] };
+  | { stencil: StencilData; errors?: undefined; scope?: JsonScope }
+  | { stencil?: undefined; errors: string[]; scope?: undefined };
 
 const sameApplication = (a: ApplicationKey, b: ApplicationKey): boolean =>
   a.category === b.category && a.name === b.name;
@@ -103,6 +103,10 @@ export function applyScopeText(
           applications: stencil.applications.map(app =>
             app === original ? edited : app
           )
+        },
+        scope: {
+          kind: 'application',
+          key: { category: edited.category, name: edited.name }
         }
       };
   }
@@ -132,6 +136,7 @@ export function applyScopeText(
             }
             : app
         )
-      }
+      },
+      scope: { kind: 'version', key: scope.key, version: edited.version }
     };
 }
