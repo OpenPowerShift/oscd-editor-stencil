@@ -876,6 +876,11 @@ export class OscdStencilCapture extends ScopedElementsMixin(LitElement) {
       .with-help > h3 {
         margin: 0;
       }
+
+      /* the signal count is text, so it uses the text colour, not the service colour */
+      .count {
+        color: var(--stencil-text);
+      }
     `
   ];
 }

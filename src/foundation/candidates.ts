@@ -56,8 +56,11 @@ function hasRequiredTag(ied: Element, requirement: IedRequirement): boolean {
   );
 }
 
+/** The IEDs of the document: its root's children, without searching below them. */
 const iedsOf = (doc: XMLDocument): Element[] =>
-  Array.from(doc.querySelectorAll(':root > IED'));
+  Array.from(doc.documentElement?.children ?? []).filter(
+    element => element.localName === 'IED'
+  );
 
 /**
  * The IEDs that can fill a function: the right manufacturer and type, the

@@ -1,4 +1,5 @@
 import { css, html, LitElement, nothing, PropertyValues, TemplateResult } from 'lit';
+import { prefersReducedMotion } from './shared/motion.js';
 
 import { property, query, state } from 'lit/decorators.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
@@ -222,6 +223,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
   private renderImportConflict(): TemplateResult {
     const stencil = this.pendingImport;
     return html`<oscd-dialog
+      ?quick=${prefersReducedMotion()}
       id="import-conflict"
       ?open=${!!stencil}
       @closed=${(e: Event) => {
@@ -391,6 +393,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     const count = this.tagSelection.length;
 
     return html`<oscd-dialog
+      ?quick=${prefersReducedMotion()}
       id="ied-stencil-metadata"
       ?open=${this.tagOpen}
       @closed=${(e: Event) => {

@@ -322,6 +322,11 @@ export class OscdStencilMappingTable extends ScopedElementsMixin(LitElement) {
       .marker.skipped {
         font-style: italic;
       }
+
+      /* the signal count is text, so it uses the text colour, not the service colour */
+      .count {
+        color: var(--stencil-text);
+      }
     `
   ];
 }

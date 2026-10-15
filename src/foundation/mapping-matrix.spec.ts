@@ -28,7 +28,7 @@ describe('mapping-matrix', () => {
   it('labels references readably', () => {
     expect(refLabel('>>LD0>GC1')).to.equal('LD0 › GC1');
     expect(refLabel('>>LD0> LGOS 1')).to.equal('LD0 › LGOS 1');
-    expect(supervisionLabel('None')).to.equal('None');
+    expect(supervisionLabel('None')).to.equal('No supervision');
     expect(supervisionLabel('>>LD0> LSVS 2')).to.equal('LD0 › LSVS 2');
   });
 

@@ -63,6 +63,19 @@ export const themeStyles = [
           var(--oscd-base03)
         )
       );
+      /* the Material roles oscd-ui colours buttons, labels and dialogs with,
+         made strong enough to read (WCAG AA) on the palette's surfaces */
+      --md-sys-color-primary: color-mix(
+        in srgb,
+        var(--oscd-primary) 60%,
+        var(--oscd-base03)
+      );
+      --md-sys-color-on-surface: var(--stencil-text);
+      --md-sys-color-on-surface-variant: var(--stencil-text);
+      --md-sys-color-error: var(--stencil-danger);
+      --md-dialog-headline-color: var(--stencil-text);
+      --md-dialog-supporting-text-color: var(--stencil-text);
+
       --stencil-danger: color-mix(
         in srgb,
         var(--oscd-error) 55%,

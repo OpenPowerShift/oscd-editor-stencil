@@ -19,7 +19,7 @@ export default [
     input: undefined,
     plugins: [
       html({
-        input: ['demo/index.html'],
+        input: ['demo/index.html', 'demo/index-themed.html'],
         minify: true,
       }),
       nodeResolve(),

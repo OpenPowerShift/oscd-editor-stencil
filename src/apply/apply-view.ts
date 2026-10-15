@@ -1135,8 +1135,9 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         font-size: 0.8125rem;
         gap: 6px;
         line-height: 1.4;
+        max-width: 100%;
+        overflow-wrap: anywhere;
         padding: 1px 10px;
-        white-space: nowrap;
       }
 
       .badge.deprecated {
@@ -1195,6 +1196,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       .needs .tags {
         display: flex;
         flex-wrap: wrap;
+        min-width: 0;
         gap: 4px;
         justify-content: flex-end;
       }

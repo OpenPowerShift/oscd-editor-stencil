@@ -3,6 +3,7 @@ import type { PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
+import { prefersReducedMotion } from '../shared/motion.js';
 
 import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
@@ -114,6 +115,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   @state() view: 'browse' | 'capture' | 'json' = 'browse';
 
   @state() jsonScope: JsonScope = { kind: 'stencil' };
+
+  /** What the capture wizard saved last, selected when it returns here. */
+  private captured?: Selection;
 
   /** The wizard is kept once opened, so leaving it does not lose its progress. */
   @state() captureOpened = false;
@@ -598,9 +602,18 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         .doc=${this.doc}
         .docVersion=${this.docVersion}
         .stencil=${this.stencil}
+        @stencil-capture=${(e: CustomEvent<Selection>) => {
+          // the plugin keeps the stencil; this shows what was saved afterwards
+          const { category, name, version } = e.detail;
+          this.captured = { category, name, version };
+        }}
         @stencil-goto=${(e: CustomEvent<string>) => {
           e.stopPropagation();
           this.view = 'browse';
+          if (this.captured) {
+            this.selection = this.captured;
+            this.captured = undefined;
+          }
         }}
       ></oscd-stencil-capture>
     </div>`;
@@ -629,6 +642,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   private renderConfirmation(): TemplateResult {
     const confirmation = this.confirmation();
     return html`<oscd-dialog
+      ?quick=${prefersReducedMotion()}
       id="confirm"
       ?open=${!!confirmation}
       @closed=${(e: Event) => {
@@ -700,7 +714,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
             </div>
           ${this.stencil.applications.length === 0
             ? html`<p class="hint" id="empty">
-                ${msg('This stencil has no applications yet. Import a stencil, or capture one from a document.')}
+                ${msg('This stencil has no applications yet. Create one from the open document, or import a stencil.')}
               </p>`
             : html`<oscd-tree
                 .data=${this.tree()}
@@ -822,6 +836,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
       this.renameVersion.trim() === this.stencil.version;
 
     return html`<oscd-dialog
+      ?quick=${prefersReducedMotion()}
       id="rename-dialog"
       ?open=${this.renaming}
       @closed=${(e: Event) => {
@@ -946,7 +961,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
 
       #stencils {
         flex: 1;
-        min-width: 220px;
+        min-width: min(220px, 100%);
       }
 
       .rename-fields {

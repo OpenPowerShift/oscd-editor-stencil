@@ -76,7 +76,7 @@ export const helpManage = (): TemplateResult => html`
     ${msg('A deprecated version stays in the stencil but is hidden when applying, unless you ask to see deprecated versions.')}
   </p>
   <p style="margin: 0 0 12px">
-    ${msg('To make a new application, capture it from the open document with the button above. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.')}
+    ${msg('To make a new application, use Create beside the list of applications: it captures one from the open document. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.')}
   </p>
 `;
 

@@ -1,3 +1,5 @@
+import { msg } from '@lit/localize';
+
 import type { ControlBlockInfo } from './mapping-info.js';
 
 /** One control block sent from a function to another. */
@@ -37,7 +39,7 @@ export function refLabel(ref: string): string {
 
 /** The supervision of a control block as `LD0 › LGOS 1`, or `None`. */
 export function supervisionLabel(ref: string): string {
-  return ref === 'None' ? 'None' : refLabel(ref);
+  return ref === 'None' ? msg('No supervision') : refLabel(ref);
 }
 
 /** Lays the control blocks out as rows of publishers and columns of subscribers. */

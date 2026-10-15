@@ -90,10 +90,6 @@
   <source>Next</source>
   <target>Weiter</target>
 </trans-unit>
-<trans-unit id="sfa17651cc21019bc">
-  <source>This stencil has no applications yet. Open a stencil file, or create an application from this document on the Create tab.</source>
-  <target>Dieses Stencil enthält noch keine Anwendungen. Öffnen Sie eine Stencil-Datei oder erstellen Sie auf dem Reiter „Erstellen“ eine Anwendung aus diesem Dokument.</target>
-</trans-unit>
 <trans-unit id="s6ba50bb0842ba1e2">
   <source>Applications</source>
   <target>Anwendungen</target>
@@ -358,14 +354,6 @@
   <source>Type</source>
   <target>Typ</target>
 </trans-unit>
-<trans-unit id="s3f8a7108a7e4e72c">
-  <source>Stencil Id</source>
-  <target>Stencil-ID</target>
-</trans-unit>
-<trans-unit id="sf00cb7eb61f87f93">
-  <source>Stencil version</source>
-  <target>Stencil-Version</target>
-</trans-unit>
 <trans-unit id="sb178f0ccd7d93346">
   <source>Tag IEDs in this document…</source>
   <target>IEDs in diesem Dokument markieren …</target>
@@ -405,10 +393,6 @@
 <trans-unit id="sdc673e73b5c13aea">
   <source>Delete</source>
   <target>Löschen</target>
-</trans-unit>
-<trans-unit id="sf2e6f9caacbc4618">
-  <source>This stencil has no applications yet. Import a stencil, or capture one from a document.</source>
-  <target>Dieses Stencil enthält noch keine Anwendungen. Importieren Sie ein Stencil oder erfassen Sie eine aus einem Dokument.</target>
 </trans-unit>
 <trans-unit id="s949f1fc431d7ff4a">
   <source>Choose an application or version to see and change it.</source>
@@ -518,26 +502,6 @@
   <source>Every matching IED is used by another function</source>
   <target>Jedes passende IED wird von einer anderen Funktion verwendet</target>
 </trans-unit>
-<trans-unit id="scb150b48092e6b1c">
-  <source>Select IEDs to add stencil metadata to</source>
-  <target>IEDs auswählen, denen Stencil-Metadaten hinzugefügt werden</target>
-</trans-unit>
-<trans-unit id="s29ec0f125c502eb5">
-  <source>Add stencil metadata</source>
-  <target>Stencil-Metadaten hinzufügen</target>
-</trans-unit>
-<trans-unit id="s1ece8821c26bc69a">
-  <source>Metadata added to 1 IED</source>
-  <target>Metadaten zu 1 IED hinzugefügt</target>
-</trans-unit>
-<trans-unit id="sef3bb2182ecfb4c8">
-  <source>Metadata added to <x id="0" equiv-text="${ieds.length}"/> IEDs</source>
-  <target>Metadaten zu <x id="0" equiv-text="${ieds.length}"/> IEDs hinzugefügt</target>
-</trans-unit>
-<trans-unit id="sa66a897b245e91f9">
-  <source>Add Metadata</source>
-  <target>Metadaten hinzufügen</target>
-</trans-unit>
 <trans-unit id="s124cf9976bd465f6">
   <source>More than one IED fits <x id="0" equiv-text="${this.ambiguousFunctions().join(', ')}"/>. Choose those yourself.</source>
   <target>Für <x id="0" equiv-text="${this.ambiguousFunctions().join(', ')}"/> passt mehr als ein IED. Wählen Sie diese selbst aus.</target>
@@ -601,10 +565,6 @@
 <trans-unit id="s0f238cd3488275ec">
   <source>Show in stencils</source>
   <target>In den Stencils anzeigen</target>
-</trans-unit>
-<trans-unit id="sf185d9711019c02b">
-  <source>Edit as JSON</source>
-  <target>Als JSON bearbeiten</target>
 </trans-unit>
 <trans-unit id="s422d2e7d405483f9">
   <source>About the JSON</source>
@@ -705,10 +665,6 @@
 <trans-unit id="s41f1192bd6241100">
   <source>A deprecated version stays in the stencil but is hidden when applying, unless you ask to see deprecated versions.</source>
   <target>Eine veraltete Version bleibt im Stencil, wird beim Anwenden aber ausgeblendet, es sei denn, Sie lassen veraltete Versionen anzeigen.</target>
-</trans-unit>
-<trans-unit id="s4eace40ad0e504b1">
-  <source>To make a new application, capture it from the open document with the button above. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.</source>
-  <target>Um neue Anwendung zu erstellen, erfassen Sie sie mit der Schaltfläche oben aus dem geöffneten Dokument. Für Änderungen, die die Formulare nicht abdecken, bearbeiten Sie das JSON des Stencils, einer Anwendung oder einer Version.</target>
 </trans-unit>
 <trans-unit id="s8a98fe79cdf9c4fa">
   <source>Capturing turns IEDs you have already configured into a stencil. Choose the IEDs that belong together, for example one protection relay and its merging units.</source>
@@ -901,6 +857,146 @@
 <trans-unit id="s1351b991ccab3902">
   <source>Start a new stencil</source>
   <target>Neues Stencil beginnen</target>
+</trans-unit>
+<trans-unit id="s62e661fc72a3fa37">
+  <source>Apply stencil <x id="0" equiv-text="${this.application.name} ${this.version.version}"/></source>
+  <target>Stencil <x id="0" equiv-text="${this.application.name} ${this.version.version}"/> anwenden</target>
+</trans-unit>
+<trans-unit id="s75011e6bc8bc5e9b">
+  <source>This stencil has no applications yet. Import a stencil file, or create an application from this document under Manage.</source>
+  <target>Dieses Stencil enthält noch keine Anwendungen. Importieren Sie eine Stencil-Datei oder erstellen Sie unter „Verwalten“ eine Anwendung aus diesem Dokument.</target>
+</trans-unit>
+<trans-unit id="sb2611ded898e03b9">
+  <source>The document has changed since this was applied, for example by undo, so not all of it is in place now.</source>
+  <target>Das Dokument wurde seit dem Anwenden geändert, zum Beispiel durch „Rückgängig“, daher ist nicht mehr alles vorhanden.</target>
+</trans-unit>
+<trans-unit id="s6e7e402508b0cd89">
+  <source>Review again</source>
+  <target>Erneut prüfen</target>
+</trans-unit>
+<trans-unit id="s0c5b9ec025dc1409">
+  <source>No supervision</source>
+  <target>Keine Überwachung</target>
+</trans-unit>
+<trans-unit id="saba0d0ef5eafcccf">
+  <source>Edit application <x id="0" equiv-text="${scope.key.name}"/> as JSON</source>
+  <target>Anwendung <x id="0" equiv-text="${scope.key.name}"/> als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="s1a28fedd36c824fb">
+  <source>Edit <x id="0" equiv-text="${scope.key.name} ${scope.version}"/> as JSON</source>
+  <target><x id="0" equiv-text="${scope.key.name} ${scope.version}"/> als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="sa8e4f51d517adfc5">
+  <source>Edit stencil <x id="0" equiv-text="${this.stencil.name}"/> as JSON</source>
+  <target>Stencil <x id="0" equiv-text="${this.stencil.name}"/> als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="see4b51ca5087a14a">
+  <source>The editor could not be loaded. Check the connection and open it again.</source>
+  <target>Der Editor konnte nicht geladen werden. Prüfen Sie die Verbindung und öffnen Sie ihn erneut.</target>
+</trans-unit>
+<trans-unit id="s50b57cbd671eda5c">
+  <source>The stencil was changed elsewhere while you were editing. Discard your edits to see it, then make them again.</source>
+  <target>Das Stencil wurde während Ihrer Bearbeitung an anderer Stelle geändert. Verwerfen Sie Ihre Änderungen, um es zu sehen, und nehmen Sie sie dann erneut vor.</target>
+</trans-unit>
+<trans-unit id="sba32db09c1135dfc">
+  <source>Edit the stencil as JSON</source>
+  <target>Das Stencil als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="s61b795a139a27572">
+  <source>Edit the application as JSON</source>
+  <target>Die Anwendung als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="sf56f6457dbf48674">
+  <source>Delete application</source>
+  <target>Anwendung löschen</target>
+</trans-unit>
+<trans-unit id="s595769c6568c69bc">
+  <source>Edit the version as JSON</source>
+  <target>Die Version als JSON bearbeiten</target>
+</trans-unit>
+<trans-unit id="s29031638bc320f02">
+  <source>Delete version</source>
+  <target>Version löschen</target>
+</trans-unit>
+<trans-unit id="sfbc31dd48f233ecc">
+  <source>Tag Id</source>
+  <target>Tag-ID</target>
+</trans-unit>
+<trans-unit id="sfa55895f7ecbd2f3">
+  <source>Tag version</source>
+  <target>Tag-Version</target>
+</trans-unit>
+<trans-unit id="s5d47db3d6ee8be2e">
+  <source>Discard your edits?</source>
+  <target>Änderungen verwerfen?</target>
+</trans-unit>
+<trans-unit id="sf109fe86787b2bad">
+  <source>The JSON you changed has not been saved.</source>
+  <target>Das geänderte JSON wurde nicht gespeichert.</target>
+</trans-unit>
+<trans-unit id="sd83908a9eb71ae52">
+  <source>This stencil has no applications yet. Create one from the open document, or import a stencil.</source>
+  <target>Dieses Stencil enthält noch keine Anwendungen. Erstellen Sie eine aus dem geöffneten Dokument oder importieren Sie ein Stencil.</target>
+</trans-unit>
+<trans-unit id="s6aabcdabfb46fb55">
+  <source>Imported <x id="0" equiv-text="${stencil.name} ${stencil.version}"/></source>
+  <target><x id="0" equiv-text="${stencil.name} ${stencil.version}"/> importiert</target>
+</trans-unit>
+<trans-unit id="s9960a2d4c04bb1de">
+  <source>This stencil is already in the library</source>
+  <target>Dieses Stencil ist bereits in der Bibliothek</target>
+</trans-unit>
+<trans-unit id="scd741ce865c0c5c9">
+  <source><x id="0" equiv-text="${stencil.name} ${stencil.version}"/> is in the library with different content. Replacing it loses the changes made to it here.</source>
+  <target><x id="0" equiv-text="${stencil.name} ${stencil.version}"/> ist mit anderem Inhalt in der Bibliothek. Beim Ersetzen gehen die hier daran vorgenommenen Änderungen verloren.</target>
+</trans-unit>
+<trans-unit id="s6cadcfd1f4d2c0b7">
+  <source>Keep both</source>
+  <target>Beide behalten</target>
+</trans-unit>
+<trans-unit id="s2a8434b16dc214a3">
+  <source>Replace</source>
+  <target>Ersetzen</target>
+</trans-unit>
+<trans-unit id="s75b71c3e4c0ee996">
+  <source>Tag IEDs</source>
+  <target>IEDs markieren</target>
+</trans-unit>
+<trans-unit id="se67be6b9b33f654e">
+  <source>These IEDs already had this tag</source>
+  <target>Diese IEDs hatten dieses Tag bereits</target>
+</trans-unit>
+<trans-unit id="s9b1eaf468beedbb4">
+  <source>Tagged 1 IED</source>
+  <target>1 IED markiert</target>
+</trans-unit>
+<trans-unit id="sc31d32c5d37a46ae">
+  <source>Tagged <x id="0" equiv-text="${changed}"/> IEDs</source>
+  <target><x id="0" equiv-text="${changed}"/> IEDs markiert</target>
+</trans-unit>
+<trans-unit id="sb68c56b2a4b2b198">
+  <source>A tag says which function of a stencil an IED is made for. Only IEDs with the tag a function asks for can fill it.</source>
+  <target>Ein Tag gibt an, für welche Funktion eines Stencils ein IED vorgesehen ist. Nur IEDs mit dem Tag, das eine Funktion verlangt, können sie übernehmen.</target>
+</trans-unit>
+<trans-unit id="s4b53adb8cdfa84d1">
+  <source>Use the tag of the function</source>
+  <target>Tag dieser Funktion verwenden</target>
+</trans-unit>
+<trans-unit id="sd17f73036896a45c">
+  <source>A tag Id is needed</source>
+  <target>Eine Tag-ID ist erforderlich</target>
+</trans-unit>
+<trans-unit id="s9fac6b1d3d4ca782">
+  <source>Tag 1 IED</source>
+  <target>1 IED markieren</target>
+</trans-unit>
+<trans-unit id="sf7b77b551dd909f0">
+  <source>Tag <x id="0" equiv-text="${count}"/> IEDs</source>
+  <target><x id="0" equiv-text="${count}"/> IEDs markieren</target>
+</trans-unit>
+<trans-unit id="sbedbba778b31436e">
+  <source>To make a new application, use Create beside the list of applications: it captures one from the open document. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.</source>
+  <target>Um eine neue Anwendung zu erstellen, verwenden Sie „Erstellen“ neben der Liste der Anwendungen: Damit wird eine aus dem geöffneten Dokument erfasst. Für Änderungen, die die Formulare nicht abdecken, bearbeiten Sie das JSON des Stencils, einer Anwendung oder einer Version.</target>
 </trans-unit>
 </body>
 </file>

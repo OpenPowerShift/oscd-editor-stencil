@@ -105,7 +105,7 @@ describe('oscd-stencil-mapping-table', () => {
       'Sampled values'
     );
     expect(text(sv1.querySelector('.count')!)).to.equal('1');
-    expect(text(sv1.querySelector('.supervision')!)).to.equal('None');
+    expect(text(sv1.querySelector('.supervision')!)).to.equal('No supervision');
   });
 
   it('can hide the supervisions', async () => {

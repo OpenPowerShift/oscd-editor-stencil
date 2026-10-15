@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { msg, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
+import { prefersReducedMotion } from './motion.js';
 
 import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
@@ -50,6 +51,7 @@ export class OscdStencilHelp extends ScopedElementsMixin(LitElement) {
         ><oscd-icon aria-hidden="true">help</oscd-icon></oscd-icon-button
       >
       <oscd-dialog
+        ?quick=${prefersReducedMotion()}
         id="dialog"
         ?open=${this.open}
         @closed=${(e: Event) => {
