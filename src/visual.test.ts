@@ -51,8 +51,7 @@ describe('screenshots', () => {
     };
 
     const choose = async () => {
-      const list = el.shadowRoot!.querySelector('#applications') as OscdSelectionList;
-      (list.shadowRoot!.querySelector('oscd-list-item') as HTMLElement).click();
+      (el.shadowRoot!.querySelector('#applications .app') as HTMLElement).click();
       await el.updateComplete;
     };
 
@@ -99,8 +98,7 @@ describe('screenshots', () => {
         <oscd-stencil-apply .doc=${doc} .stencil=${stencil}></oscd-stencil-apply>
       </div>`);
       const view = themed.querySelector('oscd-stencil-apply') as OscdStencilApply;
-      const list = view.shadowRoot!.querySelector('#applications') as OscdSelectionList;
-      (list.shadowRoot!.querySelector('oscd-list-item') as HTMLElement).click();
+      (view.shadowRoot!.querySelector('#applications .app') as HTMLElement).click();
       await view.updateComplete;
       await shoot(themed, 'apply 6 themed');
     });

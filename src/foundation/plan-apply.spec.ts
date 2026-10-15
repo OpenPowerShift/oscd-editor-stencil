@@ -189,19 +189,19 @@ describe('planApply', () => {
       expect(taken.getAttribute('doName')).to.equal('Ind9');
     });
 
-    it('does not fill an input whose restrictions the data does not meet', () => {
+    it('fills an input whatever its type restrictions, as the original plugin did', () => {
       const functions = new Map([
         ['PUBF', 'PUB2'],
         ['SUBF', 'SUB2']
       ]);
-      const sampledOnly = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
-      sampledOnly.setAttribute('pDO', 'Ind1');
-      sampledOnly.setAttribute('pServT', 'SMV');
+      const restricted = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      restricted.setAttribute('pDO', 'Ind1');
+      restricted.setAttribute('pServT', 'SMV');
 
       const plan = planApply(doc, application, functions);
-      expect(plan.errors.join()).to.contain('does not accept this data');
+      expect(plan.errors).to.be.empty;
       plan.edits.forEach(edit => handleEdit(edit));
-      expect(sampledOnly.hasAttribute('iedName')).to.be.false;
+      expect(restricted.getAttribute('iedName')).to.equal('PUB2');
     });
 
     it('marks a control block that cannot be found as failed', () => {

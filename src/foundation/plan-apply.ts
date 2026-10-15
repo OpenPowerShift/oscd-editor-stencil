@@ -1,6 +1,5 @@
 import {
   controlBlockObjRef,
-  doesFcdaMeetExtRefRestrictions,
   find,
   instantiateSubscriptionSupervision,
   matchDataAttributes,
@@ -209,28 +208,16 @@ export function planApply(
             return;
           }
 
-          // an input prepared by the IED tool is only filled when it is free
-          // and accepts the data: one bound to another source is not replaced
-          if (newSink.tagName === 'ExtRef') {
-            const where = newIedIdentity(newToIed, mapping.ExtRef);
-            if (isSubscribed(newSink)) {
-              plan.errors.push(
-                `Already subscribed to ${newSink.getAttribute('iedName')}, not changed: ${where}`
-              );
-              item.failed = true;
-              return;
-            }
-            if (
-              !doesFcdaMeetExtRefRestrictions(newSink, newSource, {
-                controlBlockType:
-                  newCb.tagName === 'GSEControl' ? 'GOOSE' : 'SMV',
-                checkOnlyBType: true
-              })
-            ) {
-              plan.errors.push(`The input does not accept this data: ${where}`);
-              item.failed = true;
-              return;
-            }
+          // an input prepared by the IED tool is only filled when it is free:
+          // one bound to another source is not replaced. As in the original
+          // plugin, its type restrictions (pDO, pDA, pLN, pServT) are not
+          // checked: the stencil was captured from a working configuration.
+          if (newSink.tagName === 'ExtRef' && isSubscribed(newSink)) {
+            plan.errors.push(
+              `Already subscribed to ${newSink.getAttribute('iedName')}, not changed: ${newIedIdentity(newToIed, mapping.ExtRef)}`
+            );
+            item.failed = true;
+            return;
           }
 
           connections.push({

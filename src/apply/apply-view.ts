@@ -9,8 +9,8 @@ import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
 import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
 import { OscdOutlinedSelect } from '@omicronenergy/oscd-ui/select/OscdOutlinedSelect.js';
-import { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
-import type { SelectItem } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
+import { OscdListItem } from '@omicronenergy/oscd-ui/list/OscdListItem.js';
+import { OscdOutlinedSearchField } from '@omicronenergy/oscd-ui/search-field/OscdOutlinedSearchField.js';
 import { OscdSelectOption } from '@omicronenergy/oscd-ui/select/OscdSelectOption.js';
 import { OscdSwitch } from '@omicronenergy/oscd-ui/switch/OscdSwitch.js';
 import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
@@ -87,7 +87,8 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     'oscd-outlined-select': OscdOutlinedSelect,
     'oscd-select-option': OscdSelectOption,
     'oscd-stencil-mapping-table': OscdStencilMappingTable,
-    'oscd-selection-list': OscdSelectionList,
+    'oscd-list-item': OscdListItem,
+    'oscd-outlined-search-field': OscdOutlinedSearchField,
     'oscd-switch': OscdSwitch,
     'oscd-text-button': OscdTextButton
   };
@@ -110,6 +111,9 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   @state() step: Step = 'choose';
 
   @state() showDeprecated = false;
+
+  /** What is typed in the search above the applications. */
+  @state() search = '';
 
   @state() application: VersionedApplications | null = null;
 
@@ -384,48 +388,81 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     </ol>`;
   }
 
-  private applicationItems(): SelectItem[] {
-    return visibleApplications(this.stencil, this.showDeprecated)
-      .sort(
-        (a, b) =>
-          a.category.toLowerCase().localeCompare(b.category.toLowerCase()) ||
-          a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-      )
-      .map((app) => {
-        const version = defaultVersion(app, this.showDeprecated);
-        return {
-          headline: app.name,
-          supportingText: [app.category, app.description, version?.version]
-            .filter(Boolean)
-            .join(' · '),
-          selected: app === this.application
-        };
-      });
+
+
+  /** The applications that can be chosen, grouped by category and sorted. */
+  private applicationGroups(): {
+    category: string;
+    apps: VersionedApplications[];
+  }[] {
+    const byName = (a: string, b: string) =>
+      a.toLowerCase().localeCompare(b.toLowerCase());
+    const terms = this.search.toLowerCase().split(/\s+/).filter(Boolean);
+    const matches = (app: VersionedApplications): boolean => {
+      const version = defaultVersion(app, this.showDeprecated)?.version ?? '';
+      const text = [app.category, app.name, app.description, version]
+        .join(' ')
+        .toLowerCase();
+      return terms.every(term => text.includes(term));
+    };
+
+    const groups = new Map<string, VersionedApplications[]>();
+    visibleApplications(this.stencil, this.showDeprecated)
+      .filter(matches)
+      .sort((a, b) => byName(a.category, b.category) || byName(a.name, b.name))
+      .forEach(app =>
+        groups.set(app.category, [...(groups.get(app.category) ?? []), app])
+      );
+    return [...groups].map(([category, apps]) => ({ category, apps }));
   }
 
   private renderApplicationList(): TemplateResult {
-    const apps = visibleApplications(this.stencil, this.showDeprecated).sort(
-      (a, b) =>
-        a.category.toLowerCase().localeCompare(b.category.toLowerCase()) ||
-        a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-    );
+    const groups = this.applicationGroups();
 
-    return html`<oscd-selection-list
-      id="applications"
-      filterable
-      .items=${this.applicationItems()}
-      @selection-list-change=${(event: Event) => {
-        const list = event.target as OscdSelectionList;
-        const index = list.items.findIndex(item => item.selected);
-        if (index >= 0) {
-          this.choose(apps[index]);
-        } else {
-          // clicking the chosen application clears the list's tick; keep the choice
-          this.requestUpdate();
-        }
-      }}
-    ></oscd-selection-list>`;
+    return html`<oscd-outlined-search-field
+        id="app-search"
+        placeholder=${msg('Search applications')}
+        aria-label=${msg('Search applications')}
+        .value=${this.search}
+        @input=${(e: Event) =>
+          (this.search = (e.target as HTMLInputElement).value)}
+      ></oscd-outlined-search-field>
+      <div id="applications" role="listbox" aria-label=${msg('Applications')}>
+        ${groups.length === 0
+          ? html`<p class="hint" id="no-match">
+              ${msg('No application matches the search.')}
+            </p>`
+          : groups.map(
+            ({ category, apps }, g) => html`<div
+                class="group"
+                role="group"
+                aria-labelledby="group-${g}"
+              >
+                <div class="group-head" id="group-${g}">${category}</div>
+                ${apps.map((app) => {
+                  const selected = app === this.application;
+                  const version = defaultVersion(app, this.showDeprecated);
+                  return html`<oscd-list-item
+                    type="button"
+                    role="option"
+                    class="app ${selected ? 'selected' : ''}"
+                    aria-selected=${selected ? 'true' : 'false'}
+                    data-app=${app.name}
+                    @click=${() => this.choose(app)}
+                  >
+                    <div slot="headline">${app.name}</div>
+                    <div slot="supporting-text">
+                      ${[app.description, version?.version]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                  </oscd-list-item>`;
+                })}
+              </div>`
+          )}
+      </div>`;
   }
+
 
   private renderVersionDetails(): TemplateResult {
     const app = this.application;
@@ -925,9 +962,32 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         margin-bottom: 8px;
       }
 
-      oscd-selection-list {
+      #app-search {
+        margin-bottom: 8px;
+        width: 100%;
+      }
+
+      #applications {
         max-height: 60vh;
         overflow-y: auto;
+      }
+
+      .group + .group {
+        margin-top: 8px;
+      }
+
+      .group-head {
+        border-bottom: 1px solid var(--stencil-border);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        padding: 8px 12px 4px;
+        text-transform: uppercase;
+      }
+
+      .app.selected {
+        background: color-mix(in srgb, var(--oscd-primary) 14%, transparent);
+        box-shadow: inset 4px 0 0 var(--oscd-primary);
       }
 
       .card {

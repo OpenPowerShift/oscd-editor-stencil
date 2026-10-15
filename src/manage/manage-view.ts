@@ -278,13 +278,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   private renderLibrary(): TemplateResult {
     return html`<div class="card" id="library">
       <div class="with-help"><h2>
-        ${msg('Stencil library')}</h2><oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help></div>
+        ${msg('Stencils')}</h2><oscd-stencil-help heading=${msg('Managing stencils')}>${helpManage()}</oscd-stencil-help></div>
       <div class="row">
         ${keyed(
           libraryKey(this.library, this.currentId),
           html`<oscd-outlined-select
           id="stencils"
-          label=${msg('Stencil')}
+          label=${msg('Selected stencil')}
           .value=${this.currentId}
           @change=${(e: Event) =>
             this.emit('stencil-select', (e.target as OscdOutlinedSelect).value)}

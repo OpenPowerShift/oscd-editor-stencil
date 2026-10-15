@@ -314,10 +314,6 @@
   <source>This cannot be applied yet:</source>
   <target>Isto ainda não pode ser aplicado:</target>
 </trans-unit>
-<trans-unit id="s8bfc48019cc626f3">
-  <source>Stencil</source>
-  <target>Stencil</target>
-</trans-unit>
 <trans-unit id="sc16f79fac7b7fcec">
   <source>Remove from library</source>
   <target>Remover da biblioteca</target>
@@ -569,10 +565,6 @@
 <trans-unit id="s422d2e7d405483f9">
   <source>About the JSON</source>
   <target>Sobre o JSON</target>
-</trans-unit>
-<trans-unit id="s2b1bb0b27f5d1994">
-  <source>Stencil library</source>
-  <target>Biblioteca de stencils</target>
 </trans-unit>
 <trans-unit id="sb2ed120f2b914316">
   <source>Managing stencils</source>
@@ -997,6 +989,22 @@
 <trans-unit id="sbedbba778b31436e">
   <source>To make a new application, use Create beside the list of applications: it captures one from the open document. For changes the forms do not cover, edit the JSON of the stencil, an application or a version.</source>
   <target>Para criar uma nova aplicação, use «Criar» junto à lista de aplicações: captura uma a partir do documento aberto. Para alterações que os formulários não cobrem, edite o JSON do stencil, de uma aplicação ou de uma versão.</target>
+</trans-unit>
+<trans-unit id="s54ad20ca7b2af128">
+  <source>Search applications</source>
+  <target>Pesquisar aplicações</target>
+</trans-unit>
+<trans-unit id="s11a52027455e3c94">
+  <source>No application matches the search.</source>
+  <target>Nenhuma aplicação corresponde à pesquisa.</target>
+</trans-unit>
+<trans-unit id="sa3d4dabd64b36b80">
+  <source>Stencils</source>
+  <target>Stencils</target>
+</trans-unit>
+<trans-unit id="sa2b01574d4715650">
+  <source>Selected stencil</source>
+  <target>Stencil selecionado</target>
 </trans-unit>
 </body>
 </file>

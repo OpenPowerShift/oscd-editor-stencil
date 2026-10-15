@@ -654,7 +654,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
               libraryKey(this.library, this.currentId),
               html`<oscd-outlined-select
                 id="recent"
-                label=${msg('Stencil')}
+                label=${msg('Selected stencil')}
                 .value=${this.currentId}
                 @change=${(e: Event) =>
                   this.selectStencil((e.target as OscdOutlinedSelect).value)}

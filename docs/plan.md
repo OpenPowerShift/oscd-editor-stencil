@@ -355,7 +355,7 @@ Decided after the review round: two tabs, **Apply** and **Manage**.
 
 Fixed:
 
-- **Document safety:** Apply no longer overwrites an input bound to another source, or one whose restrictions the data does not meet (scl-lib `doesFcdaMeetExtRefRestrictions`). Each control block that could not be applied in full is marked as such in the results. References are resolved within their IED, and LLN0 inputs count as subscribed without `lnInst`.
+- **Document safety:** Apply no longer overwrites an input bound to another source. Type restrictions (pDO, pDA, pLN, pServT) are not checked, as in the original plugin (`subscribe` with `force: true`): a check added in this round was taken out again at the user's request, so that Apply does not refuse what it used to do. Each control block that could not be applied in full is marked as such in the results. References are resolved within their IED, and LLN0 inputs count as subscribed without `lnInst`.
 - **Stencil safety:**
   - Files must have unique, non-blank names and versions, functions that exist, and GOOSE or SV control blocks.
   - An import that would replace different content asks (Replace, Keep both, Cancel).

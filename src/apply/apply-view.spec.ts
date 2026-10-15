@@ -1,7 +1,6 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { handleEdit } from '@omicronenergy/oscd-editor';
 import type { OscdOutlinedSelect } from '@omicronenergy/oscd-ui/select/OscdOutlinedSelect.js';
-import type { OscdSelectionList } from '@omicronenergy/oscd-ui/selection-list/OscdSelectionList.js';
 import type { EditV2 } from '@openscd/oscd-api';
 
 import { OscdStencilApply } from './apply-view.js';
@@ -33,10 +32,11 @@ describe('oscd-stencil-apply', () => {
   };
 
   const chooseFirstApplication = async () => {
-    const list = q<OscdSelectionList>('#applications');
-    (list.shadowRoot!.querySelector('oscd-list-item') as HTMLElement).click();
+    q<HTMLElement>('#applications .app').click();
     await el.updateComplete;
   };
+
+  const listed = () => qa('#applications .app').map(item => item.getAttribute('data-app'));
 
   const assign = async (fn: string, iedName: string) => {
     const select = q<OscdOutlinedSelect>(`[data-function="${fn}"] oscd-outlined-select`);
@@ -88,16 +88,43 @@ describe('oscd-stencil-apply', () => {
     });
 
     it('lists the usable applications and hides ones with only deprecated versions', () => {
-      const list = q<OscdSelectionList>('#applications');
-      expect(list.items.map(i => i.headline)).to.deep.equal(['BZ']);
+      expect(listed()).to.deep.equal(['BZ']);
     });
 
     it('shows deprecated-only applications when asked', async () => {
       q<HTMLElement>('#show-deprecated').dispatchEvent(new Event('change'));
       await el.updateComplete;
-      expect(q<OscdSelectionList>('#applications').items.map(i => i.headline)).to.deep.equal(
-        ['BZ', 'Old']
-      );
+      expect(listed()).to.deep.equal(['BZ', 'Old']);
+    });
+
+    it('groups the applications under their category, sorted, and searches them', async () => {
+      el.stencil = makeStencil([
+        makeApplication('Line', 'Distance', [makeVersion('1.0.0')]),
+        makeApplication('Bus', 'Zone B', [makeVersion('1.0.0')]),
+        makeApplication('Bus', 'Zone A', [makeVersion('2.0.0')])
+      ]);
+      await el.updateComplete;
+      expect(qa('.group-head').map(h => h.textContent!.trim())).to.deep.equal(['Bus', 'Line']);
+      expect(listed()).to.deep.equal(['Zone A', 'Zone B', 'Distance']);
+
+      const search = q<HTMLInputElement>('#app-search');
+      const find = async (text: string) => {
+        search.value = text;
+        search.dispatchEvent(new Event('input'));
+        await el.updateComplete;
+      };
+      await find('zone');
+      expect(listed()).to.deep.equal(['Zone A', 'Zone B']);
+      await find('line');
+      expect(listed()).to.deep.equal(['Distance']);
+      await find('2.0.0');
+      expect(listed()).to.deep.equal(['Zone A']);
+      await find('nothing like this');
+      expect(q('#no-match')).to.exist;
+    });
+
+    it('shows the category even when there is only one', () => {
+      expect(qa('.group-head').map(h => h.textContent!.trim())).to.deep.equal(['Bus']);
     });
 
     it('marks the first step as current', () => {
@@ -185,7 +212,7 @@ describe('oscd-stencil-apply', () => {
       await chooseFirstApplication();
       await el.updateComplete;
       expect(el.application?.name).to.equal('BZ');
-      expect(q<OscdSelectionList>('#applications').items[0].selected).to.be.true;
+      expect(q('#applications .app').getAttribute('aria-selected')).to.equal('true');
       expect(q('#summary')).to.exist;
     });
   });
