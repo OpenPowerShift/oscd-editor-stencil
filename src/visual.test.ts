@@ -166,6 +166,32 @@ describe('screenshots', () => {
   });
 
   describe('json', () => {
+    /**
+     * Ace measures its characters when it starts, which can be before the
+     * fonts have loaded: wait for the JSON mode and the fonts, then make it
+     * measure and draw again, so the picture is the same every time.
+     */
+    const settleEditor = async (el: OscdStencilJson) => {
+      await waitUntil(() => el.editorReady, 'editor loads');
+      const ace = el.shadowRoot!.querySelector('#editor') as HTMLElement & {
+        editor?: {
+          session: { getMode(): { $id: string } };
+          renderer: { updateFontSize(): void; updateFull(force: boolean): void };
+          resize(force: boolean): void;
+        };
+      };
+      await waitUntil(
+        () => ace.editor?.session.getMode().$id === 'ace/mode/json',
+        'JSON mode',
+        { timeout: 5000 }
+      );
+      await document.fonts.ready;
+      ace.editor!.renderer.updateFontSize();
+      ace.editor!.resize(true);
+      ace.editor!.renderer.updateFull(true);
+      await new Promise(resolve => setTimeout(resolve, 300));
+    };
+
     const edit = async (el: OscdStencilJson, text: string) => {
       el.shadowRoot!
         .querySelector('#editor')!
@@ -177,8 +203,7 @@ describe('screenshots', () => {
       const el = await fixture<OscdStencilJson>(
         html`<oscd-stencil-json .stencil=${stencil}></oscd-stencil-json>`
       );
-      await waitUntil(() => el.editorReady, 'editor loads');
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await settleEditor(el);
       await shoot(el, 'json 1 valid');
     });
 
@@ -186,9 +211,9 @@ describe('screenshots', () => {
       const el = await fixture<OscdStencilJson>(
         html`<oscd-stencil-json .stencil=${stencil}></oscd-stencil-json>`
       );
-      await waitUntil(() => el.editorReady, 'editor loads');
+      await settleEditor(el);
       await edit(el, '{"name": 5}');
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await settleEditor(el);
       await shoot(el, 'json 2 invalid');
     });
   });
