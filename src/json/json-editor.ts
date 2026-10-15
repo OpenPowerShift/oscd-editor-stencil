@@ -17,9 +17,38 @@ import { themeStyles } from '../theme.js';
 
 type AceEditorElement = HTMLElement & {
   updateComplete: Promise<boolean>;
-  editor?: { session: { setUseWorker(use: boolean): void } };
-  aceEditorBase?: { mode?: string };
+  editor?: {
+    session: { setUseWorker(use: boolean): void; setMode(mode: string): void };
+  };
+  aceEditorBase?: { mode?: string; editor?: AceEditorElement['editor'] };
 };
+
+/** oscd-ui keeps the settings of every Ace editor in the browser, under this key. */
+const ACE_OPTIONS_KEY = 'oscd:ace-options';
+const JSON_MODE = 'ace/mode/json';
+
+function storedAceMode(): string | undefined {
+  try {
+    return JSON.parse(localStorage.getItem(ACE_OPTIONS_KEY) ?? '{}').mode;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Puts a mode back in the shared settings, so other editors (XML) are not left in JSON. */
+function storeAceMode(mode: string): void {
+  try {
+    const stored = localStorage.getItem(ACE_OPTIONS_KEY);
+    if (stored) {
+      localStorage.setItem(
+        ACE_OPTIONS_KEY,
+        JSON.stringify({ ...JSON.parse(stored), mode })
+      );
+    }
+  } catch {
+    // the settings are not ours to insist on
+  }
+}
 
 /** The Ace editor is large, so it is only loaded when this view is opened. */
 const loadAceEditor = async () =>
@@ -58,14 +87,25 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
 
   private saved = '';
 
+  /** The mode other editors use, which is put back when this one goes. */
+  private shared = 'ace/mode/xml';
+
   connectedCallback(): void {
     super.connectedCallback();
+    const mode = storedAceMode();
+    this.shared = !mode || mode === JSON_MODE ? 'ace/mode/xml' : mode;
+    storeAceMode(this.shared);
     loadAceEditor().then((OscdAceEditor) => {
       if (!this.registry?.get('oscd-ace-editor')) {
         this.registry?.define('oscd-ace-editor', OscdAceEditor);
       }
       this.editorReady = true;
     });
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    storeAceMode(this.shared);
   }
 
   /** The editor is made for XML, so switch it to JSON once it is there. */
@@ -79,11 +119,24 @@ export class OscdStencilJson extends ScopedElementsMixin(LitElement) {
       import('@omicronenergy/oscd-ui/ace-editor/ace/mode-json.js'),
       ace.updateComplete
     ]);
-    // Ace would fetch a worker script that is not served; the text is
-    // checked here instead
-    ace.editor?.session.setUseWorker(false);
+    // Ask for the mode, and also set it on the session once there is one:
+    // the editor may already ask for JSON (before the mode was loaded), when
+    // asking again changes nothing. Ace would also fetch a worker script that
+    // is not served; the text is checked here instead.
     if (ace.aceEditorBase) {
-      ace.aceEditorBase.mode = 'ace/mode/json';
+      ace.aceEditorBase.mode = JSON_MODE;
+    }
+    for (let tries = 0; tries < 40; tries += 1) {
+      const editor = ace.editor ?? ace.aceEditorBase?.editor;
+      if (editor) {
+        editor.session.setUseWorker(false);
+        editor.session.setMode(JSON_MODE);
+        return;
+      }
+       
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
     }
   }
 

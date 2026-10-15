@@ -41,10 +41,39 @@ describe('oscd-stencil-json', () => {
     expect(q<HTMLButtonElement>('#revert').disabled).to.be.true;
   });
 
-  it('highlights the text as JSON', async () => {
-    const ace = q<HTMLElement & { aceEditorBase?: { mode?: string }; updateComplete: Promise<unknown> }>('#editor');
+  it('highlights the text as JSON, in the editor itself', async () => {
+    const ace = q<
+      HTMLElement & {
+        aceEditorBase?: { mode?: string; editor?: { session: { getMode(): { $id: string } } } };
+        updateComplete: Promise<unknown>;
+      }
+    >('#editor');
     await ace.updateComplete;
-    await waitUntil(() => ace.aceEditorBase?.mode === 'ace/mode/json', 'JSON mode is set', { timeout: 3000 });
+    await waitUntil(
+      () => ace.aceEditorBase?.editor?.session.getMode().$id === 'ace/mode/json',
+      'the session uses the JSON mode',
+      { timeout: 3000 }
+    );
+    expect(ace.aceEditorBase?.mode).to.equal('ace/mode/json');
+  });
+
+  it('does not leave the JSON mode in the settings that other editors share', async () => {
+    localStorage.setItem('oscd:ace-options', JSON.stringify({ mode: 'ace/mode/json', fontSize: '17' }));
+    const another = await fixture<OscdStencilJson>(
+      html`<oscd-stencil-json .stencil=${stencil}></oscd-stencil-json>`
+    );
+    expect(JSON.parse(localStorage.getItem('oscd:ace-options')!).mode).to.equal('ace/mode/xml');
+    another.remove();
+    expect(JSON.parse(localStorage.getItem('oscd:ace-options')!).mode).to.equal('ace/mode/xml');
+    expect(JSON.parse(localStorage.getItem('oscd:ace-options')!).fontSize).to.equal('17');
+
+    localStorage.setItem('oscd:ace-options', JSON.stringify({ mode: 'ace/mode/text' }));
+    const text = await fixture<OscdStencilJson>(
+      html`<oscd-stencil-json .stencil=${stencil}></oscd-stencil-json>`
+    );
+    text.remove();
+    expect(JSON.parse(localStorage.getItem('oscd:ace-options')!).mode).to.equal('ace/mode/text');
+    localStorage.removeItem('oscd:ace-options');
   });
 
   it('lists what is wrong and cannot apply invalid text', async () => {

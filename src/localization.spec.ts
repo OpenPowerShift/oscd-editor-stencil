@@ -1,4 +1,4 @@
-import { expect, fixture, html } from '@open-wc/testing';
+import { expect, fixture, html, waitUntil } from '@open-wc/testing';
 
 import OscdEditorStencil from './oscd-editor-stencil.js';
 import { getLocale, supportedLocale, useLocale } from './localization.js';
@@ -32,19 +32,19 @@ describe('localization', () => {
     const plugin = await fixture<OscdEditorStencil>(
       html`<oscd-editor-stencil .doc=${doc} locale="de"></oscd-editor-stencil>`
     );
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitUntil(() => getLocale() === 'de', 'German is loaded', { timeout: 3000 });
     await plugin.updateComplete;
     expect(getLocale()).to.equal('de');
     expect(plugin.shadowRoot!.textContent).to.contain('Verwalten');
     expect(plugin.shadowRoot!.textContent).to.contain('Anwenden');
 
     plugin.locale = 'pt';
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitUntil(() => getLocale() === 'pt', 'Portuguese is loaded', { timeout: 3000 });
     await plugin.updateComplete;
     expect(plugin.shadowRoot!.textContent).to.contain('Gerir');
 
     plugin.locale = 'en';
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitUntil(() => getLocale() === 'en', 'English is back', { timeout: 3000 });
     await plugin.updateComplete;
     expect(plugin.shadowRoot!.textContent).to.contain('Manage');
     plugin.remove();
