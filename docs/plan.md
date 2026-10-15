@@ -350,3 +350,37 @@ Decided after the review round: two tabs, **Apply** and **Manage**.
 - The capture wizard is opened from Manage (*Create*, a button at the head of the applications list, also from the first-run screen); import, export, edit as JSON and remove are icon buttons beside the stencil list. It stays mounted, so leaving it does not lose progress.
 - JSON is edited from Manage, scoped to the whole stencil, an application or a version (`foundation/json-scope.ts`: the scope's text is checked with the rules of a whole file, and a category, name or version that another one has is refused). The editor leaves when what it edits is gone.
 - Help icons (`src/shared/help.ts`, `help-content.ts`) open a dialog with a longer explanation at the key points: what a stencil is, reading the mapping table, assigning IEDs, reviewing, the library, capturing (three places), stencil tags and the JSON.
+
+## 11. Second review round (UX, visual and accessibility, breaking, code)
+
+Fixed:
+
+- **Document safety:** Apply no longer overwrites an input bound to another source, or one whose restrictions the data does not meet (scl-lib `doesFcdaMeetExtRefRestrictions`). Each control block that could not be applied in full is marked as such in the results. References are resolved within their IED, and LLN0 inputs count as subscribed without `lnInst`.
+- **Stencil safety:**
+  - Files must have unique, non-blank names and versions, functions that exist, and GOOSE or SV control blocks.
+  - An import that would replace different content asks (Replace, Keep both, Cancel).
+  - An edit that would give a stencil another stencil's name and version is refused.
+  - Unsaved JSON is not lost: going back asks first, a conflicting change is reported, and a renamed key is followed.
+- **State:**
+  - The stencil selectors show the current stencil.
+  - Apply drops assignments that no longer fit, says when applied work was undone, and keys cells by control block id.
+  - The capture wizard sees document changes, and the first capture into a new stencil shows its result.
+  - Editing a requirement keeps the other accepted tags.
+- **Tagging:** the dialog uses the tag of a chosen function, needs an Id and version, says how many IEDs changed, closes with Escape, and Select all/none act on what the search shows.
+- **Visual and accessibility:**
+  - The Material roles used by oscd-ui meet WCAG AA in both themes.
+  - Switches and icon-only buttons have names, and the GOOSE/SV icons are announced.
+  - Help buttons sit beside headings, and dialogs respect reduced motion.
+  - Narrow panels no longer overflow, and the dark demo's service colours are readable.
+
+Left open, for a decision:
+
+- **Undo:** stencil edits save at once and cannot be undone.
+- **Storage:** the library is one localStorage key, so one very large stencil can stop the rest being saved.
+- **Translations:**
+  - Validation and planner messages are English only.
+  - Counts have no plural forms.
+  - In the unbundled dev demo the plugin cannot install its translations (see slice 4).
+- **Toolbars:** they are plain groups without arrow-key navigation.
+- **Capture:** function names start as the IED names.
+- **Screenshot tests:** they are not run in CI (no `lfs: true` checkout, and font rendering differs between machines).
