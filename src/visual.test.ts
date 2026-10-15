@@ -102,6 +102,52 @@ describe('screenshots', () => {
       await view.updateComplete;
       await shoot(themed, 'apply 6 themed');
     });
+
+    /** Goes to the review with the publisher and subscriber copies assigned. */
+    const toReview = async (target: XMLDocument) => {
+      el.doc = target;
+      await el.updateComplete;
+      await choose();
+      await click('#next');
+      const assign = async (fn: string, ied: string) => {
+        const select = el.shadowRoot!.querySelector(
+          `[data-function="${fn}"] oscd-outlined-select`
+        ) as HTMLElement & { value: string };
+        select.value = ied;
+        select.dispatchEvent(new Event('change'));
+        await el.updateComplete;
+      };
+      await assign('Publisher', 'PUB2');
+      await assign('Subscriber', 'SUB2');
+      await click('#next');
+    };
+
+    it('reviews what applying will change', async () => {
+      await toReview(buildDocument());
+      await shoot(el, 'apply 7 review');
+    });
+
+    it('shows what was applied', async () => {
+      await toReview(buildDocument());
+      await click('#apply');
+      await shoot(el, 'apply 8 applied');
+    });
+
+    it('asks what to do with inputs subscribed to another source', async () => {
+      const target = buildDocument();
+      const taken = target.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      [
+        ['iedName', 'OTHER'],
+        ['ldInst', 'LD0'],
+        ['lnClass', 'GGIO'],
+        ['lnInst', '1'],
+        ['doName', 'Ind9']
+      ].forEach(([name, value]) => taken.setAttribute(name, value));
+      await toReview(target);
+      await click('#apply');
+      await settle();
+      await visualDiff(document.body, 'oscd-editor-stencil/apply 9 conflicts');
+    });
   });
 
   describe('manage', () => {
