@@ -9,7 +9,7 @@ The plugin shows the table in these places:
 * In the last step of the capture, *Review and save*.
 
 .A table of control blocks
-image::capture-review.png[The Review and save step of the capture. The table has the publisher PUB1 as a row group and the subscribers SELR and SUB1 as columns. The GC1 row has a GOOSE icon with 1 signal for SELR, with No supervision and a Quality badge Q_GC1, and a GOOSE icon with 2 signals for SUB1, supervised by LD0 › LGOS 1. The SV1 row has an SV icon with 1 signal for SUB1, supervised by LD0 › LSVS 1.]
+image::capture-review.png["The Review and save step of the capture. The table has the publisher PUB1 as a row group and the subscribers SELR and SUB1 as columns. The GC1 row has a GOOSE icon with 1 signal for SELR, with No supervision and a Quality badge Q_GC1, and a GOOSE icon with 2 signals for SUB1, supervised by LD0 › LGOS 1. The SV1 row has an SV icon with 1 signal for SUB1, supervised by LD0 › LSVS 1.",link=self]
 
 == Rows and columns
 

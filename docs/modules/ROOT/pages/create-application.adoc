@@ -25,9 +25,9 @@ The plugin shows the first step of the capture.
 . Select at least two IEDs that belong to the application.
 +
 .Select IEDs
-image::capture-ieds.png[The Select IEDs step. The heading asks which IEDs make up the application. A list of IEDs with check boxes has PUB1, SUB1 and SELR selected. The Next button is at the bottom.]
+image::capture-ieds.png["The Select IEDs step. The heading asks which IEDs make up the application. A list of IEDs with check boxes has PUB1, SUB1 and SELR selected. The Next button is at the bottom.",link=self]
 +
-To find an IED, type a part of its name in the search field.
+To find an IED, type a part of its name, manufacturer, type or description in the search field.
 *Select all* and *Select none* change only the IEDs that the search shows.
 . Click *Next*.
 +
@@ -35,7 +35,7 @@ The plugin shows the control blocks that one selected IED sends to another selec
 . Clear the check box of each subscription that does not belong to the application.
 +
 .Select control blocks
-image::capture-control-blocks.png[The Select control blocks step. A table has the publisher PUB1 as a row group, with the control blocks LD0 › GC1 and LD0 › SV1 as rows. The subscribers SELR and SUB1 are columns. Each cell has a check box, a GOOSE or SV icon and the number of signals.]
+image::capture-control-blocks.png["The Select control blocks step. A table has the publisher PUB1 as a row group, with the control blocks LD0 › GC1 and LD0 › SV1 as rows. The subscribers SELR and SUB1 are columns. Each cell has a check box, a GOOSE or SV icon and the number of signals.",link=self]
 +
 Each cell is one control block to one subscribing IED.
 The check box of a column, a group or a row changes all its cells.
@@ -47,7 +47,7 @@ These fields are necessary.
 . Type a name for each function in the *Function for* fields.
 +
 .Name the application
-image::capture-names.png[The Name the application step. It has the fields Category, Name, Description, Version and Version description, and a Function for field for each IED.]
+image::capture-names.png["The Name the application step. It has the fields Category, Name, Description, Version and Version description, and a Function for field for each IED.",link=self]
 +
 Each IED becomes one function.
 The plugin fills in the IED name as the function name.
@@ -58,7 +58,7 @@ Each function must have a different name.
 . Read the review.
 +
 .Review and save
-image::capture-review.png[The Review and save step. The heading shows Bus Protection › Captured 1.0.0. A line shows the counts. A note says that SELR has no stencil tag and has a Tag IEDs button. The table of control blocks is below.]
+image::capture-review.png["The Review and save step. The heading shows Bus Protection › Captured 1.0.0. A line shows the counts. A note says that SELR has no stencil tag and has a Tag IEDs button. The table of control blocks is below.",link=self]
 . Click *Save to stencil*.
 +
 The plugin adds the application version to the selected stencil.

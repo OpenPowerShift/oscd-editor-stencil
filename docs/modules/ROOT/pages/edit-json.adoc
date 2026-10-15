@@ -27,7 +27,7 @@ If the editor cannot load, the plugin shows a message.
 Check the network connection and open the editor again.
 
 .The JSON editor
-image::json-valid.png[The JSON editor with the heading Edit stencil Demo Stencil as JSON. The editor shows the stencil as JSON text with syntax highlighting. The buttons Discard edits and Save to stencil are below the editor.]
+image::json-valid.png["The JSON editor with the heading Edit stencil Demo Stencil as JSON. The editor shows the stencil as JSON text with syntax highlighting. The buttons Discard edits and Save to stencil are below the editor.",link=self]
 
 == Change the JSON
 
@@ -43,7 +43,7 @@ The plugin saves the change to the library.
 *Save to stencil* is not available while the text has problems.
 
 .Problems in the text
-image::json-invalid.png[The JSON editor with invalid text. Below the editor, the heading This cannot be applied yet is followed by a list of three problems. Save to stencil is not available.]
+image::json-invalid.png["The JSON editor with invalid text. Below the editor, the heading This cannot be applied yet is followed by a list of three problems. Save to stencil is not available.",link=self]
 
 To remove your changes, click *Discard edits*.
 

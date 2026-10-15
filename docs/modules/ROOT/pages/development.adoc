@@ -150,7 +150,7 @@ oscd-editor-stencil {
 `demo/index-themed.html` shows the plugin with a dark palette and other service colours.
 
 .The plugin with a dark palette and other service colours
-image::apply-themed.png[The Choose application step on a dark background. The text and the cards use the dark palette.]
+image::apply-themed.png["The Choose application step on a dark background. The text and the cards use the dark palette.",link=self]
 
 == Translations
 

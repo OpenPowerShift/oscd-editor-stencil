@@ -38,7 +38,7 @@ You open the *Tag IEDs* dialog from one of these places:
 * *Tag IEDs…* in the *Review and save* step of the capture.
 
 .The Tag IEDs dialog
-image::tag-ieds.png[The Tag IEDs dialog. The field Use the tag of the function shows Publisher. The fields Tag Id and Tag version show BZ-Publisher and 1.0.0. Below are the buttons Select all and Select none, a search field and a list of IEDs with check boxes. The buttons are Cancel and Tag 1 IED.]
+image::tag-ieds.png["The Tag IEDs dialog. The field Use the tag of the function shows Publisher. The fields Tag Id and Tag version show BZ-Publisher and 1.0.0. Below are the buttons Select all and Select none, a search field and a list of IEDs with check boxes. The buttons are Cancel and Tag 1 IED.",link=self]
 
 . Open the *Tag IEDs* dialog.
 . If the dialog shows *Use the tag of the function*, select the function.

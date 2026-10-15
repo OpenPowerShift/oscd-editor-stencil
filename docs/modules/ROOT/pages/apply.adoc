@@ -23,7 +23,7 @@ Thus the IEDs must have the same logical devices and logical nodes as the IEDs t
 == Choose the application
 
 .The first step, with an application chosen
-image::apply-chosen.png[The Choose application step. The list on the left shows the application Publisher to Subscriber in the category Bus Protection. The card on the right shows version 1.0.0, the counts 3 IEDs, 1 GOOSE, 1 SV, 3 subscriptions and 2 supervisions, and the manufacturer, type and stencil tag that each function needs.]
+image::apply-chosen.png["The Choose application step. The list on the left shows the application Publisher to Subscriber in the category Bus Protection. The card on the right shows version 1.0.0, the counts 3 IEDs, 1 GOOSE, 1 SV, 3 subscriptions and 2 supervisions, and the manufacturer, type and stencil tag that each function needs.",link=self]
 
 . If the library has more than one stencil, select the stencil in *Selected stencil*.
 . To find an application, type a part of its category, name, description or version in *Search applications*.
@@ -52,7 +52,7 @@ This switch is available only when the stencil has a deprecated version.
 == Assign the IEDs
 
 .The second step
-image::apply-assign.png[The Assign IEDs step. The functions Publisher, Relay and Subscriber each have an IED field. Relay has the IED SELR. A note says that more than one IED fits Publisher and Subscriber.]
+image::apply-assign.png["The Assign IEDs step. The functions Publisher, Relay and Subscriber each have an IED field. Relay has the IED SELR. A note says that more than one IED fits Publisher and Subscriber.",link=self]
 
 Each function shows a list of the IEDs that can fill it.
 An IED can fill a function when all these conditions are true:
@@ -60,6 +60,8 @@ An IED can fill a function when all these conditions are true:
 * The IED has the manufacturer and the type that the function needs.
 * The IED has the stencil tag that the function needs, if the function needs one.
 * Another function does not use the IED.
+
+To assign the IEDs, do these steps:
 
 . For each function, select an IED in *IED*.
 . As an alternative, click *Assign automatically*.
@@ -81,7 +83,7 @@ The plugin then does not apply the control blocks of that function.
 When no IED can fill a function, the function shows the reason in place of the *IED* field.
 
 .Functions that no IED can fill
-image::apply-no-candidates.png[The Assign IEDs step. Publisher and Subscriber show the reason that no IED can fill them: one IED of the correct type is in the document, but it does not have the stencil tag.]
+image::apply-no-candidates.png["The Assign IEDs step. Publisher and Subscriber show the reason that no IED can fill them: one IED of the correct type is in the document, but it does not have the stencil tag.",link=self]
 
 The reasons are:
 
@@ -98,7 +100,7 @@ This is a dry run.
 The document does not change.
 
 .The review
-image::apply-review.png[The Review card. A summary line shows 3 new subscriptions, 2 new supervisions, 0 SEL quality links and 0 already present. A table shows the control blocks GC1 and SV1 from PUB2 to SUB2, each with new subscriptions and a new supervision. A note says that the function Relay has no IED.]
+image::apply-review.png["The Review card. A summary line shows 3 new subscriptions, 2 new supervisions, 0 SEL quality links and 0 already present. A table shows the control blocks GC1 and SV1 from PUB2 to SUB2, each with new subscriptions and a new supervision. A note says that the function Relay has no IED.",link=self]
 
 . Read the summary line and the table *What will change*.
 . Read the notes and the problems below the table.
@@ -138,7 +140,7 @@ Examples are:
 * The IED does not have the supervision logical node at the reference in the stencil.
 * One supervision logical node is used for more than one control block.
 * The supervision logical node cannot accept the control block.
-The message says that the IED may have no free `LGOS` or `LSVS` instance.
+The message tells you to check that the IED has a free `LGOS` or `LSVS` instance.
 * The subscribing IED has `noIctBinding="true"` in its `ClientServices`, and the plugin must create an input.
 For more information, refer to <<what-applying-creates>>.
 
@@ -153,7 +155,7 @@ The table shows the IED, the input, the current source and the source in the ste
 When you click *Apply*, the plugin asks what to do with these inputs.
 
 .The question about inputs subscribed to another source
-image::apply-conflicts.png[A dialog with the title Replace existing subscriptions. It says that 1 input is already subscribed to another source. A table shows the input LD0 › I1[0\] of SUB2, which is subscribed to OTHER now. The stencil subscribes it to PUB2 · GC1. The buttons are Cancel, Keep them and Replace them.]
+image::apply-conflicts.png["A dialog with the title Replace existing subscriptions. It says that 1 input is already subscribed to another source. A table shows the input LD0 › I1[0] of SUB2, which is subscribed to OTHER now. The stencil subscribes it to PUB2 · GC1. The buttons are Cancel, Keep them and Replace them.",link=self]
 
 . Read the table in the dialog.
 . Click one of these buttons:
@@ -172,7 +174,7 @@ Earlier versions of the plugin did not check them either.
 == After you apply
 
 .The result
-image::apply-applied.png[The Applied card says that 3 subscriptions, 2 supervisions and 0 SEL quality links were added. Below it, the Mappings table shows the publisher PUB2 and the subscriber SUB2. The cells of GC1 and SV1 are marked Added.]
+image::apply-applied.png["The Applied card says that 3 subscriptions, 2 supervisions and 0 SEL quality links were added. Below it, the Mappings table shows the publisher PUB2 and the subscriber SUB2. The cells of GC1 and SV1 are marked Added.",link=self]
 
 The *Applied* card shows the number of subscriptions, supervisions and SEL quality links that the plugin added.
 The *Mappings* table shows the IED name below each function name.
@@ -202,12 +204,15 @@ It does not add them again.
 
 Subscriptions::
 The plugin writes the source into the input of the subscribing IED.
++
+--
 * When the input in the stencil has an `intAddr`, the plugin fills in the input with the same `intAddr`.
 * When the input in the stencil has no `intAddr`, the plugin creates a new `ExtRef` in the `Inputs` of the same logical node.
-+
+
 An IED with `noIctBinding="true"` in its `ClientServices` accepts only the inputs that its IED tool made.
 The plugin does not create new inputs on this IED.
 It shows a problem in the review.
+--
 
 Supervisions::
 The plugin uses the supervision logical node at the reference in the stencil, for example `LD0 › LGOS 1`.

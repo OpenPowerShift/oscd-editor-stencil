@@ -4,7 +4,7 @@ include::partial$base.adoc[]
 When the library is empty, the *Apply* tab shows three buttons to start.
 
 .The Apply tab when the library is empty
-image::first-run.png[The Apply tab with the heading Apply a stencil and three buttons: Import a stencil file, Start a new stencil and Create one from this document.]
+image::first-run.png["The Apply tab with the heading Apply a stencil and three buttons: Import a stencil file, Start a new stencil and Create one from this document.",link=self]
 
 == Import a stencil file
 

@@ -8,7 +8,7 @@ The *Manage* tab has three parts:
 * The cards of the application or the version that you select in the tree.
 
 .The Manage tab with a version selected
-image::manage-version.png[The Manage tab. The Stencils card at the top shows Selected stencil Demo Stencil 1.0.0 and a row of icons. The Applications card on the left shows a tree with Bus Protection, Publisher to Subscriber and version 1.0.0 selected. The Application card and the Version card on the right show the fields that you can change. The Control blocks card shows the table of control blocks.]
+image::manage-version.png["The Manage tab. The Stencils card at the top shows Selected stencil Demo Stencil 1.0.0 and a row of icons. The Applications card on the left shows a tree with Bus Protection, Publisher to Subscriber and version 1.0.0 selected. The Application card and the Version card on the right show the fields that you can change. The Control blocks card shows the table of control blocks.",link=self]
 
 The plugin saves each change to the library immediately.
 A change to a stencil does not change a document.
@@ -104,7 +104,7 @@ A deprecated version shows _(deprecated)_ after its number.
 Refer to xref:create-application.adoc[].
 
 .The Manage tab when the stencil has no applications
-image::manage-empty.png[The Manage tab. The Applications card shows the Create button and the message that the stencil has no applications yet.]
+image::manage-empty.png["The Manage tab. The Applications card shows the Create button and the message that the stencil has no applications yet.",link=self]
 
 == Change an application
 
@@ -161,4 +161,4 @@ It does not change a document.
 You cannot undo the delete.
 
 .The question before the plugin deletes a version
-image::manage-confirm-delete.png[A dialog with the title Delete this version. It says that the version is removed from this stencil and that documents are not changed. The buttons are Cancel and Delete.]
+image::manage-confirm-delete.png["A dialog with the title Delete this version. It says that the version is removed from this stencil and that documents are not changed. The buttons are Cancel and Delete.",link=self]

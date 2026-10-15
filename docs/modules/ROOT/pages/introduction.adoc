@@ -42,7 +42,7 @@ You also make new applications from IEDs that are already configured in the open
 For more information, refer to xref:manage.adoc[] and xref:create-application.adoc[].
 
 .The Apply tab, with an application chosen
-image::apply-chosen.png[The Apply tab. A list of applications with a search field is on the left. The details of the chosen application are on the right: its version, its counts and the IED that each function needs.]
+image::apply-chosen.png["The Apply tab. A list of applications with a search field is on the left. The details of the chosen application are on the right: its version, its counts and the IED that each function needs.",link=self]
 
 == What applying does
 
@@ -63,7 +63,7 @@ The help icon (a question mark in a circle) is next to some headings.
 Click the help icon to open a longer explanation of that part of the plugin.
 
 .A help dialog
-image::help-dialog.png[A dialog with the title Reviewing before applying. It explains the review step in a few short paragraphs and has a Close button.]
+image::help-dialog.png["A dialog with the title Reviewing before applying. It explains the review step in a few short paragraphs and has a Close button.",link=self]
 
 == Languages
 
