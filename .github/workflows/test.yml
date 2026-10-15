@@ -1,7 +1,11 @@
 name: Unit Tests
 
 # Like the OMICRONEnergyOSS plugins: runs on every push to any branch, on
-# pull requests and on demand.
+# pull requests and on demand. The screenshot tests run in the Playwright
+# container that OMICRONEnergyOSS/oscd-gh-workflows uses, so that fonts and
+# rendering match the baselines, which are made in that container too
+# (see update-screenshots.yml). Failed screenshots are uploaded, as in
+# OpenPowerShift/oscd-editor-subscriber-later-binding.
 on: [workflow_dispatch, push, pull_request]
 
 permissions:
@@ -49,3 +53,35 @@ jobs:
 
       - name: Bundle
         run: npm run bundle
+
+  visual:
+    runs-on: ubuntu-latest
+    container:
+      # keep in step with the playwright version that oscd-tooling installs
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Screenshot tests
+        run: npm run test:visual
+        env:
+          CI: true
+
+      - name: Upload failed screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-failures
+          path: screenshots/*/failed
+          retention-days: 7
+          if-no-files-found: ignore
+

@@ -33,7 +33,8 @@
     "/dist/",
     "!/dist/**/*.spec.*",
     "!/dist/**/*.test.*",
-    "!/dist/testing/**"
+    "!/dist/testing/**",
+    "!/dist/demo/**"
   ],
   "publishConfig": {
     "access": "public"

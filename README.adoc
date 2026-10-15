@@ -146,7 +146,7 @@ image::themed.png[A dark theme,width=900]
 
 == Development
 
-You need a current Node.js (24) and, because the screenshots are in Git LFS, `git-lfs`.
+You need a current Node.js (24).
 
 [source,sh]
 ----
@@ -165,11 +165,25 @@ npm start          # demo at http://localhost:8004/demo/
 | `npm test` | Unit tests with coverage. The gate is 90%
 | `npm run test:visual` | Screenshot tests against the baselines in `screenshots/`
 | `npm run test:update` | Replaces the baselines (check the pictures first)
+| `npm run bundle` and `npm run start:bundle` | Builds and serves the demo as it is deployed
 | `npm run lint` / `npm run format` | ESLint and formatting
 | `npm run localize` | Extracts messages to `xliff/` and generates `src/locales/`
 |===
 
 Tooling is `@omicronenergy/oscd-tooling`, as in the other OpenPowerShift plugins.
+
+=== Screenshot tests in CI
+
+As in the OMICRONEnergyOSS plugins, the screenshot tests run in CI in the Playwright container (`mcr.microsoft.com/playwright`), whose fonts and rendering are fixed, and the baselines are made there too:
+
+* `test.yml` runs them on every push and pull request. When they fail, the differing pictures are uploaded as the `visual-test-failures` artifact, as in `oscd-editor-subscriber-later-binding`.
+* `update-screenshots.yml` runs on pushes to branches other than `main` (and on demand). When the tests fail, it makes the baselines again and commits them to the branch, so the changed pictures can be reviewed in the pull request.
+
+Screenshots taken on your own machine usually differ a little from the container's. Run `npm run test:visual` locally to look at the pictures, and let CI make the baselines that are committed.
+
+=== The demo
+
+`npm run bundle` builds the plugin and the two demo pages (`index.html` and the dark `index-themed.html`) into `dist`. `continuous-deployment.yml` publishes them to GitHub Pages, so the plugin can be tried online. The demo is not part of the npm package.
 Commits follow Conventional Commits, and releases are made by release-please.
 
 === Translating
