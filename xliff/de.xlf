@@ -886,6 +886,22 @@
   <source>Import stencil…</source>
   <target>Stencil importieren …</target>
 </trans-unit>
+<trans-unit id="sdd8f1f4d338c7291">
+  <source>New stencil</source>
+  <target>Neues Stencil</target>
+</trans-unit>
+<trans-unit id="sca6ddd1175656ff2">
+  <source>A stencil with this name and version exists</source>
+  <target>Ein Stencil mit diesem Namen und dieser Version existiert bereits</target>
+</trans-unit>
+<trans-unit id="s546f1f94bb2d2ef7">
+  <source>Created stencil <x id="0" equiv-text="${name} ${version}"/></source>
+  <target>Stencil <x id="0" equiv-text="${name} ${version}"/> erstellt</target>
+</trans-unit>
+<trans-unit id="s1351b991ccab3902">
+  <source>Start a new stencil</source>
+  <target>Neues Stencil beginnen</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

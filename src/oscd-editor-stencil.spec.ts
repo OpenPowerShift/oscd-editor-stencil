@@ -53,6 +53,16 @@ describe('oscd-editor-stencil', () => {
     expect(manage.view).to.equal('capture');
   });
 
+  it('can start a new stencil from the first screen', async () => {
+    (plugin.shadowRoot!.querySelector('#first-new') as HTMLElement).click();
+    await plugin.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(plugin.tabIndex).to.equal(1);
+    const manage = plugin.shadowRoot!.querySelector('oscd-stencil-manage') as HTMLElement & { renaming: boolean; dialogMode: string };
+    expect(manage.renaming).to.be.true;
+    expect(manage.dialogMode).to.equal('new');
+  });
+
   it('accepts docVersion and does not expose the legacy editCount', () => {
     expect('docVersion' in plugin).to.be.true;
     expect('editCount' in plugin).to.be.false;
@@ -289,6 +299,17 @@ describe('oscd-editor-stencil UI', () => {
       expect(stored()).to.have.lengthOf(1);
       expect(stored()[0].stencil.applications[0].versions).to.have.lengthOf(1);
       expect(manage().currentId).to.not.equal('');
+    });
+
+    it('adds a new, empty stencil to the library and makes it the current one', async () => {
+      raise('stencil-change', plugin.stencilData);
+      raise('stencil-new', { name: 'Fresh', version: '0.1.0' });
+      await plugin.updateComplete;
+
+      expect(plugin.library).to.have.lengthOf(2);
+      expect(plugin.stencilData).to.include({ name: 'Fresh', version: '0.1.0' });
+      expect(plugin.stencilData.applications).to.be.empty;
+      expect(stored()).to.have.lengthOf(2);
     });
 
     it('switches between stencils of the library, and imports one into it', async () => {

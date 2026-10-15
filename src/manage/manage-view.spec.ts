@@ -74,6 +74,7 @@ describe('oscd-stencil-manage', () => {
     events = [];
     [
       'stencil-change',
+      'stencil-new',
       'stencil-select',
       'stencil-import',
       'stencil-export',
@@ -151,6 +152,38 @@ describe('oscd-stencil-manage', () => {
       q('#rename-dialog').dispatchEvent(new Event('closed'));
       await el.updateComplete;
       expect(el.renaming).to.be.false;
+    });
+
+    it('makes a new stencil in the same dialog, which cannot repeat a name and version that exists', async () => {
+      q<HTMLElement>('#new-stencil').click();
+      await el.updateComplete;
+      expect(q('#rename-dialog').hasAttribute('open')).to.be.true;
+      expect(q('#rename-dialog [slot="headline"]').textContent).to.contain('New stencil');
+      expect(q<OscdOutlinedTextField>('#rename-name').value).to.equal('');
+      expect(q<OscdOutlinedTextField>('#rename-version').value).to.equal('1.0.0');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.true;
+
+      await type('rename-name', 'My Stencil');
+      expect(q<OscdOutlinedTextField>('#rename-version').errorText).to.contain('exists');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.true;
+
+      await type('rename-name', ' Third ');
+      expect(q<HTMLButtonElement>('#rename-save').disabled).to.be.false;
+      expect(q('#rename-save').textContent).to.contain('Create');
+      q<HTMLElement>('#rename-save').click();
+      await el.updateComplete;
+
+      expect(last('stencil-new')).to.deep.equal({ name: 'Third', version: '1.0.0' });
+      expect(events.filter(event => event.type === 'stencil-change')).to.be.empty;
+      expect(q('#rename-dialog').hasAttribute('open')).to.be.false;
+    });
+
+    it('does not let a rename take the name and version of another stencil', async () => {
+      q<HTMLElement>('#rename').click();
+      await el.updateComplete;
+      await type('rename-name', 'Second');
+      await type('rename-version', '1.0.0');
+      expect(q<OscdOutlinedTextField>('#rename-version').errorText).to.contain('exists');
     });
 
     it('cannot rename when there is no stencil in the library', async () => {

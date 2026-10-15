@@ -121,6 +121,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   /** The stencil name and version being typed in the rename dialog. */
   @state() renaming = false;
 
+  /** Whether the dialog renames the stencil or makes a new one. */
+  @state() dialogMode: 'rename' | 'new' = 'rename';
+
   @state() renameName = '';
 
   @state() renameVersion = '';
@@ -275,6 +278,13 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           )}
         </oscd-outlined-select>
         <div class="tools" role="toolbar" aria-label=${msg('Stencil actions')}>
+          <oscd-icon-button
+            id="new-stencil"
+            aria-label=${msg('New stencil')}
+            title=${msg('New stencil')}
+            @click=${() => this.openNew()}
+            ><oscd-icon aria-hidden="true">note_add</oscd-icon></oscd-icon-button
+          >
           <oscd-icon-button
             id="rename"
             aria-label=${msg('Rename stencil')}
@@ -683,15 +693,35 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
   }
 
   private openRename(): void {
+    this.dialogMode = 'rename';
     this.renameName = this.stencil.name;
     this.renameVersion = this.stencil.version;
     this.renaming = true;
   }
 
+  /** Shows the dialog that makes a new, empty stencil. */
+  openNew(): void {
+    this.dialogMode = 'new';
+    this.renameName = '';
+    this.renameVersion = '1.0.0';
+    this.renaming = true;
+  }
+
   private get renameProblems(): { name?: string; version?: string } {
+    const name = this.renameName.trim();
+    const version = this.renameVersion.trim();
+    const exists = this.library.some(
+      entry =>
+        (this.dialogMode === 'new' || entry.id !== this.currentId) &&
+        entry.stencil.name === name &&
+        entry.stencil.version === version
+    );
     return {
-      ...(this.renameName.trim() ? {} : { name: msg('A name is needed') }),
-      ...(this.renameVersion.trim() ? {} : { version: msg('A version is needed') })
+      ...(name ? {} : { name: msg('A name is needed') }),
+      ...(version ? {} : { version: msg('A version is needed') }),
+      ...(name && version && exists
+        ? { version: msg('A stencil with this name and version exists') }
+        : {})
     };
   }
 
@@ -699,17 +729,21 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
     if (Object.keys(this.renameProblems).length > 0) {
       return;
     }
-    this.change({
-      ...this.stencil,
-      name: this.renameName.trim(),
-      version: this.renameVersion.trim()
-    });
+    const name = this.renameName.trim();
+    const version = this.renameVersion.trim();
+    if (this.dialogMode === 'new') {
+      this.emit('stencil-new', { name, version });
+    } else {
+      this.change({ ...this.stencil, name, version });
+    }
     this.renaming = false;
   }
 
   private renderRename(): TemplateResult {
     const problems = this.renameProblems;
+    const creating = this.dialogMode === 'new';
     const unchanged =
+      !creating &&
       this.renameName.trim() === this.stencil.name &&
       this.renameVersion.trim() === this.stencil.version;
 
@@ -722,7 +756,9 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
         }
       }}
     >
-      <div slot="headline">${msg('Rename stencil')}</div>
+      <div slot="headline">
+        ${creating ? msg('New stencil') : msg('Rename stencil')}
+      </div>
       <form
         slot="content"
         id="rename-form"
@@ -758,7 +794,7 @@ export class OscdStencilManage extends ScopedElementsMixin(LitElement) {
           id="rename-save"
           ?disabled=${Object.keys(problems).length > 0 || unchanged}
           @click=${() => this.saveRename()}
-          >${msg('Save')}</oscd-filled-button
+          >${creating ? msg('Create') : msg('Save')}</oscd-filled-button
         >
       </div>
     </oscd-dialog>`;

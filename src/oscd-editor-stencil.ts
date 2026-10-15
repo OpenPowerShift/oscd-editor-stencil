@@ -367,6 +367,30 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
     this.dispatchEvent(newEditEventV2(edits, { title }));
   }
 
+  private onNewStencil(event: CustomEvent<{ name: string; version: string }>): void {
+    event.stopPropagation();
+    const { name, version } = event.detail;
+    const added = addStencil(
+      this.library,
+      { name, version, applications: [] },
+      Date.now()
+    );
+    this.library = added.library;
+    this.currentId = added.id;
+    this.stencilData = added.library.find(entry => entry.id === added.id)!.stencil;
+    this.persist();
+    this.notify(msg(str`Created stencil ${name} ${version}`), 'success');
+  }
+
+  /** Shows Manage with the dialog for a new stencil open. */
+  private async startNewStencil(): Promise<void> {
+    this.tabIndex = 1;
+    await this.updateComplete;
+    this.shadowRoot
+      ?.querySelector<OscdStencilManage>('oscd-stencil-manage')
+      ?.openNew();
+  }
+
   /** Shows Manage with the capture wizard open. */
   private async openCapture(): Promise<void> {
     this.tabIndex = 1;
@@ -402,6 +426,7 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       .library=${recentFirst(this.library)}
       .currentId=${this.currentId}
       @stencil-change=${this.onStencilChange}
+      @stencil-new=${this.onNewStencil}
       @stencil-select=${(e: CustomEvent<string>) => {
         e.stopPropagation();
         this.selectStencil(e.detail);
@@ -435,6 +460,9 @@ export default class OscdEditorStencil extends ScopedElementsMixin(
       <div class="first-run-actions">
         <oscd-filled-button id="first-open" @click=${() => this.changeStencilUI.click()}
           >${msg('Import a stencil file')}<oscd-icon slot="icon" aria-hidden="true">file_open</oscd-icon></oscd-filled-button
+        >
+        <oscd-outlined-button id="first-new" @click=${() => this.startNewStencil()}
+          >${msg('Start a new stencil')}<oscd-icon slot="icon" aria-hidden="true">note_add</oscd-icon></oscd-outlined-button
         >
         <oscd-outlined-button
           id="first-create"
