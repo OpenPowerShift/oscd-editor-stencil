@@ -1006,6 +1006,50 @@
   <source>Selected stencil</source>
   <target>Ausgewähltes Stencil</target>
 </trans-unit>
+<trans-unit id="s147acdf8914d8663">
+  <source>Replace existing subscriptions?</source>
+  <target>Bestehende Abonnements ersetzen?</target>
+</trans-unit>
+<trans-unit id="s54a6c7f59ca2cb8f">
+  <source>1 input is already subscribed to another source.</source>
+  <target>1 Eingang abonniert bereits eine andere Quelle.</target>
+</trans-unit>
+<trans-unit id="se4e1ea1d399f7319">
+  <source><x id="0" equiv-text="${conflicts.length}"/> inputs are already subscribed to other sources.</source>
+  <target><x id="0" equiv-text="${conflicts.length}"/> Eingänge abonnieren bereits andere Quellen.</target>
+</trans-unit>
+<trans-unit id="sb7bb17601902d25a">
+  <source>Keep them</source>
+  <target>Behalten</target>
+</trans-unit>
+<trans-unit id="s1ac0cb3326b7d5cf">
+  <source>Replace them</source>
+  <target>Ersetzen</target>
+</trans-unit>
+<trans-unit id="sdb1595f5c742dfbb">
+  <source>Input</source>
+  <target>Eingang</target>
+</trans-unit>
+<trans-unit id="s52916e3a6455c45e">
+  <source>Subscribed to now</source>
+  <target>Abonniert jetzt</target>
+</trans-unit>
+<trans-unit id="s62868fac111c5275">
+  <source>Stencil subscribes to</source>
+  <target>Stencil abonniert</target>
+</trans-unit>
+<trans-unit id="s4eee33c064bb53a6">
+  <source>An input that is already subscribed to another source is listed too. When you apply, you choose whether to keep it or to replace its subscription with the stencil's.</source>
+  <target>Ein Eingang, der bereits eine andere Quelle abonniert, wird ebenfalls aufgeführt. Beim Anwenden wählen Sie, ob er so bleibt oder sein Abonnement durch das des Stencils ersetzt wird.</target>
+</trans-unit>
+<trans-unit id="s8183ffbb009bc06c">
+  <source>Replace subscribes each one to the stencil's source instead, as earlier versions of this plugin always did. Keep leaves each one as it is and applies the rest.</source>
+  <target>„Ersetzen“ lässt jeden davon stattdessen die Quelle des Stencils abonnieren, wie es frühere Versionen dieses Plugins immer getan haben. „Behalten“ lässt jeden unverändert und wendet den Rest an.</target>
+</trans-unit>
+<trans-unit id="sba4da960455de473">
+  <source>When you apply, you choose whether to keep or replace each of these.</source>
+  <target>Beim Anwenden wählen Sie, ob diese behalten oder ersetzt werden.</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

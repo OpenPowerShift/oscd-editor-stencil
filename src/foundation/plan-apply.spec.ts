@@ -182,11 +182,47 @@ describe('planApply', () => {
       ].forEach(([name, value]) => taken.setAttribute(name, value));
 
       const plan = planApply(doc, application, functions);
-      expect(plan.errors.join()).to.contain('Already subscribed to OTHER');
-      expect(plan.items[0].failed).to.be.true;
+      expect(plan.errors).to.be.empty;
+      expect(plan.conflicts).to.deep.equal([
+        {
+          ied: 'SUB2',
+          input: application.ControlBlocks[0].mappings[0].ExtRef,
+          current: 'OTHER',
+          proposed: 'PUB2',
+          controlBlock: 'GC1'
+        }
+      ]);
+      expect(plan.items[0].failed).to.be.false;
       plan.edits.forEach(edit => handleEdit(edit));
       expect(taken.getAttribute('iedName')).to.equal('OTHER');
       expect(taken.getAttribute('doName')).to.equal('Ind9');
+    });
+
+    it('replaces an input subscribed to another source when asked, as the original plugin did', () => {
+      const functions = new Map([
+        ['PUBF', 'PUB2'],
+        ['SUBF', 'SUB2']
+      ]);
+      const taken = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      [
+        ['iedName', 'OTHER'],
+        ['ldInst', 'LD0'],
+        ['lnClass', 'GGIO'],
+        ['lnInst', '1'],
+        ['doName', 'Ind9']
+      ].forEach(([name, value]) => taken.setAttribute(name, value));
+
+      const kept = planApply(doc, application, functions);
+      const replaced = planApply(doc, application, functions, { replaceSubscribed: true });
+      expect(replaced.conflicts).to.have.lengthOf(1);
+      expect(replaced.subscriptions).to.equal(kept.subscriptions + 1);
+      replaced.edits.forEach(edit => handleEdit(edit));
+      expect(taken.getAttribute('iedName')).to.equal('PUB2');
+      expect(taken.getAttribute('doName')).to.equal('Ind1');
+
+      const again = planApply(doc, application, functions);
+      expect(again.conflicts).to.be.empty;
+      expect(again.edits).to.be.empty;
     });
 
     it('fills an input whatever its type restrictions, as the original plugin did', () => {

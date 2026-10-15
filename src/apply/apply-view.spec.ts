@@ -333,6 +333,78 @@ describe('oscd-stencil-apply', () => {
     });
   });
 
+  describe('inputs subscribed to another source', () => {
+    const bindElsewhere = () => {
+      const taken = doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I1"]')!;
+      [
+        ['iedName', 'OTHER'],
+        ['ldInst', 'LD0'],
+        ['lnClass', 'GGIO'],
+        ['lnInst', '1'],
+        ['doName', 'Ind9']
+      ].forEach(([name, value]) => taken.setAttribute(name, value));
+      return taken;
+    };
+
+    it('lists them in the review and asks what to do before applying', async () => {
+      bindElsewhere();
+      await toReview();
+      expect(q('#conflicts').textContent).to.contain('OTHER').and.contain('SUB2');
+
+      await click('#apply');
+      expect(applied).to.be.empty;
+      expect(q('#conflict-dialog').hasAttribute('open')).to.be.true;
+
+      await click('#conflict-cancel');
+      expect(q('#conflict-dialog').hasAttribute('open')).to.be.false;
+      expect(applied).to.be.empty;
+    });
+
+    it('keeps them when asked, applying the rest', async () => {
+      const taken = bindElsewhere();
+      await toReview();
+      await click('#apply');
+      await click('#conflict-keep');
+
+      expect(applied).to.have.lengthOf(1);
+      applied[0].edits.forEach((edit: EditV2) => handleEdit(edit));
+      expect(taken.getAttribute('iedName')).to.equal('OTHER');
+      expect(
+        doc.querySelector('IED[name="SUB2"] ExtRef[intAddr="I2"]')!.getAttribute('iedName')
+      ).to.equal('PUB2');
+    });
+
+    it('replaces them when asked, as the plugin always did before', async () => {
+      const taken = bindElsewhere();
+      await toReview();
+      await click('#apply');
+      await click('#conflict-replace');
+
+      expect(applied).to.have.lengthOf(1);
+      applied[0].edits.forEach((edit: EditV2) => handleEdit(edit));
+      expect(taken.getAttribute('iedName')).to.equal('PUB2');
+      expect(el.step).to.equal('done');
+    });
+
+    it('can apply when every input to fill is subscribed elsewhere, by replacing them', async () => {
+      doc
+        .querySelectorAll('IED[name="SUB2"] ExtRef[intAddr]')
+        .forEach((extRef) => {
+          extRef.setAttribute('iedName', 'OTHER');
+          extRef.setAttribute('ldInst', 'LD0');
+          extRef.setAttribute('lnClass', 'GGIO');
+          extRef.setAttribute('lnInst', '1');
+          extRef.setAttribute('doName', 'Ind9');
+        });
+      await toReview();
+      expect(q<HTMLElement & { disabled: boolean }>('#apply').disabled).to.be.false;
+      await click('#apply');
+      expect(q<HTMLElement & { disabled: boolean }>('#conflict-keep').disabled).to.equal(
+        el.plan!.edits.length === 0
+      );
+    });
+  });
+
   describe('reviewing', () => {
     beforeEach(toReview);
 

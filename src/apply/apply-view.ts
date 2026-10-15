@@ -5,6 +5,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { msg, str, updateWhenLocaleChanges } from '@lit/localize';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
 import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
 import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
@@ -26,7 +27,7 @@ import {
 } from '../foundation/candidates.js';
 import { getIedDescription } from '../foundation/ied-description.js';
 import { planApply } from '../foundation/plan-apply.js';
-import type { ApplyPlan, PartStatus } from '../foundation/plan-apply.js';
+import type { ApplyPlan, Conflict, PartStatus } from '../foundation/plan-apply.js';
 import {
   defaultVersion,
   selectableVersions,
@@ -38,7 +39,7 @@ import type {
   StencilData,
   VersionedApplications
 } from '../foundation/types.js';
-import { cellKey } from '../foundation/mapping-matrix.js';
+import { cellKey, refLabel } from '../foundation/mapping-matrix.js';
 import { OscdStencilMappingTable } from '../shared/mapping-table.js';
 import type { CellMarker } from '../shared/mapping-table.js';
 import { OscdStencilHelp } from '../shared/help.js';
@@ -47,6 +48,7 @@ import {
   helpReview,
   helpWhatIsAStencil
 } from '../shared/help-content.js';
+import { prefersReducedMotion } from '../shared/motion.js';
 import { themeStyles } from '../theme.js';
 
 export type Step = 'choose' | 'assign' | 'review' | 'done';
@@ -80,6 +82,7 @@ const statusText: Record<PartStatus, () => string> = {
  */
 export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
+    'oscd-dialog': OscdDialog,
     'oscd-filled-button': OscdFilledButton,
     'oscd-icon': OscdIcon,
     'oscd-stencil-help': OscdStencilHelp,
@@ -122,6 +125,9 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
   @state() assignment: ReadonlyMap<string, string> = new Map();
 
   @state() plan: ApplyPlan | null = null;
+
+  /** Whether the user is being asked about inputs subscribed to other sources. */
+  @state() askConflicts = false;
 
   /** Whether what was applied is no longer all in the document, as after undo. */
   @state() appliedChanged = false;
@@ -277,7 +283,12 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     );
   }
 
-  private apply(): void {
+  /**
+   * Applies what was reviewed. Inputs subscribed to another source are kept
+   * or replaced as the user chooses: when there are any and no choice has
+   * been made yet, the user is asked first.
+   */
+  private apply(choice?: 'keep' | 'replace'): void {
     if (!this.plan || !this.application || !this.version || !this.doc) {
       return;
     }
@@ -288,18 +299,36 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     if (
       fresh.edits.length !== this.plan.edits.length ||
       fresh.subscriptions !== this.plan.subscriptions ||
-      fresh.supervisions !== this.plan.supervisions
+      fresh.supervisions !== this.plan.supervisions ||
+      fresh.conflicts.length !== this.plan.conflicts.length
     ) {
       this.plan = fresh;
+      this.askConflicts = false;
+      return;
+    }
+
+    if (fresh.conflicts.length > 0 && !choice) {
+      this.askConflicts = true;
+      return;
+    }
+    this.askConflicts = false;
+
+    const chosen =
+      choice === 'replace'
+        ? planApply(this.doc, this.version, this.assignment, {
+          replaceSubscribed: true
+        })
+        : fresh;
+    if (chosen.edits.length === 0) {
       return;
     }
 
     const detail: StencilApplyDetail = {
-      edits: fresh.edits,
+      edits: chosen.edits,
       title: msg(str`Apply stencil ${this.application.name} ${this.version.version}`),
-      plan: fresh
+      plan: chosen
     };
-    this.applied = fresh;
+    this.applied = chosen;
     this.step = 'done';
     this.dispatchEvent(
       new CustomEvent<StencilApplyDetail>('stencil-apply', {
@@ -309,6 +338,70 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
       })
     );
   }
+
+  private renderConflictDialog(): TemplateResult {
+    const conflicts = this.plan?.conflicts ?? [];
+    const keepDoesSomething = (this.plan?.edits.length ?? 0) > 0;
+    return html`<oscd-dialog
+      id="conflict-dialog"
+      ?quick=${prefersReducedMotion()}
+      ?open=${this.askConflicts}
+      @closed=${(e: Event) => {
+        if (e.target === e.currentTarget) {
+          this.askConflicts = false;
+        }
+      }}
+    >
+      <div slot="headline">${msg('Replace existing subscriptions?')}</div>
+      <div slot="content" class="conflict-text">
+        <p>
+          ${conflicts.length === 1
+            ? msg('1 input is already subscribed to another source.')
+            : msg(str`${conflicts.length} inputs are already subscribed to other sources.`)}
+          ${msg('Replace subscribes each one to the stencil\'s source instead, as earlier versions of this plugin always did. Keep leaves each one as it is and applies the rest.')}
+        </p>
+        ${this.renderConflictTable(conflicts)}
+      </div>
+      <div slot="actions">
+        <oscd-text-button id="conflict-cancel" @click=${() => (this.askConflicts = false)}
+          >${msg('Cancel')}</oscd-text-button
+        >
+        <oscd-outlined-button
+          id="conflict-keep"
+          ?disabled=${!keepDoesSomething}
+          @click=${() => this.apply('keep')}
+          >${msg('Keep them')}</oscd-outlined-button
+        >
+        <oscd-filled-button id="conflict-replace" @click=${() => this.apply('replace')}
+          >${msg('Replace them')}</oscd-filled-button
+        >
+      </div>
+    </oscd-dialog>`;
+  }
+
+  private renderConflictTable(conflicts: Conflict[]): TemplateResult {
+    return html`<table class="conflicts">
+      <thead>
+        <tr>
+          <th scope="col">${msg('IED')}</th>
+          <th scope="col">${msg('Input')}</th>
+          <th scope="col">${msg('Subscribed to now')}</th>
+          <th scope="col">${msg('Stencil subscribes to')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${conflicts.map(
+          conflict => html`<tr>
+            <td>${conflict.ied}</td>
+            <td>${refLabel(conflict.input)}</td>
+            <td>${conflict.current}</td>
+            <td>${conflict.proposed} · ${conflict.controlBlock}</td>
+          </tr>`
+        )}
+      </tbody>
+    </table>`;
+  }
+
 
   /** What applying did to each cell of the mapping table. */
   private appliedMarkers(): Map<string, CellMarker> {
@@ -721,7 +814,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
 
   private renderReview(): TemplateResult {
     const plan = this.plan!;
-    const nothingToDo = plan.edits.length === 0;
+    const nothingToDo = plan.edits.length === 0 && plan.conflicts.length === 0;
 
     return html`<div class="card wide">
       <div class="with-help"><h2>
@@ -774,6 +867,17 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
         ? html`<p class="reason" id="unassigned" role="note"><oscd-icon aria-hidden="true">info</oscd-icon>${msg(
           str`These functions have no IED, so their control blocks are not applied: ${this.unassigned().join(', ')}.`
         )}</p>`
+        : nothing}
+      ${plan.conflicts.length > 0
+        ? html`<div class="problems conflicts-note" id="conflicts">
+            <strong
+              >${plan.conflicts.length === 1
+                ? msg('1 input is already subscribed to another source.')
+                : msg(str`${plan.conflicts.length} inputs are already subscribed to other sources.`)}
+              ${msg('When you apply, you choose whether to keep or replace each of these.')}</strong
+            >
+            ${this.renderConflictTable(plan.conflicts)}
+          </div>`
         : nothing}
       ${plan.errors.length > 0
         ? html`<div class="problems" role="alert" id="problems">
@@ -855,6 +959,7 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
     ${this.step === 'choose' ? this.renderChoose() : nothing}
     ${this.step === 'assign' && this.version ? this.renderAssign() : nothing}
     ${this.step === 'review' && this.plan ? this.renderReview() : nothing}
+    ${this.step === 'review' && this.plan ? this.renderConflictDialog() : nothing}
     ${this.step === 'done' && this.applied ? this.renderDone() : nothing}`;
   }
 
@@ -1284,6 +1389,19 @@ export class OscdStencilApply extends ScopedElementsMixin(LitElement) {
           grid-column: 2;
           justify-content: flex-start;
         }
+      }
+
+      table.conflicts {
+        font-size: 0.875rem;
+        margin: 8px 0 0;
+      }
+
+      .conflicts-note {
+        border-left-color: var(--stencil-quality);
+      }
+
+      .conflict-text p {
+        margin: 0 0 12px;
       }
     `
   ];

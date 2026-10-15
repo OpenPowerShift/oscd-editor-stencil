@@ -58,6 +58,9 @@ export const helpReview = (): TemplateResult => html`
     ${msg('Anything that cannot be found, for example an IED that has no free supervision instance, is listed and skipped. The IED names of the control blocks are not changed.')}
   </p>
   <p style="margin: 0 0 12px">
+    ${msg('An input that is already subscribed to another source is listed too. When you apply, you choose whether to keep it or to replace its subscription with the stencil\'s.')}
+  </p>
+  <p style="margin: 0 0 12px">
     ${msg('Apply makes one change. Use undo in the menu bar to take it back. Applying the same stencil again changes nothing, because what is present is recognised.')}
   </p>
   <p style="margin: 0 0 12px">

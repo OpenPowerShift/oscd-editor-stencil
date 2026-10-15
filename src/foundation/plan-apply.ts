@@ -40,11 +40,35 @@ export type PlanItem = {
   failed: boolean;
 };
 
+/** An input that is already subscribed to a source other than the stencil's. */
+export type Conflict = {
+  /** The IED the input is on. */
+  ied: string;
+  /** The input, as the stencil refers to it on that IED. */
+  input: string;
+  /** The IED the input is subscribed to now. */
+  current: string;
+  /** The IED the stencil would subscribe it to. */
+  proposed: string;
+  controlBlock: string;
+};
+
+export type ApplyPlanOptions = {
+  /**
+   * Replace the subscriptions of inputs that are subscribed to another
+   * source, as the original plugin always did. Otherwise they are kept and
+   * reported in `conflicts`.
+   */
+  replaceSubscribed?: boolean;
+};
+
 export type ApplyPlan = {
   /** All edits, computed against the document as it is now. */
   edits: EditV2[];
   /** Everything in the stencil that could not be resolved. */
   errors: string[];
+  /** Inputs subscribed to another source: kept, or replaced when asked. */
+  conflicts: Conflict[];
   items: PlanItem[];
   subscriptions: number;
   supervisions: number;
@@ -116,10 +140,12 @@ function isBound(sink: Element, fcda: Element, control: Element): boolean {
 export function planApply(
   doc: XMLDocument,
   application: Application,
-  functionToIed: ReadonlyMap<string, string>
+  functionToIed: ReadonlyMap<string, string>,
+  options: ApplyPlanOptions = {}
 ): ApplyPlan {
   const plan: ApplyPlan = {
     edits: [],
+    conflicts: [],
     errors: [],
     items: [],
     subscriptions: 0,
@@ -208,16 +234,22 @@ export function planApply(
             return;
           }
 
-          // an input prepared by the IED tool is only filled when it is free:
-          // one bound to another source is not replaced. As in the original
-          // plugin, its type restrictions (pDO, pDA, pLN, pServT) are not
-          // checked: the stencil was captured from a working configuration.
+          // an input prepared by the IED tool that is subscribed to another
+          // source is a conflict: it is replaced only when asked, as the
+          // original plugin always did. As in the original plugin, type
+          // restrictions (pDO, pDA, pLN, pServT) are not checked: the stencil
+          // was captured from a working configuration.
           if (newSink.tagName === 'ExtRef' && isSubscribed(newSink)) {
-            plan.errors.push(
-              `Already subscribed to ${newSink.getAttribute('iedName')}, not changed: ${newIedIdentity(newToIed, mapping.ExtRef)}`
-            );
-            item.failed = true;
-            return;
+            plan.conflicts.push({
+              ied: newToIed,
+              input: mapping.ExtRef,
+              current: newSink.getAttribute('iedName') ?? '',
+              proposed: newFromIed,
+              controlBlock: item.controlBlock
+            });
+            if (!options.replaceSubscribed) {
+              return;
+            }
           }
 
           connections.push({

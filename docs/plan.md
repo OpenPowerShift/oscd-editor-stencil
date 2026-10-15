@@ -384,3 +384,7 @@ Left open, for a decision:
 - **Toolbars:** they are plain groups without arrow-key navigation.
 - **Capture:** function names start as the IED names.
 - **Screenshot tests:** they are not run in CI (no `lfs: true` checkout, and font rendering differs between machines).
+
+## 12. Inputs subscribed to another source
+
+The original plugin overwrote them silently (`subscribe` with `force: true`). Now the planner reports them as conflicts (`ApplyPlan.conflicts`), the review lists them, and Apply asks: keep them (and apply the rest) or replace them (the original behaviour, `planApply(..., { replaceSubscribed: true })`). Type restrictions are not checked, as before.

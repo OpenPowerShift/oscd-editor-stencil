@@ -1006,6 +1006,50 @@
   <source>Selected stencil</source>
   <target>Stencil selecionado</target>
 </trans-unit>
+<trans-unit id="s147acdf8914d8663">
+  <source>Replace existing subscriptions?</source>
+  <target>Substituir as subscrições existentes?</target>
+</trans-unit>
+<trans-unit id="s54a6c7f59ca2cb8f">
+  <source>1 input is already subscribed to another source.</source>
+  <target>1 entrada já está subscrita a outra fonte.</target>
+</trans-unit>
+<trans-unit id="se4e1ea1d399f7319">
+  <source><x id="0" equiv-text="${conflicts.length}"/> inputs are already subscribed to other sources.</source>
+  <target><x id="0" equiv-text="${conflicts.length}"/> entradas já estão subscritas a outras fontes.</target>
+</trans-unit>
+<trans-unit id="sb7bb17601902d25a">
+  <source>Keep them</source>
+  <target>Manter</target>
+</trans-unit>
+<trans-unit id="s1ac0cb3326b7d5cf">
+  <source>Replace them</source>
+  <target>Substituir</target>
+</trans-unit>
+<trans-unit id="sdb1595f5c742dfbb">
+  <source>Input</source>
+  <target>Entrada</target>
+</trans-unit>
+<trans-unit id="s52916e3a6455c45e">
+  <source>Subscribed to now</source>
+  <target>Subscrita agora a</target>
+</trans-unit>
+<trans-unit id="s62868fac111c5275">
+  <source>Stencil subscribes to</source>
+  <target>O stencil subscreve</target>
+</trans-unit>
+<trans-unit id="s4eee33c064bb53a6">
+  <source>An input that is already subscribed to another source is listed too. When you apply, you choose whether to keep it or to replace its subscription with the stencil's.</source>
+  <target>Uma entrada que já está subscrita a outra fonte também é listada. Ao aplicar, escolhe se a mantém ou se substitui a sua subscrição pela do stencil.</target>
+</trans-unit>
+<trans-unit id="s8183ffbb009bc06c">
+  <source>Replace subscribes each one to the stencil's source instead, as earlier versions of this plugin always did. Keep leaves each one as it is and applies the rest.</source>
+  <target>«Substituir» faz cada uma subscrever a fonte do stencil, como as versões anteriores deste plugin sempre fizeram. «Manter» deixa cada uma como está e aplica o resto.</target>
+</trans-unit>
+<trans-unit id="sba4da960455de473">
+  <source>When you apply, you choose whether to keep or replace each of these.</source>
+  <target>Ao aplicar, escolhe se as mantém ou substitui.</target>
+</trans-unit>
 </body>
 </file>
 </xliff>
